@@ -19,7 +19,7 @@ export class AuthService {
   async register(dto: RegisterDto) {
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) {
-      throw new ConflictException('Email already registered');
+      throw new ConflictException('Este email ya está registrado');
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
@@ -29,14 +29,22 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
+    const nodeEnv = process.env.NODE_ENV ?? 'development';
+    if (nodeEnv === 'development') {
+      console.log('[auth/login]', {
+        email: dto.email,
+        passwordLength: dto.password?.length ?? 0,
+      });
+    }
+
     const user = await this.usersService.findByEmail(dto.email);
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Email o contraseña incorrectos');
     }
 
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!valid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Email o contraseña incorrectos');
     }
 
     return this.buildAuthResponse(user.id, user.email);

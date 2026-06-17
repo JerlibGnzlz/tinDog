@@ -19,16 +19,20 @@ final apiClientProvider = Provider<Dio>((ref) {
       baseUrl: AppConstants.apiBaseUrl,
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Accept': 'application/json'},
     ),
   );
 
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final token = await tokenStorage.readToken();
-        if (token != null && token.isNotEmpty) {
-          options.headers['Authorization'] = 'Bearer $token';
+        final path = options.uri.path;
+        final isAuthRoute = path.startsWith('/auth/');
+        if (!isAuthRoute) {
+          final token = await tokenStorage.readToken();
+          if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
         }
         handler.next(options);
       },

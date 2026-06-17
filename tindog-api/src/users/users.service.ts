@@ -15,6 +15,7 @@ export class UsersService {
         email,
         passwordHash,
         profile: { create: {} },
+        pet: { create: {} },
       },
       include: { profile: true },
     });

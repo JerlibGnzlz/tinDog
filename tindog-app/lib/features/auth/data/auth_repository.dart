@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
+import 'auth_exception.dart';
 import 'token_storage.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -20,22 +21,30 @@ class AuthRepository {
     required String email,
     required String password,
   }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/auth/register',
-      data: {'email': email, 'password': password},
-    );
-    await _saveTokenFromResponse(response.data);
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/auth/register',
+        data: {'email': email, 'password': password},
+      );
+      await _saveTokenFromResponse(response.data);
+    } catch (e) {
+      rethrowAuthError(e);
+    }
   }
 
   Future<void> login({
     required String email,
     required String password,
   }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/auth/login',
-      data: {'email': email, 'password': password},
-    );
-    await _saveTokenFromResponse(response.data);
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/auth/login',
+        data: {'email': email, 'password': password},
+      );
+      await _saveTokenFromResponse(response.data);
+    } catch (e) {
+      rethrowAuthError(e);
+    }
   }
 
   Future<void> logout() => _tokenStorage.deleteToken();

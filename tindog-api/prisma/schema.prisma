@@ -14,6 +14,7 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
   profile      Profile?
+  pet          Pet?
 
   @@map("users")
 }
@@ -30,4 +31,16 @@ model Profile {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("profiles")
+}
+
+model Pet {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  name      String?
+  photoUrl  String?  @map("photo_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("pets")
 }
