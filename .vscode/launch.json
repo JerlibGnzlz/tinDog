@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "tinDog App (Android Emulator)",
+      "cwd": "${workspaceFolder}/tindog-app",
+      "request": "launch",
+      "type": "dart",
+      "toolArgs": [
+        "--dart-define-from-file=dart_defines/android_dev.json"
+      ],
+      "flutterMode": "debug"
+    },
+    {
+      "name": "tinDog App (Linux)",
+      "cwd": "${workspaceFolder}/tindog-app",
+      "request": "launch",
+      "type": "dart",
+      "toolArgs": [
+        "--dart-define-from-file=dart_defines/linux_dev.json"
+      ],
+      "flutterMode": "debug"
+    }
+  ]
+}

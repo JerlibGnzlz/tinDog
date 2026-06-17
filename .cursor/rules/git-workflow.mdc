@@ -1,0 +1,47 @@
+---
+description: Rama development y flujo antes de subir cambios
+alwaysApply: true
+---
+
+# Git — tinDog
+
+## Rama de trabajo
+
+- Rama principal de desarrollo: **`development`**
+- Trabajar siempre en `development` (o feature branches que salgan de ella)
+- **`main`** solo para releases estables; no commitear features directo en `main`
+
+```bash
+git checkout development
+git pull origin development
+```
+
+## Antes de subir cambios
+
+**Nunca** hacer `git push` sin que el usuario lo confirme explícitamente.
+
+Después de implementar cambios, el agente debe:
+
+1. **Verificar** que funcionen (según el cambio):
+   - API: `npm run build` y/o `npm run start:dev`
+   - App: `flutter analyze` y/o correr en emulador
+   - DB: `npm run db:migrate:dev` si hubo cambios en schema
+2. **Informar** al usuario qué se probó y el resultado
+3. **Preguntar** si quiere subir los cambios a `development`
+
+Ejemplo de cierre:
+> Los cambios compilan y la API responde. ¿Quieres que haga commit y push a `development`?
+
+## Commits
+
+- Solo commitear cuando el usuario lo pida (o confirme al preguntar)
+- Mensajes claros, en español o inglés según el repo
+- No incluir `.env`, secrets ni credenciales
+
+## Push
+
+```bash
+git push origin development
+```
+
+Solo tras confirmación explícita del usuario.

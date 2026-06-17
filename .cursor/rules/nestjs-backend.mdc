@@ -1,0 +1,50 @@
+---
+description: Modularización y patrones del backend NestJS
+globs: tindog-api/**/*.ts
+alwaysApply: false
+---
+
+# NestJS — tinDog API
+
+## Estructura por feature
+```
+src/
+  auth/       # register, login, refresh, guards, strategies
+  users/      # entidad usuario, users/me
+  profiles/   # profiles/me GET/PATCH
+  prisma/     # PrismaService global
+  common/     # filters, decorators, pipes compartidos
+```
+
+## Reglas de modularización
+- Cada feature exporta solo su `XxxModule`; dependencias vía `imports`, no imports circulares
+- `AuthModule` importa `UsersModule`; `ProfilesModule` importa `UsersModule`
+- Lógica de negocio en **services**, nunca en controllers
+- Controllers: validar DTO → llamar service → mapear response
+
+## Auth (JWT)
+- Passwords con `bcrypt` (rounds ≥ 10)
+- Payload JWT mínimo: `{ sub: userId, email }`
+- Rutas protegidas con `@UseGuards(JwtAuthGuard)` + `@CurrentUser()` decorator
+- Refresh token opcional en cookie httpOnly o body según implementación
+
+## Prisma
+- Schema en `prisma/schema.prisma`; migraciones versionadas
+- `PrismaService` extiende `PrismaClient`, `onModuleInit` conecta
+- No usar Prisma fuera de services de su dominio
+
+## DTOs y errores
+```typescript
+// ✅ Response sin password
+return { id: user.id, email: user.email, profile: user.profile };
+
+// ❌ Nunca
+return user; // incluye passwordHash
+```
+- `NotFoundException`, `ConflictException`, `UnauthorizedException` según caso
+- Validar con `ValidationPipe` global (`whitelist: true, forbidNonWhitelisted: true`)
+
+## Naming
+- Archivos: `kebab-case` (`create-profile.dto.ts`)
+- Clases: `PascalCase` (`ProfilesService`)
+- Endpoints: plural, REST (`GET /profiles/me`, `PATCH /profiles/me`)

@@ -1,0 +1,39 @@
+---
+description: Alcance y criterios de aceptación del Módulo 1 — Base & Auth
+alwaysApply: true
+---
+
+# Módulo 1 — Base & Auth
+
+## Entra en este módulo
+| Área | Entregable |
+|------|------------|
+| DB | Tablas `users`, `profiles` (1:1) |
+| API | `POST /auth/register`, `POST /auth/login` |
+| API | `GET /users/me`, `GET/PATCH /profiles/me` |
+| Auth | JWT access token; guard en rutas protegidas |
+| App | Login, registro, editar perfil, persistir sesión |
+
+## NO entra (rechazar si se propone)
+- Docker, Compose, CI/CD, scripts de deploy
+- Tablas: pets, likes, matches, chat, payments, notifications
+- Cloudinary, Firebase, Stream Chat, Mercado Pago
+- Refresh token complejo (opcional; no bloqueante para M1)
+- Panel admin, IA, marketplace
+
+## Esquema mínimo
+```
+users:    id, email, password_hash, created_at, updated_at
+profiles: id, user_id, name, bio, avatar_url, location, created_at, updated_at
+```
+
+## Criterios de aceptación
+1. Usuario se registra con email/password y recibe JWT
+2. Usuario hace login y accede a ruta protegida
+3. Usuario ve y edita su perfil (name, bio, location)
+4. Sin token válido → 401 en API; redirect a login en app
+5. Password nunca en responses ni logs
+
+## Al extender código
+- Preguntar: ¿esto es Módulo 1 o un módulo futuro?
+- Si es futuro: no implementar; dejar stub o TODO en `docs/`
