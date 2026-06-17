@@ -19,7 +19,7 @@ export class CloudinaryService {
         {
           folder: 'tindog/pets',
           resource_type: 'image',
-          transformation: [{ width: 800, height: 1000, crop: 'fill' }],
+          transformation: [{ width: 1200, height: 1200, crop: 'limit', quality: 'auto' }],
         },
         (error, result) => {
           if (error || !result) {

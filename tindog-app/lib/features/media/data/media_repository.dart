@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -15,7 +17,17 @@ class MediaRepository {
   Future<String> uploadImage(XFile file) async {
     final bytes = await file.readAsBytes();
     final filename = file.name.isNotEmpty ? file.name : 'pet-photo.jpg';
+    return _uploadBytes(bytes, filename);
+  }
 
+  Future<String> uploadImageBytes(
+    Uint8List bytes, {
+    String filename = 'pet-photo.jpg',
+  }) {
+    return _uploadBytes(bytes, filename);
+  }
+
+  Future<String> _uploadBytes(Uint8List bytes, String filename) async {
     final formData = FormData.fromMap({
       'file': MultipartFile.fromBytes(
         bytes,

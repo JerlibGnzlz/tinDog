@@ -47,6 +47,7 @@ class TindogNetworkImage extends StatelessWidget {
         child: CachedNetworkImage(
           imageUrl: imageUrl!,
           fit: fit,
+          alignment: Alignment.center,
           placeholder: (_, _) => Shimmer.fromColors(
             baseColor: AppColors.border,
             highlightColor: Colors.white,

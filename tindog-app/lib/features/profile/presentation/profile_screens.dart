@@ -8,8 +8,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/widgets/no_stretch_scroll_behavior.dart';
 import '../../../core/network/session_handler.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/pet_photo_preview.dart';
 import '../../../shared/widgets/pet_photo_picker.dart';
-import '../../../shared/widgets/tindog_network_image.dart';
 import '../../../shared/widgets/tindog_text_field.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../media/data/media_repository.dart';
@@ -87,15 +87,7 @@ class _HomeBody extends StatelessWidget {
       child: Column(
         children: [
           if (photoUrl != null && photoUrl!.isNotEmpty)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: TindogNetworkImage(
-                imageUrl: photoUrl,
-                width: double.infinity,
-                height: 220,
-                borderRadius: 24,
-              ),
-            )
+            PetPhotoPreview(photoUrl: photoUrl)
           else
             const Icon(Icons.pets, size: 80, color: AppColors.primary),
           const SizedBox(height: 20),
@@ -239,7 +231,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     try {
       final url = await ref.read(mediaRepositoryProvider).uploadImage(picked);
       if (!mounted) return;
-      setState(() => _photoUrl = url);
+      setState(() {
+        _photoUrl = url;
+        _localPhoto = null;
+        _localPhotoBytes = null;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Foto subida correctamente')),
       );
@@ -259,12 +255,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<String?> _ensurePhotoUploaded() async {
-    if (_localPhoto == null) return _photoUrl;
+    if (_localPhoto == null && _localPhotoBytes == null) return _photoUrl;
+    if (_photoUrl != null) return _photoUrl;
 
     setState(() => _uploadingPhoto = true);
     try {
-      final url = await ref.read(mediaRepositoryProvider).uploadImage(_localPhoto!);
-      if (mounted) setState(() => _photoUrl = url);
+      final url = _localPhotoBytes != null
+          ? await ref.read(mediaRepositoryProvider).uploadImageBytes(
+                _localPhotoBytes!,
+                filename: _localPhoto?.name ?? 'pet-photo.jpg',
+              )
+          : await ref.read(mediaRepositoryProvider).uploadImage(_localPhoto!);
+      if (mounted) {
+        setState(() {
+          _photoUrl = url;
+          _localPhoto = null;
+          _localPhotoBytes = null;
+        });
+      }
       return url;
     } catch (e) {
       if (isUnauthorizedError(e)) {
@@ -294,7 +302,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     setState(() => _saving = true);
     try {
       String? photoUrl = _photoUrl;
-      if (_localPhoto != null) {
+      if (_localPhotoBytes != null || _localPhoto != null) {
         photoUrl = await _ensurePhotoUploaded();
       }
 
@@ -342,6 +350,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text('Mi perfil'),
         leading: IconButton(
@@ -370,72 +379,81 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 )
               : ScrollConfiguration(
                   behavior: const NoStretchScrollBehavior(),
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(
+                      24,
+                      16,
+                      24,
+                      24 + MediaQuery.viewInsetsOf(context).bottom,
+                    ),
                     keyboardDismissBehavior:
                         ScrollViewKeyboardDismissBehavior.onDrag,
-                    children: [
-                      Text(
-                        'Tu mascota',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 12),
-                      PetPhotoPicker(
-                        photoUrl: _photoUrl,
-                        localImageBytes: _localPhotoBytes,
-                        localFile: _localPhoto != null && _localPhotoBytes == null
-                            ? File(_localPhoto!.path)
-                            : null,
-                        isLoading: _uploadingPhoto,
-                        onTap: _pickPhoto,
-                      ),
-                      const SizedBox(height: 16),
-                      TindogTextField(
-                        controller: _petNameController,
-                        label: 'Nombre de tu mascota',
-                      ),
-                      const SizedBox(height: 32),
-                      Text(
-                        'Sobre ti',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 12),
-                      TindogTextField(
-                        controller: _nameController,
-                        label: 'Tu nombre',
-                      ),
-                      const SizedBox(height: 16),
-                      TindogTextField(
-                        controller: _bioController,
-                        label: 'Bio',
-                        maxLines: 3,
-                      ),
-                      const SizedBox(height: 16),
-                      TindogTextField(
-                        controller: _locationController,
-                        label: 'Ubicación',
-                      ),
-                      const SizedBox(height: 28),
-                      FilledButton(
-                        onPressed: _saving || _uploadingPhoto ? null : _save,
-                        child: _saving
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text('Guardar'),
-                      ),
-                    ],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Tu mascota',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 12),
+                        PetPhotoPicker(
+                          photoUrl: _photoUrl,
+                          localImageBytes: _localPhotoBytes,
+                          localFile: _localPhoto != null &&
+                                  _localPhotoBytes == null
+                              ? File(_localPhoto!.path)
+                              : null,
+                          isLoading: _uploadingPhoto,
+                          onTap: _pickPhoto,
+                        ),
+                        const SizedBox(height: 16),
+                        TindogTextField(
+                          controller: _petNameController,
+                          label: 'Nombre de tu mascota',
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Sobre ti',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 12),
+                        TindogTextField(
+                          controller: _nameController,
+                          label: 'Tu nombre',
+                        ),
+                        const SizedBox(height: 16),
+                        TindogTextField(
+                          controller: _bioController,
+                          label: 'Bio',
+                          maxLines: 3,
+                        ),
+                        const SizedBox(height: 16),
+                        TindogTextField(
+                          controller: _locationController,
+                          label: 'Ubicación',
+                        ),
+                        const SizedBox(height: 24),
+                        FilledButton(
+                          onPressed: _saving || _uploadingPhoto ? null : _save,
+                          child: _saving
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text('Guardar'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
     );
