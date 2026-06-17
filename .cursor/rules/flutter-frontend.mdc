@@ -1,0 +1,49 @@
+---
+description: Arquitectura y patrones de la app Flutter
+globs: tindog-app/**/*.dart
+alwaysApply: false
+---
+
+# Flutter — tinDog App
+
+## Estructura por feature
+```
+lib/
+  core/           # theme, router, http client, constants, errors
+  features/
+    auth/         # login, register, auth_repository, auth_provider
+    profile/      # profile screen, profile_repository
+  shared/         # widgets reutilizables
+  main.dart
+```
+
+## Capas por feature
+```
+presentation/  → widgets, screens, providers/bloc
+domain/        → entities, repository interfaces (si crece)
+data/          → api client, models, repository impl
+```
+
+Para Módulo 1, `data/` + `presentation/` por feature es suficiente.
+
+## Estado y navegación
+- **Riverpod** para estado global (auth session, profile)
+- **go_router** para rutas; redirect según token en `authProvider`
+- Rutas públicas: `/login`, `/register`
+- Rutas protegidas: `/home`, `/profile`
+
+## HTTP y auth
+- Cliente Dio/Http centralizado en `core/network/api_client.dart`
+- Interceptor adjunta `Authorization: Bearer <token>`
+- Token en `flutter_secure_storage` (no SharedPreferences)
+- En 401: limpiar token y redirigir a login
+
+## UI (Módulo 1)
+- Pantallas simples y funcionales; pulir UX en módulos posteriores
+- Formularios con validación local antes de llamar API
+- Loading y error states en cada pantalla async
+
+## Naming
+- Archivos: `snake_case` (`login_screen.dart`)
+- Clases: `PascalCase` (`LoginScreen`)
+- Providers: `xxxProvider` (`authProvider`)

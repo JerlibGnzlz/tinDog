@@ -1,0 +1,7 @@
+node_modules
+# Environment files (never commit)
+.env
+.env.development
+.env.production
+
+/generated/prisma

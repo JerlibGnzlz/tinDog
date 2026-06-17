@@ -1,0 +1,14 @@
+---
+description: Seguridad y variables de entorno
+alwaysApply: true
+---
+
+# Seguridad tinDog
+
+- Nunca commitear `.env.development`, `.env.production` ni `DATABASE_URL`
+- Usar `.env.development.example` y `.env.production.example` con placeholders
+- Seed y `migrate dev` solo en desarrollo; en prod usar `db:migrate:prod`
+- Passwords solo como hash (`bcrypt`) en DB; nunca en logs ni JSON responses
+- JWT_SECRET debe ser largo y aleatorio en producción
+- Validar todos los inputs con DTOs (`class-validator` / formularios Flutter)
+- En Flutter: token en `flutter_secure_storage`, no en SharedPreferences

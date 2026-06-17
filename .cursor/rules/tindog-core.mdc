@@ -1,0 +1,47 @@
+---
+description: Visión, stack y convenciones globales de tinDog
+alwaysApply: true
+---
+
+# tinDog — Core
+
+## Stack
+- **App:** Flutter (Dart)
+- **API:** NestJS (TypeScript)
+- **DB:** PostgreSQL remoto (Supabase/Neon) vía Prisma
+- **Auth:** JWT propio en NestJS (no Supabase Auth)
+
+## Arquitectura
+```
+Flutter  →  NestJS API  →  PostgreSQL
+```
+El frontend **nunca** accede directamente a la base de datos.
+
+## Monorepo
+```
+tindog-api/   # Backend NestJS
+tindog-app/   # App Flutter
+docs/         # Alcance por módulo MVP
+```
+
+## Módulos MVP (orden)
+1. **Base & Auth** — users, profiles, JWT, login/register
+2. Media — Cloudinary, avatares
+3. Pets — perfiles de mascotas
+4. Matching — likes, matches
+5. Chat — Stream Chat
+6. Notificaciones — Firebase Push
+7. Pagos — Mercado Pago / Stripe
+
+## Fuera de alcance global (por ahora)
+- Docker / Compose local
+- CI/CD y pipelines
+- Scripts de deploy automatizados
+- Complejidad de módulos futuros en el código actual
+
+## Convenciones generales
+- Rama de desarrollo: **`development`** (ver regla `git-workflow`)
+- Un módulo de negocio = una carpeta con controller, service, dto, module
+- DTOs con `class-validator`; no exponer entidades Prisma en responses
+- Variables sensibles solo en `.env` (nunca commitear)
+- Commits pequeños y por feature; no mezclar backend y frontend en un solo commit sin razón
