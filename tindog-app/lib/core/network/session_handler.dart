@@ -21,7 +21,7 @@ void handleSessionExpired(WidgetRef ref, BuildContext context, Object error) {
 
   ref.read(authSessionProvider.notifier).logout();
   if (context.mounted) {
-    context.go('/login');
+    context.go('/welcome');
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Tu sesión expiró. Vuelve a iniciar sesión.'),

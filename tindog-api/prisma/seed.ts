@@ -26,6 +26,10 @@ const seedUsers = [
     },
     pet: {
       name: 'Luna',
+      age: 3,
+      breed: 'Golden Retriever',
+      color: 'Dorado',
+      favoriteToy: 'Cuerda para tirar',
       photoSource: 'https://placedog.net/800/1000?id=1',
     },
   },
@@ -40,6 +44,10 @@ const seedUsers = [
     },
     pet: {
       name: 'Rocky',
+      age: 4,
+      breed: 'Bulldog',
+      color: 'Blanco y negro',
+      favoriteToy: 'Pelota de tenis',
       photoSource: 'https://placedog.net/800/1000?id=2',
     },
   },
@@ -54,6 +62,10 @@ const seedUsers = [
     },
     pet: {
       name: 'Mimi',
+      age: 2,
+      breed: 'Siamés',
+      color: 'Crema',
+      favoriteToy: 'Ratón de juguete',
       photoSource: 'https://placedog.net/800/1000?id=3',
     },
   },
@@ -68,6 +80,10 @@ const seedUsers = [
     },
     pet: {
       name: 'Thor',
+      age: 5,
+      breed: 'Husky',
+      color: 'Gris',
+      favoriteToy: 'Frisbee',
       photoSource: 'https://placedog.net/800/1000?id=4',
     },
   },
@@ -82,6 +98,10 @@ const seedUsers = [
     },
     pet: {
       name: 'Coco',
+      age: 1,
+      breed: 'Corgi',
+      color: 'Naranja y blanco',
+      favoriteToy: 'Hueso de goma',
       photoSource: 'https://placedog.net/800/1000?id=5',
     },
   },
@@ -197,6 +217,10 @@ async function main() {
         pet: {
           create: {
             name: user.pet.name,
+            age: user.pet.age,
+            breed: user.pet.breed,
+            color: user.pet.color,
+            favoriteToy: user.pet.favoriteToy,
             photoUrl,
           },
         },

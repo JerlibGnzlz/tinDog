@@ -17,11 +17,22 @@ class PetRepository {
     return PetModel.fromJson(response.data!);
   }
 
-  Future<PetModel> updateMyPet({String? name, String? photoUrl}) async {
+  Future<PetModel> updateMyPet({
+    String? name,
+    int? age,
+    String? color,
+    String? breed,
+    String? favoriteToy,
+    String? photoUrl,
+  }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
       '/pets/me',
       data: {
         if (name != null) 'name': name,
+        if (age != null) 'age': age,
+        if (color != null) 'color': color,
+        if (breed != null) 'breed': breed,
+        if (favoriteToy != null) 'favoriteToy': favoriteToy,
         if (photoUrl != null) 'photoUrl': photoUrl,
       },
     );

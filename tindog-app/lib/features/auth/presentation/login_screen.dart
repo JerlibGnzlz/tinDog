@@ -1,13 +1,15 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_constants.dart';
+import '../../../core/feedback/app_haptics.dart';
+import '../../../shared/widgets/app_tagline.dart';
 import '../../../shared/widgets/auth_error_banner.dart';
 import '../../../shared/widgets/auth_scaffold.dart';
+import '../../../shared/widgets/tindog_filled_button.dart';
 import '../../../shared/widgets/tindog_password_field.dart';
 import '../../../shared/widgets/tindog_text_field.dart';
 import 'auth_provider.dart';
+import 'auth_validators.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -20,18 +22,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _emailFocus = FocusNode();
+  final _passwordFocus = FocusNode();
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _emailFocus.dispose();
+    _passwordFocus.dispose();
     super.dispose();
   }
 
+  void _clearFailure() => ref.read(authFailureProvider.notifier).state = null;
+
   Future<void> _submit() async {
-    ref.read(authFailureProvider.notifier).state = null;
-    setState(() => _autovalidateMode = AutovalidateMode.always);
+    FocusScope.of(context).unfocus();
+    _clearFailure();
+    setState(() => _autovalidateMode = AutovalidateMode.onUserInteraction);
     if (!_formKey.currentState!.validate()) return;
 
     final success = await ref.read(authSessionProvider.notifier).login(
@@ -41,7 +50,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     if (!mounted) return;
     if (success) {
-      context.go('/home');
+      AppHaptics.success();
     }
   }
 
@@ -49,72 +58,59 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authSessionProvider);
     final failure = ref.watch(authFailureProvider);
+    final isLoading = authState.isLoading;
+    final fieldErrors = failure?.fieldErrors;
 
     return AuthScaffold(
       title: 'Bienvenido a tinDog',
-      subtitle: 'Encuentra el mejor amigo para tu mascota',
+      subtitle: const AppTagline(onDark: false),
+      showBackButton: true,
+      onBack: () => context.go('/auth/email'),
       child: Form(
         key: _formKey,
         autovalidateMode: _autovalidateMode,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (failure != null) ...[
+            if (failure != null &&
+                (fieldErrors == null || fieldErrors.isEmpty)) ...[
               AuthErrorBanner(message: failure.message),
-              const SizedBox(height: 16),
-            ],
-            if (kDebugMode) ...[
-              AuthHintBanner(
-                apiBaseUrl: AppConstants.apiBaseUrl,
-                onUseTestAccount: () async {
-                  _emailController.text = 'lucas@tindog.test';
-                  _passwordController.text = 'password123';
-                  await _submit();
-                },
-              ),
               const SizedBox(height: 16),
             ],
             TindogTextField(
               controller: _emailController,
+              focusNode: _emailFocus,
+              enabled: !isLoading,
               label: 'Email',
               keyboardType: TextInputType.emailAddress,
-              onChanged: (_) => ref.read(authFailureProvider.notifier).state = null,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'El email es requerido';
-                }
-                if (!value.contains('@')) return 'Ingresa un email válido';
-                return null;
-              },
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.email],
+              autocorrect: false,
+              externalError: authFieldError(fieldErrors, 'email'),
+              onChanged: (_) => _clearFailure(),
+              onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
+              validator: validateEmail,
             ),
             const SizedBox(height: 16),
             TindogPasswordField(
               controller: _passwordController,
+              focusNode: _passwordFocus,
+              enabled: !isLoading,
               label: 'Contraseña',
-              onChanged: (_) => ref.read(authFailureProvider.notifier).state = null,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'La contraseña es requerida';
-                }
-                if (value.length < 8) {
-                  return 'La contraseña debe tener al menos 8 caracteres';
-                }
-                return null;
-              },
+              textInputAction: TextInputAction.done,
+              externalError: authFieldError(fieldErrors, 'password'),
+              onChanged: (_) => _clearFailure(),
+              onFieldSubmitted: (_) => _submit(),
+              validator: validateLoginPassword,
             ),
             const SizedBox(height: 28),
-            FilledButton(
-              onPressed: authState.isLoading ? null : _submit,
-              child: authState.isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Text('Entrar'),
+            TindogFilledButton(
+              onPressed: _submit,
+              loading: isLoading,
+              child: const Text('Entrar'),
             ),
             TextButton(
-              onPressed: () => context.go('/register'),
+              onPressed: isLoading ? null : () => context.go('/register'),
               child: const Text('Crear cuenta'),
             ),
           ],

@@ -16,6 +16,7 @@ class PetPhotoPreview extends StatefulWidget {
     this.localFile,
     this.borderRadius = 24,
     this.placeholderAspectRatio = 4 / 3,
+    this.maxHeight,
   });
 
   final String? photoUrl;
@@ -23,6 +24,7 @@ class PetPhotoPreview extends StatefulWidget {
   final File? localFile;
   final double borderRadius;
   final double placeholderAspectRatio;
+  final double? maxHeight;
 
   @override
   State<PetPhotoPreview> createState() => _PetPhotoPreviewState();
@@ -102,12 +104,31 @@ class _PetPhotoPreviewState extends State<PetPhotoPreview> {
   Widget build(BuildContext context) {
     final ratio = _aspectRatio ?? widget.placeholderAspectRatio;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(widget.borderRadius),
-      child: AspectRatio(
-        aspectRatio: ratio,
-        child: _aspectRatio == null ? _buildPlaceholder() : _buildImage(),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth.isFinite && constraints.maxWidth > 0
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+
+        var width = maxWidth;
+        var height = width / ratio;
+
+        if (widget.maxHeight != null && height > widget.maxHeight!) {
+          height = widget.maxHeight!;
+          width = height * ratio;
+        }
+
+        return Center(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(widget.borderRadius),
+            child: SizedBox(
+              width: width,
+              height: height,
+              child: _aspectRatio == null ? _buildPlaceholder() : _buildImage(),
+            ),
+          ),
+        );
+      },
     );
   }
 

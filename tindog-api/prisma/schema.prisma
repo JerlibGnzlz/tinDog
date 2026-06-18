@@ -34,13 +34,17 @@ model Profile {
 }
 
 model Pet {
-  id        String   @id @default(uuid())
-  userId    String   @unique @map("user_id")
-  name      String?
-  photoUrl  String?  @map("photo_url")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String   @id @default(uuid())
+  userId       String   @unique @map("user_id")
+  name         String?
+  age          Int?
+  color        String?
+  breed        String?
+  favoriteToy  String?  @map("favorite_toy")
+  photoUrl     String?  @map("photo_url")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("pets")
 }
