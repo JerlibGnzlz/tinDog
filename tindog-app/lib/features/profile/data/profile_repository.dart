@@ -26,10 +26,10 @@ class ProfileRepository {
     final response = await _dio.patch<Map<String, dynamic>>(
       '/profiles/me',
       data: {
-        if (name != null) 'name': name,
-        if (bio != null) 'bio': bio,
-        if (avatarUrl != null) 'avatarUrl': avatarUrl,
-        if (location != null) 'location': location,
+        'name': ?name,
+        'bio': ?bio,
+        'avatarUrl': ?avatarUrl,
+        'location': ?location,
       },
     );
     return ProfileModel.fromJson(response.data!);

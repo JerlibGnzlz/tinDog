@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_gradients.dart';
 import '../../core/feedback/app_haptics.dart';
 import 'tindog_loader.dart';
 
@@ -84,22 +86,50 @@ class _TindogFilledButtonState extends State<TindogFilledButton>
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return ScaleTransition(
       scale: _pressScale,
-      child: FilledButton(
-        style: FilledButton.styleFrom(
-          disabledBackgroundColor: colorScheme.primary,
-          disabledForegroundColor: colorScheme.onPrimary,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: _isInteractive ? AppGradients.primaryButton : null,
+          color: _isInteractive ? null : AppColors.primary.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: _isInteractive
+              ? [
+                  BoxShadow(
+                    color: AppColors.primaryDark.withValues(alpha: 0.28),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    blurRadius: 0,
+                    offset: const Offset(0, 1),
+                    spreadRadius: 0,
+                  ),
+                ]
+              : null,
         ),
-        onPressed: widget.onPressed == null ? null : _handlePress,
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          switchInCurve: Curves.easeOut,
-          switchOutCurve: Curves.easeIn,
-          child: KeyedSubtree(
-            key: ValueKey(_visual),
-            child: _buildContent(),
+        child: FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            disabledBackgroundColor: Colors.transparent,
+            disabledForegroundColor: Colors.white,
+            foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(52),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          onPressed: widget.onPressed == null ? null : _handlePress,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            child: KeyedSubtree(
+              key: ValueKey(_visual),
+              child: _buildContent(),
+            ),
           ),
         ),
       ),

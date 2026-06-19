@@ -75,7 +75,8 @@ Map<String, String>? _fieldErrorsForMessage(
   if (rawMessage == 'Email already registered') {
     return {'email': translated};
   }
-  if (status == 401 || rawMessage == 'Invalid credentials') {
+  if (rawMessage == 'Invalid credentials' ||
+      rawMessage == 'Email o contraseña incorrectos') {
     return {'password': translated};
   }
   return null;

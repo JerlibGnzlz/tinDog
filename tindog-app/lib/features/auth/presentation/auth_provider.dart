@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../profile/presentation/profile_providers.dart';
+import '../../../core/session/user_data_cache.dart';
 import '../data/auth_exception.dart';
 import '../data/auth_repository.dart';
 
@@ -22,8 +22,7 @@ class AuthSessionNotifier extends AsyncNotifier<bool> {
   }
 
   void _clearUserDataCache() {
-    ref.invalidate(myProfileProvider);
-    ref.invalidate(myPetProvider);
+    bumpUserDataCache(ref);
   }
 
   Future<bool> login(String email, String password) async {
@@ -33,8 +32,8 @@ class AuthSessionNotifier extends AsyncNotifier<bool> {
       await ref
           .read(authRepositoryProvider)
           .login(email: email, password: password);
-      _clearUserDataCache();
       state = const AsyncData(true);
+      _clearUserDataCache();
       return true;
     } on AuthException catch (e) {
       ref.read(authFailureProvider.notifier).state = AuthFailure(
@@ -59,8 +58,8 @@ class AuthSessionNotifier extends AsyncNotifier<bool> {
       await ref
           .read(authRepositoryProvider)
           .register(email: email, password: password);
-      _clearUserDataCache();
       state = const AsyncData(true);
+      _clearUserDataCache();
       return true;
     } on AuthException catch (e) {
       ref.read(authFailureProvider.notifier).state = AuthFailure(
@@ -79,9 +78,9 @@ class AuthSessionNotifier extends AsyncNotifier<bool> {
   }
 
   Future<void> logout() async {
-    await ref.read(authRepositoryProvider).logout();
     ref.read(authFailureProvider.notifier).state = null;
-    _clearUserDataCache();
     state = const AsyncData(false);
+    await ref.read(authRepositoryProvider).logout();
+    _clearUserDataCache();
   }
 }

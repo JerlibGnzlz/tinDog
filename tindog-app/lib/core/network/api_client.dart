@@ -37,7 +37,10 @@ final apiClientProvider = Provider<Dio>((ref) {
         handler.next(options);
       },
       onError: (error, handler) async {
-        if (error.response?.statusCode == 401) {
+        final status = error.response?.statusCode;
+        final hadAuthHeader =
+            error.requestOptions.headers['Authorization'] != null;
+        if (status == 401 && hadAuthHeader) {
           await tokenStorage.deleteToken();
         }
         handler.next(error);

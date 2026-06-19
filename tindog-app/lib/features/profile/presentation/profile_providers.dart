@@ -1,15 +1,28 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/network/api_client.dart';
+import '../../../core/network/session_handler.dart';
+import '../../../core/session/user_data_cache.dart';
 import '../../pets/data/pet_model.dart';
 import '../../pets/data/pet_repository.dart';
 import '../data/profile_model.dart';
 import '../data/profile_repository.dart';
 
-final myProfileProvider = FutureProvider<ProfileModel>((ref) {
-  return ref.watch(profileRepositoryProvider).getMyProfile();
+final myProfileProvider = FutureProvider<ProfileModel>((ref) async {
+  ref.watch(userDataCacheGenerationProvider);
+  final token = await ref.read(tokenStorageProvider).readToken();
+  if (token == null || token.isEmpty) {
+    throw const SessionRequiredException();
+  }
+  return ref.read(profileRepositoryProvider).getMyProfile();
 });
 
-final myPetProvider = FutureProvider<PetModel>((ref) {
-  return ref.watch(petRepositoryProvider).getMyPet();
+final myPetProvider = FutureProvider<PetModel>((ref) async {
+  ref.watch(userDataCacheGenerationProvider);
+  final token = await ref.read(tokenStorageProvider).readToken();
+  if (token == null || token.isEmpty) {
+    throw const SessionRequiredException();
+  }
+  return ref.read(petRepositoryProvider).getMyPet();
 });
 
 bool isPersonalComplete(ProfileModel profile) =>

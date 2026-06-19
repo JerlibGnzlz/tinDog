@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/constants/app_constants.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/tindog_scroll_behavior.dart';
 
 void main() {
   if (kDebugMode) {
@@ -22,6 +23,7 @@ class TinDogApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'tinDog',
       theme: AppTheme.light,
+      scrollBehavior: const TindogScrollBehavior(),
       routerConfig: router,
     );
   }

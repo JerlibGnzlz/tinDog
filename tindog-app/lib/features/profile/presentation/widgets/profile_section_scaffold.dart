@@ -51,7 +51,7 @@ class ProfileSectionScaffold extends StatelessWidget {
                       children: [
                         Text(loadError!),
                         const SizedBox(height: 16),
-                        FilledButton(
+                        TindogFilledButton(
                           onPressed: onRetry,
                           child: const Text('Reintentar'),
                         ),

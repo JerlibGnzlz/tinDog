@@ -7,7 +7,7 @@ import '../../../shared/widgets/app_logo.dart';
 import '../../../shared/widgets/pet_photo_preview.dart';
 import '../../../shared/widgets/tindog_filled_button.dart';
 import '../../../shared/widgets/tindog_loader.dart';
-import '../../auth/presentation/auth_provider.dart';
+import '../../../core/auth/auth_navigation.dart';
 import 'profile_providers.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -19,7 +19,11 @@ class HomeScreen extends ConsumerWidget {
 
     ref.listen(myPetProvider, (previous, next) {
       next.whenOrNull(
-        error: (error, _) => handleSessionExpired(ref, context, error),
+        error: (error, _) {
+          if (isSessionError(error)) {
+            handleSessionExpired(ref, context, error);
+          }
+        },
       );
     });
 
@@ -33,11 +37,9 @@ class HomeScreen extends ConsumerWidget {
             tooltip: 'Editar perfil',
           ),
           IconButton(
-            onPressed: () async {
-              await ref.read(authSessionProvider.notifier).logout();
-              if (context.mounted) context.go('/welcome');
-            },
+            onPressed: () => signOutToWelcome(ref, context),
             icon: const Icon(Icons.logout),
+            tooltip: 'Salir',
           ),
         ],
       ),

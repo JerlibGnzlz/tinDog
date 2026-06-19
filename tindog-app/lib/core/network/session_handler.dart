@@ -5,7 +5,13 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/auth_provider.dart';
 import 'api_error_mapper.dart';
 
-bool isUnauthorizedError(Object error) {
+/// Sin token local; evita llamadas API innecesarias en rutas protegidas.
+class SessionRequiredException implements Exception {
+  const SessionRequiredException();
+}
+
+bool isSessionError(Object error) {
+  if (error is SessionRequiredException) return true;
   if (error is DioException) {
     return error.response?.statusCode == 401;
   }
@@ -16,18 +22,22 @@ bool isUnauthorizedError(Object error) {
   return false;
 }
 
-void handleSessionExpired(WidgetRef ref, BuildContext context, Object error) {
-  if (!isUnauthorizedError(error)) return;
+bool isUnauthorizedError(Object error) => isSessionError(error);
 
-  ref.read(authSessionProvider.notifier).logout();
-  if (context.mounted) {
-    context.go('/welcome');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Tu sesión expiró. Vuelve a iniciar sesión.'),
-      ),
-    );
-  }
+bool _handlingSessionExpiry = false;
+
+void handleSessionExpired(WidgetRef ref, BuildContext context, Object error) {
+  if (!isSessionError(error) || _handlingSessionExpiry) return;
+
+  _handlingSessionExpiry = true;
+  ref.read(authSessionProvider.notifier).logout().whenComplete(() {
+    _handlingSessionExpiry = false;
+  });
+
+  if (!context.mounted) return;
+
+  ScaffoldMessenger.of(context).clearSnackBars();
+  context.go('/login');
 }
 
 String readableError(Object error) {

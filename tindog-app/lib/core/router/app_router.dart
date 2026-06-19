@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../features/auth/presentation/auth_email_choice_screen.dart';
+import '../../features/legal/presentation/legal_document_screen.dart';
 import '../../features/auth/presentation/auth_provider.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
@@ -10,11 +10,13 @@ import '../../features/profile/presentation/profile_hub_screen.dart';
 import '../../features/profile/presentation/profile_section_screens.dart';
 import '../../features/profile/presentation/profile_screens.dart';
 
-const _authRoutes = {
+const _publicRoutes = {
   '/welcome',
-  '/auth/email',
   '/login',
   '/register',
+  '/legal/privacy',
+  '/legal/cookies',
+  '/legal/terms',
 };
 
 /// Evita recrear [GoRouter] en cada cambio de sesión (causa doble navegación).
@@ -33,12 +35,23 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) => _resolveRedirect(ref, state),
     routes: [
       GoRoute(path: '/welcome', builder: (_, _) => const WelcomeScreen()),
-      GoRoute(
-        path: '/auth/email',
-        builder: (_, _) => const AuthEmailChoiceScreen(),
-      ),
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/register', builder: (_, _) => const RegisterScreen()),
+      GoRoute(
+        path: '/legal/privacy',
+        builder: (_, _) =>
+            const LegalDocumentScreen(type: LegalDocumentType.privacy),
+      ),
+      GoRoute(
+        path: '/legal/cookies',
+        builder: (_, _) =>
+            const LegalDocumentScreen(type: LegalDocumentType.cookies),
+      ),
+      GoRoute(
+        path: '/legal/terms',
+        builder: (_, _) =>
+            const LegalDocumentScreen(type: LegalDocumentType.terms),
+      ),
       GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
       GoRoute(
         path: '/profile',
@@ -75,19 +88,23 @@ String? _resolveRedirect(Ref ref, GoRouterState state) {
   final isLoading = authState.isLoading;
   final isLoggedIn = authState.value ?? false;
   final location = state.matchedLocation;
-  final isAuthRoute = _authRoutes.contains(location);
 
   if (isLoading) return null;
 
-  if (!isLoggedIn && !isAuthRoute) return '/welcome';
-
-  if (isLoggedIn && isAuthRoute) {
-    // Registro → onboarding de perfil. Login/resto → home.
-    if (location == '/register') return '/profile';
-    return '/home';
+  if (!isLoggedIn) {
+    if (_publicRoutes.contains(location)) return null;
+    return '/welcome';
   }
 
-  return null;
+  switch (location) {
+    case '/welcome':
+    case '/login':
+      return '/home';
+    case '/register':
+      return '/profile';
+    default:
+      return null;
+  }
 }
 
 class GoRouterRefreshNotifier extends ChangeNotifier {

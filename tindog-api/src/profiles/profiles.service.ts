@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
@@ -7,15 +7,14 @@ export class ProfilesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getByUserId(userId: string) {
-    const profile = await this.prisma.profile.findUnique({
+    await this.ensureUserExists(userId);
+
+    const existing = await this.prisma.profile.findUnique({
       where: { userId },
     });
+    if (existing) return existing;
 
-    if (!profile) {
-      throw new NotFoundException('Profile not found');
-    }
-
-    return profile;
+    return this.prisma.profile.create({ data: { userId } });
   }
 
   async updateByUserId(userId: string, dto: UpdateProfileDto) {
@@ -25,5 +24,14 @@ export class ProfilesService {
       where: { userId },
       data: dto,
     });
+  }
+
+  private async ensureUserExists(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException(
+        'Sesión inválida. Vuelve a iniciar sesión.',
+      );
+    }
   }
 }

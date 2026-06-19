@@ -4,10 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/feedback/app_feedback.dart';
 import '../../../core/feedback/app_haptics.dart';
+import '../../../core/session/user_data_cache.dart';
 import '../../../core/network/session_handler.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/profile_completion_confetti.dart';
 import '../../../shared/widgets/tindog_back_button.dart';
+import '../../../shared/widgets/tindog_filled_button.dart';
+import '../../../shared/widgets/tindog_gradient_progress_bar.dart';
 import '../../../shared/widgets/tindog_loader.dart';
 import '../../pets/data/pet_model.dart';
 import '../data/profile_model.dart';
@@ -32,12 +35,20 @@ class _ProfileHubScreenState extends ConsumerState<ProfileHubScreen> {
 
     ref.listen(myProfileProvider, (previous, next) {
       next.whenOrNull(
-        error: (error, _) => handleSessionExpired(ref, context, error),
+        error: (error, _) {
+          if (isSessionError(error)) {
+            handleSessionExpired(ref, context, error);
+          }
+        },
       );
     });
     ref.listen(myPetProvider, (previous, next) {
       next.whenOrNull(
-        error: (error, _) => handleSessionExpired(ref, context, error),
+        error: (error, _) {
+          if (isSessionError(error)) {
+            handleSessionExpired(ref, context, error);
+          }
+        },
       );
     });
 
@@ -49,22 +60,30 @@ class _ProfileHubScreenState extends ConsumerState<ProfileHubScreen> {
       ),
       body: profileAsync.when(
         loading: () => const Center(child: TindogLoader(message: 'Cargando perfil…')),
-        error: (error, _) => _ErrorBody(
-          message: readableError(error),
-          onRetry: () {
-            ref.invalidate(myProfileProvider);
-            ref.invalidate(myPetProvider);
-          },
-        ),
+        error: (error, _) {
+          if (isSessionError(error)) {
+            return _SessionErrorBody(
+              onLogin: () => context.go('/login'),
+            );
+          }
+          return _ErrorBody(
+            message: readableError(error),
+            onRetry: () => ref.read(userDataCacheGenerationProvider.notifier).update((n) => n + 1),
+          );
+        },
         data: (profile) => petAsync.when(
           loading: () => const Center(child: TindogLoader(message: 'Cargando perfil…')),
-          error: (error, _) => _ErrorBody(
-            message: readableError(error),
-            onRetry: () {
-              ref.invalidate(myProfileProvider);
-              ref.invalidate(myPetProvider);
-            },
-          ),
+          error: (error, _) {
+            if (isSessionError(error)) {
+              return _SessionErrorBody(
+                onLogin: () => context.go('/login'),
+              );
+            }
+            return _ErrorBody(
+              message: readableError(error),
+              onRetry: () => ref.read(userDataCacheGenerationProvider.notifier).update((n) => n + 1),
+            );
+          },
           data: (pet) {
             final completedCount = _completedCount(profile, pet);
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -111,6 +130,44 @@ class _ProfileHubScreenState extends ConsumerState<ProfileHubScreen> {
   }
 }
 
+class _SessionErrorBody extends StatelessWidget {
+  const _SessionErrorBody({required this.onLogin});
+
+  final VoidCallback onLogin;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Tu sesión no está activa',
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Iniciá sesión de nuevo para ver tu perfil.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            TindogFilledButton(
+              onPressed: onLogin,
+              child: const Text('Iniciar sesión'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ErrorBody extends StatelessWidget {
   const _ErrorBody({required this.message, required this.onRetry});
 
@@ -127,7 +184,10 @@ class _ErrorBody extends StatelessWidget {
           children: [
             Text(message),
             const SizedBox(height: 16),
-            FilledButton(onPressed: onRetry, child: const Text('Reintentar')),
+            TindogFilledButton(
+              onPressed: onRetry,
+              child: const Text('Reintentar'),
+            ),
           ],
         ),
       ),
@@ -175,15 +235,7 @@ class _HubBody extends StatelessWidget {
           tween: Tween(begin: 0, end: progress),
           duration: const Duration(milliseconds: 500),
           curve: Curves.easeOutCubic,
-          builder: (context, value, _) => ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: value,
-              minHeight: 8,
-              backgroundColor: AppColors.border,
-              color: AppColors.primary,
-            ),
-          ),
+          builder: (context, value, _) => TindogGradientProgressBar(value: value),
         ).animate().fadeIn(delay: 100.ms, duration: 300.ms),
         const SizedBox(height: 20),
         ProfileMenuTile(

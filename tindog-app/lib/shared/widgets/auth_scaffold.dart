@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_gradients.dart';
 import 'app_logo.dart';
 import 'tindog_back_button.dart';
+import 'tindog_gradient_background.dart';
 
 class AuthScaffold extends StatelessWidget {
   const AuthScaffold({
@@ -22,23 +25,30 @@ class AuthScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.surface,
       resizeToAvoidBottomInset: true,
       appBar: showBackButton
           ? AppBar(
+              backgroundColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              scrolledUnderElevation: 0,
               leading: TindogBackButton(
                 onPressed: onBack ?? () => Navigator.of(context).maybePop(),
               ),
               leadingWidth: 48,
             )
           : null,
-      body: SafeArea(
-        child: GestureDetector(
-          onTap: () => FocusScope.of(context).unfocus(),
-          behavior: HitTestBehavior.opaque,
-          child: SingleChildScrollView(
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Column(
+      body: TindogGradientBackground(
+        gradient: AppGradients.authSoft,
+        child: SafeArea(
+          child: GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
+            behavior: HitTestBehavior.opaque,
+            child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Center(child: AnimatedAppLogo(size: 96)),
@@ -82,6 +92,7 @@ class AuthScaffold extends StatelessWidget {
                       curve: Curves.easeOutCubic,
                     ),
               ],
+              ),
             ),
           ),
         ),

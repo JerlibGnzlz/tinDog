@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/feedback/app_feedback.dart';
 import '../../../core/feedback/app_haptics.dart';
 import '../../../shared/widgets/app_tagline.dart';
 import '../../../shared/widgets/auth_error_banner.dart';
 import '../../../shared/widgets/auth_scaffold.dart';
 import '../../../shared/widgets/tindog_filled_button.dart';
+import '../../../shared/widgets/tindog_text_button.dart';
 import '../../../shared/widgets/tindog_password_field.dart';
 import '../../../shared/widgets/tindog_text_field.dart';
 import 'auth_provider.dart';
@@ -27,6 +29,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ScaffoldMessenger.of(context).clearSnackBars();
+    });
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
@@ -36,6 +46,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _clearFailure() => ref.read(authFailureProvider.notifier).state = null;
+
+  void _showForgotPassword() {
+    showTindogInfoSnackBar(
+      context,
+      'Recuperación de contraseña — próximamente',
+    );
+  }
 
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
@@ -65,13 +82,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       title: 'Bienvenido a tinDog',
       subtitle: const AppTagline(onDark: false),
       showBackButton: true,
-      onBack: () => context.go('/auth/email'),
+      onBack: () => context.go('/welcome'),
       child: Form(
         key: _formKey,
         autovalidateMode: _autovalidateMode,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+            child: AutofillGroup(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
             if (failure != null &&
                 (fieldErrors == null || fieldErrors.isEmpty)) ...[
               AuthErrorBanner(message: failure.message),
@@ -84,7 +102,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               label: 'Email',
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
-              autofillHints: const [AutofillHints.email],
+              autofillHints: const [AutofillHints.email, AutofillHints.username],
               autocorrect: false,
               externalError: authFieldError(fieldErrors, 'email'),
               onChanged: (_) => _clearFailure(),
@@ -98,23 +116,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               enabled: !isLoading,
               label: 'Contraseña',
               textInputAction: TextInputAction.done,
+              autofillHints: const [AutofillHints.password],
               externalError: authFieldError(fieldErrors, 'password'),
               onChanged: (_) => _clearFailure(),
               onFieldSubmitted: (_) => _submit(),
               validator: validateLoginPassword,
             ),
-            const SizedBox(height: 28),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TindogTextButton(
+                onPressed: isLoading ? null : _showForgotPassword,
+                child: const Text('¿Olvidaste tu contraseña?'),
+              ),
+            ),
+            const SizedBox(height: 16),
             TindogFilledButton(
               onPressed: _submit,
               loading: isLoading,
               child: const Text('Entrar'),
             ),
-            TextButton(
+            TindogTextButton(
               onPressed: isLoading ? null : () => context.go('/register'),
               child: const Text('Crear cuenta'),
             ),
-          ],
-        ),
+                ],
+              ),
+            ),
       ),
     );
   }

@@ -1,8 +1,19 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 abstract final class AppTheme {
+  static final _pageTransitions = PageTransitionsTheme(
+    builders: {
+      TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.windows: CupertinoPageTransitionsBuilder(),
+    },
+  );
+
   static ThemeData get light {
     final base = ThemeData(
       useMaterial3: true,
@@ -13,6 +24,8 @@ abstract final class AppTheme {
         brightness: Brightness.light,
       ),
       scaffoldBackgroundColor: AppColors.surface,
+      pageTransitionsTheme: _pageTransitions,
+      splashFactory: InkRipple.splashFactory,
     );
 
     return base.copyWith(
@@ -62,6 +75,21 @@ abstract final class AppTheme {
           minimumSize: const Size.fromHeight(52),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(52),
+          side: const BorderSide(color: AppColors.primary, width: 1.5),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          foregroundColor: AppColors.primaryDark,
+          textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16),
+        ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          foregroundColor: AppColors.textPrimary,
+          visualDensity: VisualDensity.compact,
         ),
       ),
       textButtonTheme: TextButtonThemeData(

@@ -4,9 +4,12 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/feedback/app_feedback.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_gradients.dart';
+import '../../../shared/widgets/tindog_gradient_background.dart';
 import '../../../shared/widgets/app_logo.dart';
 import '../../../shared/widgets/app_tagline.dart';
 import '../../../shared/widgets/google_logo.dart';
+import '../../../shared/widgets/tindog_text_button.dart';
 import '../../../shared/widgets/welcome_auth_button.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -19,20 +22,32 @@ class WelcomeScreen extends StatefulWidget {
 class _WelcomeScreenState extends State<WelcomeScreen> {
   late final TapGestureRecognizer _privacyRecognizer;
   late final TapGestureRecognizer _cookiesRecognizer;
+  late final TapGestureRecognizer _termsRecognizer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ScaffoldMessenger.of(context).clearSnackBars();
+    });
     _privacyRecognizer = TapGestureRecognizer();
     _cookiesRecognizer = TapGestureRecognizer();
+    _termsRecognizer = TapGestureRecognizer();
   }
 
   @override
   void dispose() {
     _privacyRecognizer.dispose();
     _cookiesRecognizer.dispose();
+    _termsRecognizer.dispose();
     super.dispose();
   }
+
+  void _openPrivacy() => context.push('/legal/privacy');
+
+  void _openCookies() => context.push('/legal/cookies');
+
+  void _openTerms() => context.push('/legal/terms');
 
   void _showComingSoon() {
     showTindogInfoSnackBar(context, 'Próximamente disponible');
@@ -108,9 +123,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             children: [
               const TextSpan(
                 text:
-                    'Al tocar Continuar, aceptás las condiciones de tinDog. '
-                    'Conocé cómo usamos tus datos en nuestra ',
+                    'Al tocar Continuar, aceptás los ',
               ),
+              TextSpan(
+                text: 'Términos y condiciones',
+                style: linkStyle,
+                recognizer: _termsRecognizer,
+              ),
+              const TextSpan(text: '. Conocé cómo usamos tus datos en nuestra '),
               TextSpan(
                 text: 'Política de privacidad',
                 style: linkStyle,
@@ -137,7 +157,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             color: AppColors.textPrimary,
             size: 24,
           ),
-          onPressed: () => context.push('/auth/email'),
+          onPressed: () => context.push('/login'),
         )
             .animate()
             .fadeIn(delay: 280.ms, duration: 400.ms)
@@ -152,15 +172,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             .fadeIn(delay: 340.ms, duration: 400.ms)
             .slideY(begin: 0.06, end: 0, duration: 400.ms),
         SizedBox(height: compact ? 12 : 20),
-        TextButton(
+        TindogTextButton(
           onPressed: _showLoginHelp,
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.white,
-          ),
-          child: const Text(
-            '¿No podés iniciar sesión?',
-            style: TextStyle(fontWeight: FontWeight.w700),
-          ),
+          foregroundColor: Colors.white,
+          fontWeight: FontWeight.w700,
+          child: const Text('¿No podés iniciar sesión?'),
         )
             .animate()
             .fadeIn(delay: 400.ms, duration: 400.ms),
@@ -170,8 +186,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    _privacyRecognizer.onTap = _showComingSoon;
-    _cookiesRecognizer.onTap = _showComingSoon;
+    _privacyRecognizer.onTap = _openPrivacy;
+    _cookiesRecognizer.onTap = _openCookies;
+    _termsRecognizer.onTap = _openTerms;
 
     final legalStyle = _legalStyle(context);
     final linkStyle = legalStyle?.copyWith(
@@ -180,10 +197,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
 
     return Scaffold(
-      backgroundColor: AppColors.primaryDark,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
+      body: TindogGradientBackground(
+        gradient: AppGradients.authHero,
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
             final compact = constraints.maxHeight < 560;
             final logoSize = compact ? 72.0 : 120.0;
             const horizontalPadding = 28.0;
@@ -224,6 +242,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               ),
             );
           },
+          ),
         ),
       ),
     );

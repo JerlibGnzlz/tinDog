@@ -1,0 +1,67 @@
+---
+description: Tamaño de archivos y modularización en tinDog
+alwaysApply: true
+---
+
+# Organización de código — tinDog
+
+## Principio
+
+**Un archivo = una responsabilidad.** Pantallas, servicios y widgets reutilizables en archivos separados.
+
+## Límites orientativos
+
+| Tipo | Objetivo | Revisar si supera | Dividir si supera |
+|------|----------|-------------------|-------------------|
+| Pantalla Flutter (`*_screen.dart`) | 80–200 | 250 | 350 |
+| Widget compartido | 50–150 | 180 | 250 |
+| Service / repository (Dart o TS) | 50–150 | 200 | 300 |
+| Controller NestJS | 30–80 | 120 | 200 |
+| DTO / model | 20–80 | 100 | 150 |
+
+No es regla rígida: una pantalla de formulario largo puede estar bien en ~200 líneas si es cohesiva.
+
+## Cuándo modularizar
+
+Dividir el archivo cuando ocurra **cualquiera** de estos:
+
+1. Supera **~250 líneas** y mezcla más de una pantalla o clase pública
+2. Contiene **2+ widgets/pantallas** que podrían vivir solos
+3. Es difícil de revisar en un PR o de encontrar código en el IDE
+4. Se repite lógica que merece un widget/helper propio
+
+## Cómo dividir (Flutter)
+
+```
+features/<feature>/presentation/
+  <feature>_hub_screen.dart      # una pantalla por archivo
+  sections/                      # sub-pantallas relacionadas
+    <section>_screen.dart
+  widgets/                       # UI reutilizable del feature
+    <widget>.dart
+```
+
+- Export barrel opcional: `profile_section_screens.dart` con `export` de cada sección
+- El router importa el barrel o cada pantalla directamente
+- **No** acumular varias pantallas en un solo `.dart` por comodidad
+
+## Cómo dividir (NestJS)
+
+```
+src/<modulo>/
+  <modulo>.controller.ts   # solo rutas HTTP
+  <modulo>.service.ts      # lógica de negocio
+  dto/                     # un DTO por archivo si crece
+```
+
+Si un service supera ~200 líneas, extraer helpers o sub-servicios por dominio.
+
+## Al agregar código nuevo
+
+- Preferir **archivo nuevo** antes que inflar uno existente
+- Si un archivo tocado ya supera 250 líneas, proponer split en el mismo cambio o en PR siguiente
+- Seeds y migraciones pueden ser más largos; no aplicar el límite estricto
+
+## Ejemplo en el repo
+
+Perfil: cada sección en `tindog-app/lib/features/profile/presentation/sections/` en lugar de un único archivo de 600+ líneas.

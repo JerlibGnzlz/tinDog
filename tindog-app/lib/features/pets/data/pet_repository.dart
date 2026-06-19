@@ -28,12 +28,12 @@ class PetRepository {
     final response = await _dio.patch<Map<String, dynamic>>(
       '/pets/me',
       data: {
-        if (name != null) 'name': name,
-        if (age != null) 'age': age,
-        if (color != null) 'color': color,
-        if (breed != null) 'breed': breed,
-        if (favoriteToy != null) 'favoriteToy': favoriteToy,
-        if (photoUrl != null) 'photoUrl': photoUrl,
+        'name': ?name,
+        'age': ?age,
+        'color': ?color,
+        'breed': ?breed,
+        'favoriteToy': ?favoriteToy,
+        'photoUrl': ?photoUrl,
       },
     );
     return PetModel.fromJson(response.data!);
