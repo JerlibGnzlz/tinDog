@@ -43,6 +43,8 @@ dependencies:
   confetti: ^0.8.0
   flutter_svg: ^2.3.0
   flutter_image_compress: ^2.4.0
+  pinput: ^5.0.1
+  video_player: ^2.11.1
 
 dev_dependencies:
   flutter_test:

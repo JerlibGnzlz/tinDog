@@ -53,12 +53,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     showTindogInfoSnackBar(context, 'Próximamente disponible');
   }
 
-  void _showLoginHelp() {
-    showTindogInfoSnackBar(
-      context,
-      'Recuperación de contraseña — próximamente',
-    );
-  }
+  void _openForgotPassword() => context.push('/forgot-password');
 
   TextStyle? _legalStyle(BuildContext context) {
     return Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -173,7 +168,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             .slideY(begin: 0.06, end: 0, duration: 400.ms),
         SizedBox(height: compact ? 12 : 20),
         TindogTextButton(
-          onPressed: _showLoginHelp,
+          onPressed: _openForgotPassword,
           foregroundColor: Colors.white,
           fontWeight: FontWeight.w700,
           child: const Text('¿No podés iniciar sesión?'),

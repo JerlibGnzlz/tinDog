@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/legal/presentation/legal_document_screen.dart';
 import '../../features/auth/presentation/auth_provider.dart';
+import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
+import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/auth/presentation/welcome_screen.dart';
 import '../../features/profile/presentation/profile_hub_screen.dart';
 import '../../features/profile/presentation/profile_section_screens.dart';
@@ -14,6 +16,8 @@ const _publicRoutes = {
   '/welcome',
   '/login',
   '/register',
+  '/forgot-password',
+  '/reset-password',
   '/legal/privacy',
   '/legal/cookies',
   '/legal/terms',
@@ -37,6 +41,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/welcome', builder: (_, _) => const WelcomeScreen()),
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/register', builder: (_, _) => const RegisterScreen()),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) {
+          final email = state.uri.queryParameters['email'] ?? '';
+          return ForgotPasswordScreen(
+            initialEmail: Uri.decodeComponent(email),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/reset-password',
+        builder: (context, state) {
+          final email = state.uri.queryParameters['email'] ?? '';
+          return ResetPasswordScreen(
+            email: Uri.decodeComponent(email),
+          );
+        },
+      ),
       GoRoute(
         path: '/legal/privacy',
         builder: (_, _) =>

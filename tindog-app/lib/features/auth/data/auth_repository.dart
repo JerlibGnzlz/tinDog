@@ -54,6 +54,36 @@ class AuthRepository {
     return token != null && token.isNotEmpty;
   }
 
+  Future<void> requestPasswordReset({required String email}) async {
+    try {
+      await _dio.post<Map<String, dynamic>>(
+        '/auth/forgot-password',
+        data: {'email': email.trim().toLowerCase()},
+      );
+    } catch (e) {
+      rethrowAuthError(e);
+    }
+  }
+
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String password,
+  }) async {
+    try {
+      await _dio.post<Map<String, dynamic>>(
+        '/auth/reset-password',
+        data: {
+          'email': email.trim().toLowerCase(),
+          'code': code,
+          'password': password,
+        },
+      );
+    } catch (e) {
+      rethrowAuthError(e);
+    }
+  }
+
   Future<void> _saveTokenFromResponse(Map<String, dynamic>? data) async {
     final token = data?['accessToken'] as String?;
     if (token == null || token.isEmpty) {

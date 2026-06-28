@@ -13,6 +13,7 @@ import '../../../shared/widgets/tindog_filled_button.dart';
 import '../../../shared/widgets/tindog_gradient_progress_bar.dart';
 import '../../../shared/widgets/tindog_loader.dart';
 import '../../pets/data/pet_model.dart';
+import '../../pets/data/pet_media_model.dart';
 import '../data/profile_model.dart';
 import 'profile_providers.dart';
 import 'widgets/profile_menu_tile.dart';
@@ -195,7 +196,7 @@ class _ErrorBody extends StatelessWidget {
   }
 }
 
-class _HubBody extends StatelessWidget {
+class _HubBody extends ConsumerWidget {
   const _HubBody({
     required this.profile,
     required this.pet,
@@ -207,11 +208,14 @@ class _HubBody extends StatelessWidget {
   final int completedCount;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final personalDone = isPersonalComplete(profile);
     final petDone = isPetComplete(pet);
     final photosDone = isPhotosComplete(pet);
     final locationDone = isLocationComplete(profile);
+    final videosAsync = ref.watch(myPetVideosProvider);
+    final videos = videosAsync.valueOrNull ?? const [];
+    final videosDone = isVideosComplete(videos);
     final progress = completedCount / 4;
 
     return ListView(
@@ -258,7 +262,9 @@ class _HubBody extends StatelessWidget {
           animationIndex: 2,
           icon: Icons.photo_library_outlined,
           title: 'Fotos',
-          subtitle: photosDone ? 'Foto principal cargada' : 'Foto principal',
+          subtitle: photosDone
+              ? 'Galería lista · hasta 6 fotos'
+              : 'Subí hasta 6 fotos',
           isComplete: photosDone,
           onTap: () => context.push('/profile/photos'),
         ),
@@ -266,8 +272,12 @@ class _HubBody extends StatelessWidget {
           animationIndex: 3,
           icon: Icons.videocam_outlined,
           title: 'Videos',
-          subtitle: 'Clips de tu mascota',
-          comingSoon: true,
+          subtitle: videosDone
+              ? videos.length == 1
+                  ? '1 clip listo'
+                  : '${videos.length} clips listos'
+              : 'Hasta $maxPetVideos clips cortos (opcional)',
+          isComplete: videosDone,
           onTap: () => context.push('/profile/videos'),
         ),
         ProfileMenuTile(

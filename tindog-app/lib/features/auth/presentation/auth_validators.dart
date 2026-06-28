@@ -26,5 +26,14 @@ String? validateConfirmPassword(String? value, String password) {
   return null;
 }
 
+String? validateResetCode(String? value) {
+  final trimmed = value?.trim() ?? '';
+  if (trimmed.isEmpty) return 'Ingresa el código de 6 dígitos';
+  if (!RegExp(r'^\d{6}$').hasMatch(trimmed)) {
+    return 'El código debe tener 6 dígitos';
+  }
+  return null;
+}
+
 String? authFieldError(Map<String, String>? fieldErrors, String field) =>
     fieldErrors?[field];

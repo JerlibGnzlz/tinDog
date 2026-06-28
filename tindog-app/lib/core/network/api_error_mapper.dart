@@ -39,7 +39,7 @@ ApiException mapDioError(DioException error) {
     }
 
     if (message is String) {
-      final translated = _translateMessage(message);
+      final translated = _translateMessage(message, status: status);
       return ApiException(
         translated,
         fieldErrors: _fieldErrorsForMessage(status, message, translated),
@@ -47,16 +47,34 @@ ApiException mapDioError(DioException error) {
     }
   }
 
+  if (error.response?.statusCode == 429) {
+    return ApiException('Demasiadas solicitudes. Intenta más tarde.');
+  }
+
   return ApiException('Ocurrió un error inesperado. Intenta de nuevo.');
 }
 
-String _translateMessage(String message) {
+String _translateMessage(String message, {int? status}) {
+  final lower = message.toLowerCase();
+  if (status == 429 ||
+      lower.contains('throttlerexception') ||
+      lower.contains('too many requests')) {
+    return 'Demasiadas solicitudes. Intenta más tarde.';
+  }
+
   const translations = {
     'Invalid credentials': 'Email o contraseña incorrectos',
     'Email already registered': 'Este email ya está registrado',
     'Unauthorized': 'Sesión no autorizada',
     'Sesión inválida. Vuelve a iniciar sesión.':
         'Sesión inválida. Vuelve a iniciar sesión.',
+    'Código inválido o expirado': 'Código inválido o expirado',
+    'Demasiados intentos. Solicita un nuevo código.':
+        'Demasiados intentos. Solicita un nuevo código.',
+    'Demasiadas solicitudes. Intenta más tarde.':
+        'Demasiadas solicitudes. Intenta más tarde.',
+    'Contraseña actualizada correctamente':
+        'Contraseña actualizada correctamente',
   };
   return translations[message] ?? message;
 }
@@ -93,6 +111,8 @@ Map<String, String>? _fieldErrorsFromValidationList(List<dynamic> messages) {
       errors['email'] = _translateValidation(text);
     } else if (lower.contains('password')) {
       errors['password'] = _translateValidation(text);
+    } else if (lower.contains('code')) {
+      errors['code'] = _translateValidation(text);
     }
   }
 
@@ -115,6 +135,9 @@ String _translateValidation(String message) {
   if (lower.contains('password should not be empty') ||
       lower.contains('password must be a string')) {
     return 'La contraseña es requerida';
+  }
+  if (lower.contains('code must') || lower.contains('6 dígitos')) {
+    return 'El código debe tener 6 dígitos';
   }
   return _translateMessage(message);
 }

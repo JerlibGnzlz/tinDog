@@ -4,6 +4,8 @@ import '../../../core/network/session_handler.dart';
 import '../../../core/session/user_data_cache.dart';
 import '../../pets/data/pet_model.dart';
 import '../../pets/data/pet_repository.dart';
+import '../../pets/data/pet_media_model.dart';
+import '../../pets/data/pet_media_repository.dart';
 import '../data/profile_model.dart';
 import '../data/profile_repository.dart';
 
@@ -23,6 +25,24 @@ final myPetProvider = FutureProvider<PetModel>((ref) async {
     throw const SessionRequiredException();
   }
   return ref.read(petRepositoryProvider).getMyPet();
+});
+
+final myPetPhotosProvider = FutureProvider<List<PetMediaModel>>((ref) async {
+  ref.watch(userDataCacheGenerationProvider);
+  final token = await ref.read(tokenStorageProvider).readToken();
+  if (token == null || token.isEmpty) {
+    throw const SessionRequiredException();
+  }
+  return ref.read(petMediaRepositoryProvider).listMyPhotos();
+});
+
+final myPetVideosProvider = FutureProvider<List<PetMediaModel>>((ref) async {
+  ref.watch(userDataCacheGenerationProvider);
+  final token = await ref.read(tokenStorageProvider).readToken();
+  if (token == null || token.isEmpty) {
+    throw const SessionRequiredException();
+  }
+  return ref.read(petMediaRepositoryProvider).listMyVideos();
 });
 
 bool isPersonalComplete(ProfileModel profile) =>
@@ -45,6 +65,8 @@ String petHubSubtitle(PetModel pet) {
 }
 
 bool isPhotosComplete(PetModel pet) => (pet.photoUrl ?? '').trim().isNotEmpty;
+
+bool isVideosComplete(List<PetMediaModel> videos) => videos.isNotEmpty;
 
 bool isLocationComplete(ProfileModel profile) =>
     (profile.location ?? '').trim().isNotEmpty;

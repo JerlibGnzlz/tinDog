@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/feedback/app_feedback.dart';
 import '../../../core/feedback/app_haptics.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/app_tagline.dart';
 import '../../../shared/widgets/auth_error_banner.dart';
 import '../../../shared/widgets/auth_scaffold.dart';
@@ -47,11 +47,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   void _clearFailure() => ref.read(authFailureProvider.notifier).state = null;
 
-  void _showForgotPassword() {
-    showTindogInfoSnackBar(
-      context,
-      'Recuperación de contraseña — próximamente',
-    );
+  void _goToForgotPassword() {
+    final email = _emailController.text.trim().toLowerCase();
+    if (email.isEmpty) {
+      context.go('/forgot-password');
+      return;
+    }
+    context.go('/forgot-password?email=${Uri.encodeComponent(email)}');
+  }
+
+  bool _isCredentialFailure(AuthFailure failure) {
+    final message = failure.message.toLowerCase();
+    return message.contains('incorrect') ||
+        message.contains('contraseña incorrect') ||
+        failure.fieldErrors?.containsKey('password') == true;
   }
 
   Future<void> _submit() async {
@@ -93,7 +102,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             if (failure != null &&
                 (fieldErrors == null || fieldErrors.isEmpty)) ...[
               AuthErrorBanner(message: failure.message),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
+            ],
+            if (failure != null && _isCredentialFailure(failure)) ...[
+              Text(
+                '¿Olvidaste tu contraseña o el email no es el correcto? '
+                'Podés restablecer el acceso con el email que usaste al registrarte.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                      height: 1.45,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              TindogTextButton(
+                onPressed: isLoading ? null : _goToForgotPassword,
+                child: const Text('Restablecer contraseña'),
+              ),
+              const SizedBox(height: 8),
             ],
             TindogTextField(
               controller: _emailController,
@@ -125,7 +150,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             Align(
               alignment: Alignment.centerRight,
               child: TindogTextButton(
-                onPressed: isLoading ? null : _showForgotPassword,
+                onPressed: isLoading ? null : _goToForgotPassword,
                 child: const Text('¿Olvidaste tu contraseña?'),
               ),
             ),
