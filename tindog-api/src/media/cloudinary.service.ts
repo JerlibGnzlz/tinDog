@@ -32,4 +32,54 @@ export class CloudinaryService {
       stream.end(file.buffer);
     });
   }
+
+  uploadPetVideo(file: Express.Multer.File): Promise<UploadApiResponse> {
+    return new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'tindog/pets/videos',
+          resource_type: 'video',
+        },
+        (error, result) => {
+          if (error || !result) {
+            reject(error ?? new Error('Upload failed'));
+            return;
+          }
+          resolve(result);
+        },
+      );
+      stream.end(file.buffer);
+    });
+  }
+
+  destroyImage(publicId: string): Promise<void> {
+    return this.destroyAsset(publicId, 'image');
+  }
+
+  destroyVideo(publicId: string): Promise<void> {
+    return this.destroyAsset(publicId, 'video');
+  }
+
+  private destroyAsset(
+    publicId: string,
+    resourceType: 'image' | 'video',
+  ): Promise<void> {
+    if (!publicId || publicId === 'legacy') {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+      cloudinary.uploader.destroy(
+        publicId,
+        { resource_type: resourceType },
+        (error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve();
+        },
+      );
+    });
+  }
 }
