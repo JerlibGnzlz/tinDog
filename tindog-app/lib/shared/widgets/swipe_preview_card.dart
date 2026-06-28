@@ -4,6 +4,23 @@ import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
 import '../models/swipe_preview_media.dart';
 import 'pet_video_player_screen.dart';
+import 'pet_photo_viewer_screen.dart';
+
+enum SwipePreviewDecision { like, pass }
+
+class SwipePreviewCardController {
+  _SwipePreviewCardState? _state;
+
+  void _attach(_SwipePreviewCardState state) => _state = state;
+
+  void _detach(_SwipePreviewCardState state) {
+    if (_state == state) _state = null;
+  }
+
+  void previewLike() => _state?._previewDecision(isLike: true);
+
+  void previewPass() => _state?._previewDecision(isLike: false);
+}
 
 /// Vista previa visual del swipe (sin like/pass real). La tarjeta vuelve al centro.
 class SwipePreviewCard extends StatefulWidget {
@@ -13,22 +30,28 @@ class SwipePreviewCard extends StatefulWidget {
     required this.mediaIndex,
     this.petName,
     this.maxHeight = 420,
+    this.controller,
     this.onMediaIndexChanged,
+    this.onPreviewDecision,
   });
 
   final List<SwipePreviewMediaItem> mediaItems;
   final int mediaIndex;
   final String? petName;
   final double maxHeight;
+  final SwipePreviewCardController? controller;
   final ValueChanged<int>? onMediaIndexChanged;
+  final ValueChanged<SwipePreviewDecision>? onPreviewDecision;
 
   @override
   State<SwipePreviewCard> createState() => _SwipePreviewCardState();
 }
 
 class _SwipePreviewCardState extends State<SwipePreviewCard>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   static const _maxCardDrag = 140.0;
+  static const _decisionDragTarget = 110.0;
+  static const _decisionFeedbackThreshold = 40.0;
   static const _tapDragThreshold = 12.0;
   static const _photoCommitFraction = 0.16;
   static const _cardIntentDistance = 62.0;
@@ -43,7 +66,9 @@ class _SwipePreviewCardState extends State<SwipePreviewCard>
   _DragIntent _dragIntent = _DragIntent.none;
 
   late final AnimationController _photoSnapController;
+  late final AnimationController _decisionController;
   Animation<double>? _photoSnapAnimation;
+  Animation<double>? _decisionAnimation;
 
   int get _mediaIndex =>
       widget.mediaIndex.clamp(0, widget.mediaItems.length - 1);
@@ -53,6 +78,7 @@ class _SwipePreviewCardState extends State<SwipePreviewCard>
   @override
   void initState() {
     super.initState();
+    widget.controller?._attach(this);
     _photoSnapController = AnimationController(
       vsync: this,
       duration: _photoSnapDuration,
@@ -69,20 +95,43 @@ class _SwipePreviewCardState extends State<SwipePreviewCard>
         _photoSnapController.reset();
         if (mounted) setState(() {});
       });
-  }
-
-  @override
-  void dispose() {
-    _photoSnapController.dispose();
-    super.dispose();
+    _decisionController = AnimationController(vsync: this)
+      ..addListener(() {
+        if (_decisionAnimation != null) {
+          setState(() => _cardDragX = _decisionAnimation!.value);
+        }
+      });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _precacheAdjacentPhotos();
+    });
   }
 
   @override
   void didUpdateWidget(SwipePreviewCard oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.controller != oldWidget.controller) {
+      oldWidget.controller?._detach(this);
+      widget.controller?._attach(this);
+    }
     if (widget.mediaIndex != oldWidget.mediaIndex) {
       _slideDirection = widget.mediaIndex > oldWidget.mediaIndex ? 1 : -1;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _precacheAdjacentPhotos();
+      });
     }
+    if (widget.mediaItems != oldWidget.mediaItems) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _precacheAdjacentPhotos();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller?._detach(this);
+    _photoSnapController.dispose();
+    _decisionController.dispose();
+    super.dispose();
   }
 
   void _onHorizontalDragStart(DragStartDetails details) {
@@ -178,12 +227,19 @@ class _SwipePreviewCardState extends State<SwipePreviewCard>
 
   void _onHorizontalDragEnd(DragEndDetails details, double width) {
     if (_dragIntent == _DragIntent.card) {
+      final wasLike = _cardDragX >= _decisionFeedbackThreshold;
+      final wasPass = _cardDragX <= -_decisionFeedbackThreshold;
       setState(() {
         _cardDragX = 0;
         _photoDragX = 0;
         _gestureDragX = 0;
         _dragIntent = _DragIntent.none;
       });
+      if (wasLike) {
+        _emitPreviewDecision(isLike: true);
+      } else if (wasPass) {
+        _emitPreviewDecision(isLike: false);
+      }
       return;
     }
 
@@ -233,6 +289,11 @@ class _SwipePreviewCardState extends State<SwipePreviewCard>
       return;
     }
 
+    if (!item.isVideo && x >= width * 0.35 && x <= width * 0.65) {
+      _openPhoto(item);
+      return;
+    }
+
     if (widget.mediaItems.length <= 1) return;
 
     if (x < width * 0.35) {
@@ -261,6 +322,78 @@ class _SwipePreviewCardState extends State<SwipePreviewCard>
         ),
       ),
     );
+  }
+
+  void _openPhoto(SwipePreviewMediaItem item) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PetPhotoViewerScreen(
+          url: item.url,
+          title: widget.petName,
+        ),
+      ),
+    );
+  }
+
+  void _emitPreviewDecision({required bool isLike}) {
+    HapticFeedback.mediumImpact();
+    widget.onPreviewDecision?.call(
+      isLike ? SwipePreviewDecision.like : SwipePreviewDecision.pass,
+    );
+  }
+
+  Future<void> _previewDecision({required bool isLike}) async {
+    if (!mounted || _decisionController.isAnimating) return;
+
+    _stopPhotoSnapAnimation();
+    setState(() {
+      _photoDragX = 0;
+      _gestureDragX = 0;
+      _dragIntent = _DragIntent.card;
+    });
+
+    final target = isLike ? _decisionDragTarget : -_decisionDragTarget;
+
+    _decisionController.duration = const Duration(milliseconds: 240);
+    _decisionAnimation = Tween<double>(begin: 0, end: target).animate(
+      CurvedAnimation(
+        parent: _decisionController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+    await _decisionController.forward(from: 0);
+    if (!mounted) return;
+
+    _emitPreviewDecision(isLike: isLike);
+
+    _decisionController.duration = const Duration(milliseconds: 220);
+    _decisionAnimation = Tween<double>(begin: target, end: 0).animate(
+      CurvedAnimation(
+        parent: _decisionController,
+        curve: Curves.easeInOut,
+      ),
+    );
+    await _decisionController.forward(from: 0);
+    if (!mounted) return;
+
+    setState(() {
+      _cardDragX = 0;
+      _dragIntent = _DragIntent.none;
+    });
+  }
+
+  void _precacheAdjacentPhotos() {
+    if (widget.mediaItems.isEmpty) return;
+
+    for (final offset in [-1, 1]) {
+      final index = _mediaIndex + offset;
+      if (index < 0 || index >= widget.mediaItems.length) continue;
+
+      final item = widget.mediaItems[index];
+      if (item.isVideo) continue;
+
+      precacheImage(CachedNetworkImageProvider(item.url), context);
+    }
   }
 
   double _stampOpacity(double dragOffsetX) {

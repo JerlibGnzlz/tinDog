@@ -96,3 +96,57 @@ bool isVideosComplete(List<PetMediaModel> videos) => videos.isNotEmpty;
 
 bool isLocationComplete(ProfileModel profile) =>
     (profile.location ?? '').trim().isNotEmpty;
+
+const profileCoreSectionCount = 4;
+
+int countProfileCoreSectionsComplete({
+  required ProfileModel profile,
+  required PetModel pet,
+}) {
+  return [
+    isPersonalComplete(profile),
+    isPetComplete(pet),
+    isPhotosComplete(pet),
+    isLocationComplete(profile),
+  ].where((v) => v).length;
+}
+
+double profileCoreCompletionProgress({
+  required ProfileModel profile,
+  required PetModel pet,
+}) {
+  return countProfileCoreSectionsComplete(profile: profile, pet: pet) /
+      profileCoreSectionCount;
+}
+
+int profileCoreCompletionPercent({
+  required ProfileModel profile,
+  required PetModel pet,
+}) {
+  return (profileCoreCompletionProgress(profile: profile, pet: pet) * 100)
+      .round();
+}
+
+String? profileCoreNextStepLabel({
+  required ProfileModel profile,
+  required PetModel pet,
+}) {
+  if (!isPersonalComplete(profile)) return 'datos personales';
+  if (!isPetComplete(pet)) return 'datos de tu mascota';
+  if (!isPhotosComplete(pet)) return 'fotos';
+  if (!isLocationComplete(profile)) return 'ubicación';
+  return null;
+}
+
+String profileCoreCompletionMessage({
+  required ProfileModel profile,
+  required PetModel pet,
+}) {
+  final percent = profileCoreCompletionPercent(profile: profile, pet: pet);
+  if (percent >= 100) {
+    return 'Perfil completo — ¡listo para el match!';
+  }
+
+  final nextStep = profileCoreNextStepLabel(profile: profile, pet: pet);
+  return 'Perfil $percent% listo — falta $nextStep';
+}
