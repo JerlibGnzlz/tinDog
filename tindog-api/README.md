@@ -46,7 +46,7 @@ npm run db:seed:dev
 
 ## Módulos
 
-- `auth` — register, login, JWT
+- `auth` — register, login, forgot/reset password, JWT
 - `users` — GET /users/me
 - `profiles` — GET/PATCH /profiles/me
 - `prisma` — acceso a PostgreSQL
