@@ -8,6 +8,7 @@ import '../../pets/data/pet_media_model.dart';
 import '../../pets/data/pet_media_repository.dart';
 import '../data/profile_model.dart';
 import '../data/profile_repository.dart';
+import '../../../shared/models/swipe_preview_media.dart';
 
 final myProfileProvider = FutureProvider<ProfileModel>((ref) async {
   ref.watch(userDataCacheGenerationProvider);
@@ -44,6 +45,31 @@ final myPetVideosProvider = FutureProvider<List<PetMediaModel>>((ref) async {
   }
   return ref.read(petMediaRepositoryProvider).listMyVideos();
 });
+
+List<SwipePreviewMediaItem> buildSwipePreviewMedia({
+  required List<PetMediaModel> photos,
+  required List<PetMediaModel> videos,
+  String? fallbackPhotoUrl,
+}) {
+  final items = <SwipePreviewMediaItem>[
+    ...photos.map((photo) => SwipePreviewMediaItem.photo(photo.url)),
+    ...videos.map(
+      (video) => SwipePreviewMediaItem.video(
+        url: video.url,
+        durationSec: video.durationSec,
+      ),
+    ),
+  ];
+
+  if (items.isEmpty) {
+    final url = fallbackPhotoUrl?.trim();
+    if (url != null && url.isNotEmpty) {
+      return [SwipePreviewMediaItem.photo(url)];
+    }
+  }
+
+  return items;
+}
 
 bool isPersonalComplete(ProfileModel profile) =>
     (profile.name ?? '').trim().isNotEmpty;
