@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/feedback/app_feedback.dart';
+import '../../../core/network/session_handler.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/tindog_loader.dart';
 import '../data/discover_candidate.dart';
+import '../data/matching_repository.dart';
+import 'chats_providers.dart';
 import 'likes_providers.dart';
-import 'matching_nav.dart';
-import 'widgets/discover_bottom_nav.dart';
 import 'widgets/like_grid_card.dart';
+import 'widgets/likes_boost_cta.dart';
+import 'widgets/match_celebration_dialog.dart';
 
 enum _LikesTab { received, sent, topPicks }
 
@@ -19,7 +23,8 @@ class LikesScreen extends ConsumerStatefulWidget {
 }
 
 class _LikesScreenState extends ConsumerState<LikesScreen> {
-  _LikesTab _tab = _LikesTab.sent;
+  _LikesTab _tab = _LikesTab.received;
+  String? _likingPetId;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +33,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
     final topInset = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF111111),
+      backgroundColor: AppColors.surface,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -38,7 +43,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
             child: Text(
               'Likes',
               style: TextStyle(
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
               ),
@@ -51,12 +56,18 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
             onChanged: (tab) => setState(() => _tab = tab),
           ),
           const SizedBox(height: 8),
-          Expanded(child: _buildBody()),
-          DiscoverBottomNav(
-            active: DiscoverNavTab.likes,
-            likesBadge: receivedCount > 0 ? receivedCount : null,
-            chatsBadge: false,
-            onSelected: (tab) => handleMatchingBottomNav(context, tab),
+          Expanded(
+            child: Stack(
+              children: [
+                Positioned.fill(child: _buildBody()),
+                const Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 16,
+                  child: Center(child: LikesBoostCta()),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -70,6 +81,9 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
           provider: receivedLikesProvider,
           emptyTitle: 'Todavía no tenés likes',
           emptySubtitle: 'Cuando alguien te dé like, aparece acá.',
+          enableLikeBack: true,
+          likingPetId: _likingPetId,
+          onLikeBack: _likeBack,
         );
       case _LikesTab.sent:
         return _LikesGrid(
@@ -82,6 +96,45 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
           title: 'Top Picks',
           subtitle: 'Próximamente en tinDog.',
         );
+    }
+  }
+
+  Future<void> _likeBack(LikeListItem item) async {
+    if (_likingPetId != null) return;
+    setState(() => _likingPetId = item.id);
+    try {
+      final result =
+          await ref.read(matchingRepositoryProvider).like(item.id);
+      if (!mounted) return;
+
+      ref.invalidate(receivedLikesProvider);
+      ref.invalidate(sentLikesProvider);
+      ref.invalidate(likesSummaryProvider);
+      ref.invalidate(matchesProvider);
+
+      if (result.matched) {
+        final goChat = await showMatchCelebrationDialog(
+          context,
+          petName: item.name,
+        );
+        if (!mounted) return;
+        if (goChat && result.matchId != null) {
+          context.push('/chats/${result.matchId}');
+        } else {
+          showTindogInfoSnackBar(context, '¡Match con ${item.name}!');
+        }
+      } else {
+        showTindogInfoSnackBar(context, 'Like enviado a ${item.name}');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      if (isSessionError(e)) {
+        handleSessionExpired(ref, context, e);
+        return;
+      }
+      showTindogErrorSnackBar(context, readableError(e));
+    } finally {
+      if (mounted) setState(() => _likingPetId = null);
     }
   }
 }
@@ -101,24 +154,31 @@ class _LikesTabs extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Row(
-        children: [
-          _TabChip(
-            label: receivedCount > 0 ? '$receivedCount Like' : 'Likes',
-            selected: tab == _LikesTab.received,
-            onTap: () => onChanged(_LikesTab.received),
-          ),
-          _TabChip(
-            label: 'Likes enviados',
-            selected: tab == _LikesTab.sent,
-            onTap: () => onChanged(_LikesTab.sent),
-          ),
-          _TabChip(
-            label: 'Top Picks',
-            selected: tab == _LikesTab.topPicks,
-            onTap: () => onChanged(_LikesTab.topPicks),
-          ),
-        ],
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            _TabChip(
+              label: receivedCount > 0 ? '$receivedCount Like' : 'Likes',
+              selected: tab == _LikesTab.received,
+              onTap: () => onChanged(_LikesTab.received),
+            ),
+            _TabChip(
+              label: 'Enviados',
+              selected: tab == _LikesTab.sent,
+              onTap: () => onChanged(_LikesTab.sent),
+            ),
+            _TabChip(
+              label: 'Top Picks',
+              selected: tab == _LikesTab.topPicks,
+              onTap: () => onChanged(_LikesTab.topPicks),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -138,11 +198,17 @@ class _TabChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          children: [
-            Padding(
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Material(
+          color: selected
+              ? AppColors.primary.withValues(alpha: 0.22)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 10),
               child: Text(
                 label,
@@ -150,22 +216,15 @@ class _TabChip extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: selected ? Colors.white : const Color(0xFF9A9A9A),
+                  color: selected
+                      ? AppColors.primaryDark
+                      : AppColors.textSecondary,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   fontSize: 13,
                 ),
               ),
             ),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              height: 2.5,
-              margin: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                color: selected ? Colors.white : Colors.transparent,
-                borderRadius: BorderRadius.circular(999),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -177,20 +236,24 @@ class _LikesGrid extends ConsumerWidget {
     required this.provider,
     required this.emptyTitle,
     required this.emptySubtitle,
+    this.enableLikeBack = false,
+    this.likingPetId,
+    this.onLikeBack,
   });
 
   final AutoDisposeFutureProvider<List<LikeListItem>> provider;
   final String emptyTitle;
   final String emptySubtitle;
+  final bool enableLikeBack;
+  final String? likingPetId;
+  final Future<void> Function(LikeListItem item)? onLikeBack;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(provider);
 
     return async.when(
-      loading: () => const Center(
-        child: TindogLoader(message: 'Cargando…', inverted: true),
-      ),
+      loading: () => const Center(child: TindogLoader(message: 'Cargando…')),
       error: (error, _) => Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -199,7 +262,7 @@ class _LikesGrid extends ConsumerWidget {
             children: [
               Text(
                 likesErrorMessage(error),
-                style: TextStyle(color: Colors.red.shade300),
+                style: TextStyle(color: Colors.red.shade700),
                 textAlign: TextAlign.center,
               ),
               TextButton(
@@ -219,15 +282,15 @@ class _LikesGrid extends ConsumerWidget {
         }
 
         return RefreshIndicator(
-          color: Colors.white,
-          backgroundColor: const Color(0xFF2A2A2A),
+          color: AppColors.primary,
+          backgroundColor: AppColors.card,
           onRefresh: () async {
             ref.invalidate(provider);
             ref.invalidate(likesSummaryProvider);
             await ref.read(provider.future);
           },
           child: GridView.builder(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 72),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               mainAxisSpacing: 10,
@@ -239,12 +302,20 @@ class _LikesGrid extends ConsumerWidget {
               final item = items[index];
               return LikeGridCard(
                 item: item,
+                liking: likingPetId == item.id,
+                onLikeBack: enableLikeBack && onLikeBack != null
+                    ? () => onLikeBack!(item)
+                    : null,
                 onTap: () {
+                  if (enableLikeBack && onLikeBack != null && !item.matched) {
+                    onLikeBack!(item);
+                    return;
+                  }
                   showTindogInfoSnackBar(
                     context,
                     item.matched
                         ? '${item.name} — ya es match'
-                        : '${item.name} — detalle próximamente',
+                        : 'Like enviado a ${item.name}',
                   );
                 },
               );
@@ -269,16 +340,20 @@ class _EmptyLikesState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.fromLTRB(32, 32, 32, 88),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.favorite_border, size: 56, color: Colors.white38),
+            Icon(
+              Icons.favorite_border_rounded,
+              size: 56,
+              color: AppColors.primary.withValues(alpha: 0.75),
+            ),
             const SizedBox(height: 14),
             Text(
               title,
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
               ),
@@ -287,14 +362,19 @@ class _EmptyLikesState extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               subtitle,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.65),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
                 fontSize: 13,
+                height: 1.35,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            TextButton(
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
               onPressed: () => context.go('/discover'),
               child: const Text('Ir a Desliza'),
             ),

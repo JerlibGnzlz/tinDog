@@ -164,20 +164,26 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
         : null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF111111),
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF111111),
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         titleSpacing: 0,
         title: Row(
           children: [
             CircleAvatar(
               radius: 18,
-              backgroundColor: const Color(0xFF2A2A2A),
+              backgroundColor: AppColors.border,
               backgroundImage:
                   photo != null ? CachedNetworkImageProvider(photo) : null,
               child: photo == null
-                  ? Icon(Icons.pets, size: 18, color: AppColors.primary)
+                  ? const Icon(
+                      Icons.pets,
+                      size: 18,
+                      color: AppColors.primaryDark,
+                    )
                   : null,
             ),
             const SizedBox(width: 10),
@@ -188,7 +194,7 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
                   Text(
                     _petName,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
                     ),
@@ -196,8 +202,8 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
                   if (_subtitle != null)
                     Text(
                       _subtitle!,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.55),
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
                         fontSize: 12,
                         fontWeight: FontWeight.w400,
                       ),
@@ -213,12 +219,12 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
           Expanded(
             child: messagesAsync.when(
               loading: () => const Center(
-                child: TindogLoader(message: 'Cargando…', inverted: true),
+                child: TindogLoader(message: 'Cargando…'),
               ),
               error: (error, _) => Center(
                 child: Text(
                   chatErrorMessage(error),
-                  style: TextStyle(color: Colors.red.shade300),
+                  style: TextStyle(color: Colors.red.shade700),
                 ),
               ),
               data: (messages) {
@@ -239,18 +245,18 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
                             '¡Match con $_petName!',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: AppColors.textPrimary,
                               fontWeight: FontWeight.w700,
                               fontSize: 18,
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Text(
+                          const Text(
                             'Coordiná un paseo, compartí una foto o usá '
                             'una frase rápida abajo.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.55),
+                              color: AppColors.textSecondary,
                               height: 1.35,
                             ),
                           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
 
 enum DiscoverNavTab { discover, explore, likes, chats, profile }
 
@@ -20,17 +21,25 @@ class DiscoverBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
-    return ColoredBox(
-      color: const Color(0xFF111111),
+    return Material(
+      color: AppColors.surface,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(8, 6, 8, bottom > 0 ? bottom : 10),
+        padding: EdgeInsets.fromLTRB(10, 4, 10, bottom > 0 ? bottom : 8),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A),
-            borderRadius: BorderRadius.circular(32),
+            color: AppColors.card,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.textPrimary.withValues(alpha: 0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+          child: SizedBox(
+            height: 58,
             child: Row(
               children: [
                 _Item(
@@ -93,49 +102,51 @@ class _Item extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? Colors.white : const Color(0xFFB0B0B0);
+    final color = selected ? AppColors.primaryDark : AppColors.textSecondary;
 
     return Expanded(
-      child: GestureDetector(
+      child: InkWell(
         onTap: onTap,
-        behavior: HitTestBehavior.opaque,
+        borderRadius: BorderRadius.circular(22),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          margin: const EdgeInsets.symmetric(horizontal: 2),
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFF2C2C2E) : Colors.transparent,
-            borderRadius: BorderRadius.circular(24),
+            color: selected
+                ? AppColors.primary.withValues(alpha: 0.22)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(22),
           ),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.max,
             children: [
               SizedBox(
                 width: 28,
-                height: 24,
+                height: 22,
                 child: Stack(
                   clipBehavior: Clip.none,
                   alignment: Alignment.center,
                   children: [
-                    Icon(icon, size: 24, color: color),
+                    Icon(icon, size: 22, color: color),
                     if (badgeCount != null && badgeCount! > 0)
                       Positioned(
                         top: -4,
                         right: -8,
                         child: Container(
-                          constraints: const BoxConstraints(minWidth: 16),
-                          height: 16,
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          constraints: const BoxConstraints(minWidth: 14),
+                          height: 14,
+                          padding: const EdgeInsets.symmetric(horizontal: 3),
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFF4458),
+                            color: AppColors.accent,
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
                             badgeCount! > 9 ? '9+' : '$badgeCount',
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 9,
+                              fontSize: 8,
                               fontWeight: FontWeight.w800,
                               height: 1,
                             ),
@@ -147,10 +158,10 @@ class _Item extends StatelessWidget {
                         top: -2,
                         right: -2,
                         child: Container(
-                          width: 8,
-                          height: 8,
+                          width: 7,
+                          height: 7,
                           decoration: const BoxDecoration(
-                            color: Color(0xFFFF4458),
+                            color: AppColors.accent,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -158,12 +169,15 @@ class _Item extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 2),
               Text(
                 label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: color,
                   fontSize: 10,
+                  height: 1.0,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),

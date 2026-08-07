@@ -72,15 +72,24 @@ class LikeResult {
   const LikeResult({
     required this.liked,
     required this.matched,
+    this.matchId,
   });
 
   final bool liked;
   final bool matched;
+  /// Id del match cuando `matched` es true (`POST /likes` → `match.id`).
+  final String? matchId;
 
   factory LikeResult.fromJson(Map<String, dynamic> json) {
+    final match = json['match'];
+    String? matchId;
+    if (match is Map<String, dynamic>) {
+      matchId = match['id'] as String?;
+    }
     return LikeResult(
       liked: json['liked'] as bool? ?? true,
       matched: json['matched'] as bool? ?? false,
+      matchId: matchId,
     );
   }
 }

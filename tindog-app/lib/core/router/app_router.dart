@@ -11,7 +11,9 @@ import '../../features/auth/presentation/welcome_screen.dart';
 import '../../features/chat/presentation/stream_chat_thread_screen.dart';
 import '../../features/matching/presentation/chats_screen.dart';
 import '../../features/matching/presentation/discover_screen.dart';
+import '../../features/matching/presentation/explore_screen.dart';
 import '../../features/matching/presentation/likes_screen.dart';
+import '../../features/matching/presentation/matching_shell.dart';
 import '../../features/matching/data/chat_models.dart';
 import '../../features/profile/presentation/profile_hub_screen.dart';
 import '../../features/profile/presentation/profile_section_screens.dart';
@@ -79,10 +81,53 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, _) =>
             const LegalDocumentScreen(type: LegalDocumentType.terms),
       ),
-      GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
-      GoRoute(path: '/discover', builder: (_, _) => const DiscoverScreen()),
-      GoRoute(path: '/likes', builder: (_, _) => const LikesScreen()),
-      GoRoute(path: '/chats', builder: (_, _) => const ChatsScreen()),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return MatchingShell(navigationShell: navigationShell);
+        },
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/discover',
+                builder: (_, _) => const DiscoverScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/explore',
+                builder: (_, _) => const ExploreScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/likes',
+                builder: (_, _) => const LikesScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/chats',
+                builder: (_, _) => const ChatsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/home',
+                builder: (_, _) => const HomeScreen(),
+              ),
+            ],
+          ),
+        ],
+      ),
       GoRoute(
         path: '/chats/:matchId',
         builder: (context, state) {

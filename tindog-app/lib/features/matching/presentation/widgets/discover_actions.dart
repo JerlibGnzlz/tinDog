@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
 
 class DiscoverActions extends StatelessWidget {
   const DiscoverActions({
@@ -23,33 +24,33 @@ class DiscoverActions extends StatelessWidget {
       children: [
         _Btn(
           icon: Icons.replay_rounded,
-          color: const Color(0xFFF5C518),
+          color: const Color(0xFFD4A017),
           size: 46,
           onTap: onRewind,
         ),
         _Btn(
           icon: Icons.close_rounded,
-          color: Colors.white,
+          color: AppColors.textSecondary,
           size: 62,
           iconSize: 32,
           onTap: onPass,
         ),
         _Btn(
           icon: Icons.star_rounded,
-          color: const Color(0xFF4DB5FF),
+          color: const Color(0xFF5B8FA8),
           size: 46,
           onTap: onSuperLike,
         ),
         _Btn(
           icon: Icons.favorite_rounded,
-          color: const Color(0xFFFF4458),
+          color: AppColors.accent,
           size: 62,
           iconSize: 30,
           onTap: onLike,
         ),
         _Btn(
           icon: Icons.bolt_rounded,
-          color: const Color(0xFFA56BFF),
+          color: AppColors.primaryDark,
           size: 46,
           onTap: onBoost,
         ),
@@ -77,6 +78,7 @@ class _Btn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
+      elevation: 0,
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),
@@ -84,14 +86,14 @@ class _Btn extends StatelessWidget {
           width: size,
           height: size,
           decoration: BoxDecoration(
-            color: const Color(0xFF2A2A2A),
+            color: AppColors.card,
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: AppColors.border),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+                color: AppColors.textPrimary.withValues(alpha: 0.08),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
               ),
             ],
           ),

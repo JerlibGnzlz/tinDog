@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import '../../../core/network/session_handler.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/tindog_loader.dart';
 import '../../matching/data/chat_models.dart';
 import '../../matching/data/discover_candidate.dart';
+import '../../matching/presentation/chats_providers.dart';
+import '../../matching/presentation/likes_providers.dart';
+import '../../safety/presentation/safety_sheets.dart';
 import '../data/chat_repository.dart';
 import 'stream_chat_providers.dart';
+import 'widgets/chat_presence_avatar.dart';
 import 'widgets/stream_chat_icebreakers.dart';
 import 'widgets/tindog_channel_status.dart';
 import 'widgets/tindog_message_leading.dart';
@@ -146,6 +151,33 @@ class _StreamChatThreadScreenState
     );
   }
 
+  Future<void> _openSafety() async {
+    final otherUserId =
+        widget.thread?.otherPet.ownerUserId ?? _ensureOther?.id;
+    if (otherUserId == null || otherUserId.isEmpty) return;
+
+    final result = await showSafetyActionsSheet(
+      context: context,
+      ref: ref,
+      otherUserId: otherUserId,
+      otherName: _petName,
+      matchId: widget.matchId,
+    );
+    if (!mounted || result == null) return;
+
+    if (result.removedFromChats) {
+      ref.invalidate(matchesProvider);
+      ref.invalidate(receivedLikesProvider);
+      ref.invalidate(sentLikesProvider);
+      ref.invalidate(likesSummaryProvider);
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/chats');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -236,9 +268,28 @@ class _StreamChatThreadScreenState
               ),
             ),
             subtitle: TindogChannelStatus(channel: channel),
-            trailing: Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: _HeaderPetAvatar(name: _petName, imageUrl: otherPhoto),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: 'Seguridad',
+                  onPressed: () => _openSafety(),
+                  icon: const Icon(
+                    Icons.shield_outlined,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChatPresenceAvatar(
+                    photoUrl: otherPhoto,
+                    streamUserId:
+                        widget.thread?.otherPet.ownerUserId ??
+                        _ensureOther?.id,
+                    radius: 16,
+                  ),
+                ),
+              ],
             ),
           ),
           body: Column(
@@ -252,17 +303,12 @@ class _StreamChatThreadScreenState
                     );
                   },
                   builders: StreamMessageListViewBuilders(
-                    empty: (_) => _EmptyMatchHint(petName: _petName),
+                    empty: (_) => _EmptyMatchHint(
+                      petName: _petName,
+                      channel: channel,
+                    ),
                   ),
                 ),
-              ),
-              BetterStreamBuilder<List<Message>>(
-                stream: channel.state!.messagesStream,
-                initialData: channel.state!.messages,
-                builder: (context, messages) {
-                  if (messages.isNotEmpty) return const SizedBox.shrink();
-                  return StreamChatIcebreakers(channel: channel);
-                },
               ),
               StreamMessageComposer(
                 enableVoiceRecording: false,
@@ -280,54 +326,26 @@ class _StreamChatThreadScreenState
   }
 }
 
-class _HeaderPetAvatar extends StatelessWidget {
-  const _HeaderPetAvatar({required this.name, this.imageUrl});
-
-  final String name;
-  final String? imageUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    final url = imageUrl?.trim();
-    if (url != null && url.isNotEmpty) {
-      return CircleAvatar(
-        radius: 16,
-        backgroundColor: AppColors.border,
-        backgroundImage: NetworkImage(url),
-      );
-    }
-    final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : '?';
-    return CircleAvatar(
-      radius: 16,
-      backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-      child: Text(
-        initial,
-        style: const TextStyle(
-          color: AppColors.primary,
-          fontWeight: FontWeight.w700,
-          fontSize: 14,
-        ),
-      ),
-    );
-  }
-}
-
 class _EmptyMatchHint extends StatelessWidget {
-  const _EmptyMatchHint({required this.petName});
+  const _EmptyMatchHint({
+    required this.petName,
+    required this.channel,
+  });
 
   final String petName;
+  final Channel channel;
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 28),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.pets_rounded,
-              size: 40,
+              size: 44,
               color: AppColors.primary.withValues(alpha: 0.9),
             ),
             const SizedBox(height: 14),
@@ -342,13 +360,18 @@ class _EmptyMatchHint extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Coordiná un paseo o mandá una foto. '
-              'Vas a ver cuándo está en línea o escribiendo.',
+              'Vas a ver cuándo está en línea o escribiendo. '
+              'Empezá con una frase rápida:',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: AppColors.textSecondary.withValues(alpha: 0.9),
+                color: AppColors.textSecondary.withValues(alpha: 0.95),
                 height: 1.35,
               ),
+            ),
+            const SizedBox(height: 18),
+            StreamChatIcebreakers(
+              channel: channel,
+              wrap: true,
             ),
           ],
         ),

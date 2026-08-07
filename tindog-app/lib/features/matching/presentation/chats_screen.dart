@@ -3,15 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
-import '../../../core/feedback/app_feedback.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/tindog_loader.dart';
 import '../../chat/presentation/widgets/chat_presence_avatar.dart';
+import '../../safety/presentation/safety_sheets.dart';
 import '../data/chat_models.dart';
 import 'chats_providers.dart';
 import 'likes_providers.dart';
-import 'matching_nav.dart';
-import 'widgets/discover_bottom_nav.dart';
+import 'widgets/chats_likes_shortcut_card.dart';
 
 class ChatsScreen extends ConsumerWidget {
   const ChatsScreen({super.key});
@@ -21,10 +20,16 @@ class ChatsScreen extends ConsumerWidget {
     final matchesAsync = ref.watch(matchesProvider);
     final receivedCount =
         ref.watch(likesSummaryProvider).valueOrNull?.receivedCount ?? 0;
+    final receivedLikes =
+        ref.watch(receivedLikesProvider).valueOrNull ?? const [];
+    final likesPreviewUrl = receivedLikes
+        .map((item) => item.photoUrls.isNotEmpty ? item.photoUrls.first : null)
+        .whereType<String>()
+        .firstOrNull;
     final topInset = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF111111),
+      backgroundColor: AppColors.surface,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -37,32 +42,35 @@ class ChatsScreen extends ConsumerWidget {
                   child: Text(
                     'Chats',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                DecoratedBox(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2A2A2A),
+                    color: AppColors.card,
                     borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: Row(
                     children: [
                       IconButton(
-                        onPressed: () => showTindogInfoSnackBar(
-                          context,
-                          'Seguridad — próximamente',
+                        onPressed: () => showSafetyInfoSheet(context),
+                        icon: const Icon(
+                          Icons.shield_outlined,
+                          color: AppColors.textSecondary,
+                          size: 22,
                         ),
-                        icon: const Icon(Icons.shield_outlined,
-                            color: Colors.white70, size: 22),
                       ),
                       IconButton(
                         onPressed: () => ref.invalidate(matchesProvider),
-                        icon: const Icon(Icons.refresh_rounded,
-                            color: Colors.white70, size: 22),
+                        icon: const Icon(
+                          Icons.refresh_rounded,
+                          color: AppColors.primaryDark,
+                          size: 22,
+                        ),
                       ),
                     ],
                   ),
@@ -73,7 +81,7 @@ class ChatsScreen extends ConsumerWidget {
           Expanded(
             child: matchesAsync.when(
               loading: () => const Center(
-                child: TindogLoader(message: 'Cargando chats…', inverted: true),
+                child: TindogLoader(message: 'Cargando chats…'),
               ),
               error: (error, _) => Center(
                 child: Padding(
@@ -83,7 +91,7 @@ class ChatsScreen extends ConsumerWidget {
                     children: [
                       Text(
                         chatErrorMessage(error),
-                        style: TextStyle(color: Colors.red.shade300),
+                        style: TextStyle(color: Colors.red.shade700),
                         textAlign: TextAlign.center,
                       ),
                       TextButton(
@@ -101,10 +109,12 @@ class ChatsScreen extends ConsumerWidget {
                     threads.where((t) => t.hasMessages).toList();
 
                 return RefreshIndicator(
-                  color: Colors.white,
-                  backgroundColor: const Color(0xFF2A2A2A),
+                  color: AppColors.primary,
+                  backgroundColor: AppColors.card,
                   onRefresh: () async {
                     ref.invalidate(matchesProvider);
+                    ref.invalidate(likesSummaryProvider);
+                    ref.invalidate(receivedLikesProvider);
                     await ref.read(matchesProvider.future);
                   },
                   child: ListView(
@@ -115,7 +125,7 @@ class ChatsScreen extends ConsumerWidget {
                         child: Text(
                           'Matches nuevos',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                           ),
@@ -127,8 +137,9 @@ class ChatsScreen extends ConsumerWidget {
                           scrollDirection: Axis.horizontal,
                           padding: const EdgeInsets.symmetric(horizontal: 14),
                           children: [
-                            _LikesShortcutCard(
+                            ChatsLikesShortcutCard(
                               count: receivedCount,
+                              previewPhotoUrl: likesPreviewUrl,
                               onTap: () => context.go('/likes'),
                             ),
                             ...newMatches.map(
@@ -150,19 +161,19 @@ class ChatsScreen extends ConsumerWidget {
                         child: Text(
                           'Mensajes',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                       if (conversations.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(20, 24, 20, 40),
                           child: Text(
                             'Cuando escribas a un match, el chat aparece acá.',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.55),
+                              color: AppColors.textSecondary,
                               fontSize: 13,
                             ),
                             textAlign: TextAlign.center,
@@ -184,58 +195,7 @@ class ChatsScreen extends ConsumerWidget {
               },
             ),
           ),
-          DiscoverBottomNav(
-            active: DiscoverNavTab.chats,
-            likesBadge: receivedCount > 0 ? receivedCount : null,
-            chatsBadge: (matchesAsync.valueOrNull ?? const [])
-                .any((t) => !t.hasMessages),
-            onSelected: (tab) => handleMatchingBottomNav(context, tab),
-          ),
         ],
-      ),
-    );
-  }
-}
-
-class _LikesShortcutCard extends StatelessWidget {
-  const _LikesShortcutCard({required this.count, required this.onTap});
-
-  final int count;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 10),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Ink(
-          width: 84,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white, width: 2),
-            color: const Color(0xFF2A2A2A),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              const Icon(Icons.favorite_rounded, color: Colors.white, size: 28),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Text(
-                  count > 0 ? '$count Like' : 'Likes',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -263,39 +223,52 @@ class _NewMatchCard extends StatelessWidget {
           child: Column(
             children: [
               Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      if (photo != null)
-                        CachedNetworkImage(
-                          imageUrl: photo,
-                          fit: BoxFit.cover,
-                          errorWidget: (_, _, _) =>
-                              const ColoredBox(color: Color(0xFF2A2A2A)),
-                        )
-                      else
-                        const ColoredBox(color: Color(0xFF2A2A2A)),
-                      const Align(
-                        alignment: Alignment.bottomRight,
-                        child: Padding(
-                          padding: EdgeInsets.all(6),
-                          child: Icon(
-                            Icons.favorite_rounded,
-                            color: AppColors.primary,
-                            size: 16,
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        left: 6,
-                        bottom: 6,
-                        child: _NewMatchPresenceDot(
-                          streamUserId: thread.otherPet.ownerUserId,
-                        ),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.border),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.textPrimary.withValues(alpha: 0.05),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
                       ),
                     ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (photo != null)
+                          CachedNetworkImage(
+                            imageUrl: photo,
+                            fit: BoxFit.cover,
+                            errorWidget: (_, _, _) =>
+                                const ColoredBox(color: AppColors.border),
+                          )
+                        else
+                          const ColoredBox(color: AppColors.border),
+                        const Align(
+                          alignment: Alignment.bottomRight,
+                          child: Padding(
+                            padding: EdgeInsets.all(6),
+                            child: Icon(
+                              Icons.favorite_rounded,
+                              color: AppColors.accent,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: 6,
+                          bottom: 6,
+                          child: _NewMatchPresenceDot(
+                            streamUserId: thread.otherPet.ownerUserId,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -305,7 +278,7 @@ class _NewMatchCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -323,15 +296,15 @@ class _EmptyNewMatchesHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, right: 12),
+    return const Padding(
+      padding: EdgeInsets.only(left: 4, right: 12),
       child: SizedBox(
         width: 160,
         child: Center(
           child: Text(
             'Los matches nuevos aparecen acá',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.45),
+              color: AppColors.textSecondary,
               fontSize: 12,
             ),
           ),
@@ -363,9 +336,9 @@ class _NewMatchPresenceDot extends StatelessWidget {
           width: 12,
           height: 12,
           decoration: BoxDecoration(
-            color: online ? AppColors.primary : const Color(0xFF6B6B6B),
+            color: online ? AppColors.primary : AppColors.textSecondary,
             shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFF111111), width: 2),
+            border: Border.all(color: AppColors.surface, width: 2),
           ),
         );
       },
@@ -388,63 +361,69 @@ class _MessageRow extends StatelessWidget {
     final yourTurn = thread.lastMessage != null && !thread.lastMessage!.fromMe;
     final ownerId = thread.otherPet.ownerUserId;
 
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            ChatPresenceAvatar(
-              photoUrl: photo,
-              streamUserId: ownerId,
-              radius: 28,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    thread.otherPet.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              ChatPresenceAvatar(
+                photoUrl: photo,
+                streamUserId: ownerId,
+                radius: 28,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      thread.otherPet.name,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    ChatPresenceLabel(streamUserId: ownerId),
+                    const SizedBox(height: 2),
+                    Text(
+                      preview,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (yourTurn)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.35),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  ChatPresenceLabel(streamUserId: ownerId),
-                  const SizedBox(height: 2),
-                  Text(
-                    preview,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  child: const Text(
+                    'Tu turno',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.65),
-                      fontSize: 13,
+                      color: AppColors.primaryDark,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                ],
-              ),
-            ),
-            if (yourTurn)
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2A2A2A),
-                  borderRadius: BorderRadius.circular(999),
                 ),
-                child: const Text(
-                  'Tu turno',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

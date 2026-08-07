@@ -20,11 +20,11 @@ class ChatPresenceAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final avatar = CircleAvatar(
       radius: radius,
-      backgroundColor: const Color(0xFF2A2A2A),
+      backgroundColor: AppColors.border,
       backgroundImage:
           photoUrl != null ? CachedNetworkImageProvider(photoUrl!) : null,
       child: photoUrl == null
-          ? Icon(Icons.pets, color: Colors.white38, size: radius)
+          ? Icon(Icons.pets, color: AppColors.textSecondary, size: radius)
           : null,
     );
 
@@ -51,7 +51,7 @@ class ChatPresenceAvatar extends StatelessWidget {
                 width: radius * 0.45,
                 height: radius * 0.45,
                 decoration: BoxDecoration(
-                  color: online ? AppColors.primary : const Color(0xFF6B6B6B),
+                  color: online ? AppColors.primary : AppColors.textSecondary,
                   shape: BoxShape.circle,
                   border: Border.all(color: AppColors.surface, width: 2),
                 ),
@@ -86,9 +86,7 @@ class ChatPresenceLabel extends StatelessWidget {
         return Text(
           online ? 'En línea' : 'Desconectado',
           style: TextStyle(
-            color: online
-                ? AppColors.primary
-                : Colors.white.withValues(alpha: 0.45),
+            color: online ? AppColors.primaryDark : AppColors.textSecondary,
             fontSize: 12,
             fontWeight: FontWeight.w600,
           ),

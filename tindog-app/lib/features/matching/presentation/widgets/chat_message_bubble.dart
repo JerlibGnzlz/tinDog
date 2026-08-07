@@ -25,21 +25,32 @@ class ChatMessageBubble extends StatelessWidget {
           maxWidth: MediaQuery.sizeOf(context).width * 0.75,
         ),
         decoration: BoxDecoration(
-          color: mine ? AppColors.primary : const Color(0xFF2A2A2A),
+          color: mine ? AppColors.primary : AppColors.card,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
             bottomLeft: Radius.circular(mine ? 16 : 4),
             bottomRight: Radius.circular(mine ? 4 : 16),
           ),
+          border: mine ? null : Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.textPrimary.withValues(alpha: 0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: switch (message.type) {
           ChatMessageType.text => Text(
               message.body,
-              style: const TextStyle(color: Colors.white, fontSize: 15),
+              style: TextStyle(
+                color: mine ? Colors.white : AppColors.textPrimary,
+                fontSize: 15,
+              ),
             ),
-          ChatMessageType.image => _ImageBody(message: message),
-          ChatMessageType.video => _VideoBody(message: message),
+          ChatMessageType.image => _ImageBody(message: message, mine: mine),
+          ChatMessageType.video => _VideoBody(message: message, mine: mine),
         },
       ),
     );
@@ -47,15 +58,17 @@ class ChatMessageBubble extends StatelessWidget {
 }
 
 class _ImageBody extends StatelessWidget {
-  const _ImageBody({required this.message});
+  const _ImageBody({required this.message, required this.mine});
 
   final ChatMessage message;
+  final bool mine;
 
   @override
   Widget build(BuildContext context) {
     final url = message.mediaUrl;
+    final captionColor = mine ? Colors.white : AppColors.textPrimary;
     if (url == null || url.isEmpty) {
-      return const Text('📷 Foto', style: TextStyle(color: Colors.white));
+      return Text('📷 Foto', style: TextStyle(color: captionColor));
     }
 
     return Column(
@@ -85,7 +98,10 @@ class _ImageBody extends StatelessWidget {
               errorWidget: (_, _, _) => Container(
                 height: 120,
                 alignment: Alignment.center,
-                child: const Icon(Icons.broken_image, color: Colors.white70),
+                child: Icon(
+                  Icons.broken_image,
+                  color: mine ? Colors.white70 : AppColors.textSecondary,
+                ),
               ),
             ),
           ),
@@ -96,7 +112,7 @@ class _ImageBody extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             child: Text(
               message.body,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              style: TextStyle(color: captionColor, fontSize: 14),
             ),
           ),
         ],
@@ -106,15 +122,17 @@ class _ImageBody extends StatelessWidget {
 }
 
 class _VideoBody extends StatelessWidget {
-  const _VideoBody({required this.message});
+  const _VideoBody({required this.message, required this.mine});
 
   final ChatMessage message;
+  final bool mine;
 
   @override
   Widget build(BuildContext context) {
     final url = message.mediaUrl;
+    final captionColor = mine ? Colors.white : AppColors.textPrimary;
     if (url == null || url.isEmpty) {
-      return const Text('🎬 Video', style: TextStyle(color: Colors.white));
+      return Text('🎬 Video', style: TextStyle(color: captionColor));
     }
 
     final thumb = message.thumbnailUrl?.isNotEmpty == true
@@ -204,7 +222,7 @@ class _VideoBody extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             child: Text(
               message.body,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              style: TextStyle(color: captionColor, fontSize: 14),
             ),
           ),
         ],

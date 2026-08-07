@@ -3,13 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/feedback/app_feedback.dart';
 import '../../../core/network/session_handler.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/tindog_loader.dart';
 import 'discover_providers.dart';
-import 'likes_providers.dart';
-import 'matching_nav.dart';
 import 'widgets/discover_actions.dart';
-import 'widgets/discover_bottom_nav.dart';
 import 'widgets/discover_card.dart';
+import 'widgets/match_celebration_dialog.dart';
 
 class DiscoverScreen extends ConsumerStatefulWidget {
   const DiscoverScreen({super.key});
@@ -27,9 +26,16 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     try {
       await ref.read(discoverDeckProvider.notifier).decide(decision);
       if (!mounted) return;
-      final matched = ref.read(discoverDeckProvider).lastMatched;
-      if (decision == DiscoverSwipeDecision.like && matched) {
-        showTindogInfoSnackBar(context, '¡Match con $name!');
+      final deck = ref.read(discoverDeckProvider);
+      if (decision == DiscoverSwipeDecision.like && deck.lastMatched) {
+        final goChat = await showMatchCelebrationDialog(
+          context,
+          petName: name,
+        );
+        if (!mounted) return;
+        if (goChat && deck.lastMatchId != null) {
+          context.push('/chats/${deck.lastMatchId}');
+        }
       }
     } catch (e) {
       if (!mounted) return;
@@ -46,11 +52,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final deck = ref.watch(discoverDeckProvider);
     final current = deck.current;
     final topInset = MediaQuery.paddingOf(context).top;
-    final receivedCount =
-        ref.watch(likesSummaryProvider).valueOrNull?.receivedCount ?? 0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF111111),
+      backgroundColor: AppColors.surface,
       body: Column(
         children: [
           Expanded(
@@ -58,9 +62,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               fit: StackFit.expand,
               children: [
                 if (deck.isLoading && current == null)
-                  const Center(
-                    child: TindogLoader(message: 'Buscando…', inverted: true),
-                  )
+                  const Center(child: TindogLoader(message: 'Buscando…'))
                 else if (deck.errorMessage != null && current == null)
                   Center(
                     child: Padding(
@@ -71,13 +73,17 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                           Text(
                             deck.errorMessage!,
                             style: TextStyle(
-                              color: Colors.red.shade300,
+                              color: Colors.red.shade700,
                               fontSize: 14,
                             ),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 16),
-                          TextButton(
+                          FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                            ),
                             onPressed: () => ref
                                 .read(discoverDeckProvider.notifier)
                                 .reload(),
@@ -124,32 +130,37 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.pets,
+                          Icon(
+                            Icons.pets_rounded,
                             size: 64,
-                            color: Colors.white38,
+                            color: AppColors.primary.withValues(alpha: 0.7),
                           ),
                           const SizedBox(height: 16),
                           const Text(
                             'No hay más perfiles por ahora',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: AppColors.textPrimary,
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
                             ),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 8),
-                          Text(
+                          const Text(
                             'Volvé más tarde o completá tu perfil para aparecer ante otros.',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.65),
+                              color: AppColors.textSecondary,
                               fontSize: 13,
+                              height: 1.35,
                             ),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 20),
-                          TextButton(
+                          FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                            ),
                             onPressed: () => ref
                                 .read(discoverDeckProvider.notifier)
                                 .reload(),
@@ -170,8 +181,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withValues(alpha: 0.55),
-                          Colors.transparent,
+                          AppColors.surface.withValues(alpha: 0.92),
+                          AppColors.surface.withValues(alpha: 0),
                         ],
                       ),
                     ),
@@ -180,12 +191,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 ),
               ],
             ),
-          ),
-          DiscoverBottomNav(
-            active: DiscoverNavTab.discover,
-            likesBadge: receivedCount > 0 ? receivedCount : null,
-            chatsBadge: false,
-            onSelected: (tab) => handleMatchingBottomNav(context, tab),
           ),
         ],
       ),
@@ -206,7 +211,10 @@ class _DiscoverTopBar extends StatelessWidget {
         children: [
           IconButton(
             onPressed: () => context.go('/home'),
-            icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+            icon: const Icon(
+              Icons.arrow_back_rounded,
+              color: AppColors.textPrimary,
+            ),
             tooltip: 'Volver a mi perfil',
           ),
           Expanded(
@@ -222,16 +230,19 @@ class _DiscoverTopBar extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   decoration: BoxDecoration(
                     color: selected
-                        ? Colors.black.withValues(alpha: 0.55)
+                        ? AppColors.primary.withValues(alpha: 0.22)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(999),
+                    border: selected
+                        ? Border.all(color: AppColors.primary.withValues(alpha: 0.4))
+                        : null,
                   ),
                   child: Text(
                     _tabs[index],
                     style: TextStyle(
                       color: selected
-                          ? Colors.white
-                          : Colors.white.withValues(alpha: 0.72),
+                          ? AppColors.primaryDark
+                          : AppColors.textSecondary,
                       fontWeight:
                           selected ? FontWeight.w700 : FontWeight.w500,
                       fontSize: 14,
@@ -247,8 +258,8 @@ class _DiscoverTopBar extends StatelessWidget {
               'Filtros — próximamente',
             ),
             icon: const Icon(
-              Icons.bolt_rounded,
-              color: Color(0xFFFF4D6D),
+              Icons.tune_rounded,
+              color: AppColors.primaryDark,
             ),
             tooltip: 'Filtros',
           ),

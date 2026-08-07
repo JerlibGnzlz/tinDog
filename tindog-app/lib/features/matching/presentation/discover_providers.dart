@@ -13,6 +13,7 @@ class DiscoverDeckState {
     this.lastDecision,
     this.lastCandidateId,
     this.lastMatched = false,
+    this.lastMatchId,
   });
 
   final List<DiscoverCandidate> remaining;
@@ -21,6 +22,7 @@ class DiscoverDeckState {
   final DiscoverSwipeDecision? lastDecision;
   final String? lastCandidateId;
   final bool lastMatched;
+  final String? lastMatchId;
 
   DiscoverCandidate? get current =>
       remaining.isEmpty ? null : remaining.first;
@@ -76,6 +78,7 @@ class DiscoverDeckNotifier extends StateNotifier<DiscoverDeckState> {
             lastDecision: decision,
             lastCandidateId: current.id,
             lastMatched: true,
+            lastMatchId: result.matchId,
           );
         }
       } else {

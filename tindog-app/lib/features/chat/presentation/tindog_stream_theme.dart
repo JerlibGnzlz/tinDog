@@ -36,7 +36,7 @@ StreamTheme tindogStreamTheme() {
           return mine ? AppColors.primary : const Color(0xFFE8EFDF);
         }),
       ),
-      text: StreamMessageTextStyle(
+            text: StreamMessageTextStyle(
         textColor: StreamMessageLayoutProperty.resolveWith((p) {
           final mine = p.alignment == StreamMessageAlignment.end;
           return mine ? Colors.white : AppColors.textPrimary;
