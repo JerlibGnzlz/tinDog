@@ -29,6 +29,9 @@ Flutter dart_defines: solo `STREAM_API_KEY` (opcional; la key también viene en 
 - Chat HTTP local (`chat_messages`) queda como legado; hilos nuevos usan Stream
 
 ## NO entra aún
-- Push notifications Stream/Firebase
+- Push notifications Stream/Firebase — ver [module-6.md](./module-6.md)
 - Traducciones ES del SDK (`stream_chat_localizations`)
 - Migración masiva de `chat_messages` históricos a Stream
+
+## Seguridad
+Bloquear / reportar: [module-safety.md](./module-safety.md)

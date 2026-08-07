@@ -16,6 +16,10 @@ model User {
   profile             Profile?
   pet                 Pet?
   passwordResetTokens PasswordResetToken[]
+  blocksCreated      UserBlock[]          @relation("BlocksCreated")
+  blocksReceived     UserBlock[]          @relation("BlocksReceived")
+  reportsCreated     UserReport[]         @relation("ReportsCreated")
+  reportsReceived    UserReport[]         @relation("ReportsReceived")
 
   @@map("users")
 }
@@ -161,4 +165,43 @@ model ChatMessage {
   @@index([matchId, createdAt])
   @@index([fromPetId])
   @@map("chat_messages")
+}
+
+/// Bloqueo entre usuarios (no se ven en discover ni chats).
+model UserBlock {
+  id        String   @id @default(uuid())
+  blockerId String   @map("blocker_id")
+  blockedId String   @map("blocked_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  blocker   User     @relation("BlocksCreated", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("BlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+  @@map("user_blocks")
+}
+
+enum ReportReason {
+  spam
+  harassment
+  inappropriate
+  fake
+  other
+}
+
+/// Denuncia de un usuario hacia otro (revisión manual / futura).
+model UserReport {
+  id         String       @id @default(uuid())
+  reporterId String       @map("reporter_id")
+  reportedId String       @map("reported_id")
+  reason     ReportReason
+  details    String?
+  matchId    String?      @map("match_id")
+  createdAt  DateTime     @default(now()) @map("created_at")
+  reporter   User         @relation("ReportsCreated", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported   User         @relation("ReportsReceived", fields: [reportedId], references: [id], onDelete: Cascade)
+
+  @@index([reportedId, createdAt])
+  @@index([reporterId])
+  @@map("user_reports")
 }

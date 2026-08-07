@@ -9,6 +9,7 @@ import {
 import { PetMediaType, Prisma, ChatMessageType } from '@prisma/client';
 import { ChatService } from '../chat/chat.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { SafetyService } from '../safety/safety.service';
 import { SendMessageDto } from './dto/send-message.dto';
 
 export type DiscoverCandidateDto = {
@@ -68,13 +69,14 @@ export class MatchingService {
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => ChatService))
     private readonly chatService: ChatService,
+    private readonly safetyService: SafetyService,
   ) {}
 
   async discover(userId: string, limit = 20): Promise<DiscoverCandidateDto[]> {
     const myPet = await this.requireMyPet(userId);
     const take = Math.min(Math.max(limit, 1), 50);
 
-    const [liked, passed] = await Promise.all([
+    const [liked, passed, blockedUserIds] = await Promise.all([
       this.prisma.like.findMany({
         where: { fromPetId: myPet.id },
         select: { toPetId: true },
@@ -83,6 +85,7 @@ export class MatchingService {
         where: { fromPetId: myPet.id },
         select: { toPetId: true },
       }),
+      this.safetyService.relatedBlockedUserIds(userId),
     ]);
 
     const excludedIds = [
@@ -94,6 +97,9 @@ export class MatchingService {
     const pets = await this.prisma.pet.findMany({
       where: {
         id: { notIn: excludedIds },
+        ...(blockedUserIds.length > 0
+          ? { userId: { notIn: blockedUserIds } }
+          : {}),
         name: { not: null },
         NOT: { name: '' },
         OR: [
@@ -128,7 +134,8 @@ export class MatchingService {
       throw new BadRequestException('No podés darte like a vos mismo.');
     }
 
-    await this.requireTargetPet(toPetId);
+    const target = await this.requireTargetPet(toPetId);
+    await this.safetyService.assertNotBlocked(userId, target.userId);
 
     const existing = await this.prisma.like.findUnique({
       where: {
@@ -174,7 +181,8 @@ export class MatchingService {
       throw new BadRequestException('No podés pasar tu propio perfil.');
     }
 
-    await this.requireTargetPet(toPetId);
+    const target = await this.requireTargetPet(toPetId);
+    await this.safetyService.assertNotBlocked(userId, target.userId);
 
     const alreadyLiked = await this.prisma.like.findUnique({
       where: {
@@ -200,6 +208,9 @@ export class MatchingService {
 
   async listSentLikes(userId: string): Promise<LikeListItemDto[]> {
     const myPet = await this.requireMyPet(userId);
+    const blocked = new Set(
+      await this.safetyService.relatedBlockedUserIds(userId),
+    );
     const likes = await this.prisma.like.findMany({
       where: { fromPetId: myPet.id },
       orderBy: { createdAt: 'desc' },
@@ -212,6 +223,7 @@ export class MatchingService {
 
     const items: LikeListItemDto[] = [];
     for (const like of likes) {
+      if (blocked.has(like.toPet.userId)) continue;
       const candidate = this.toCandidate(like.toPet);
       if (!candidate) continue;
       const match = await this.findMatchBetween(myPet.id, like.toPetId);
@@ -226,6 +238,9 @@ export class MatchingService {
 
   async listReceivedLikes(userId: string): Promise<LikeListItemDto[]> {
     const myPet = await this.requireMyPet(userId);
+    const blocked = new Set(
+      await this.safetyService.relatedBlockedUserIds(userId),
+    );
     const likes = await this.prisma.like.findMany({
       where: { toPetId: myPet.id },
       orderBy: { createdAt: 'desc' },
@@ -244,6 +259,7 @@ export class MatchingService {
 
     const items: LikeListItemDto[] = [];
     for (const like of likes) {
+      if (blocked.has(like.fromPet.userId)) continue;
       // Solo likes pendientes (aún no respondí con like).
       if (alreadyLikedBack.has(like.fromPetId)) continue;
       const candidate = this.toCandidate(like.fromPet);
@@ -281,6 +297,9 @@ export class MatchingService {
 
   async listMatches(userId: string): Promise<MatchThreadDto[]> {
     const myPet = await this.requireMyPet(userId);
+    const blocked = new Set(
+      await this.safetyService.relatedBlockedUserIds(userId),
+    );
     const matches = await this.prisma.match.findMany({
       where: {
         OR: [{ petAId: myPet.id }, { petBId: myPet.id }],
@@ -300,6 +319,7 @@ export class MatchingService {
     for (const match of matches) {
       const other =
         match.petAId === myPet.id ? match.petB : match.petA;
+      if (blocked.has(other.userId)) continue;
       const candidate = this.toCandidate(other);
       if (!candidate) continue;
 

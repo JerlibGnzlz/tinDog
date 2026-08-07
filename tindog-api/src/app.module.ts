@@ -8,6 +8,7 @@ import { MatchingModule } from './matching/matching.module';
 import { PetsModule } from './pets/pets.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProfilesModule } from './profiles/profiles.module';
+import { SafetyModule } from './safety/safety.module';
 import { UsersModule } from './users/users.module';
 
 const nodeEnv = process.env.NODE_ENV ?? 'development';
@@ -32,6 +33,7 @@ const nodeEnv = process.env.NODE_ENV ?? 'development';
     MediaModule,
     MatchingModule,
     ChatModule,
+    SafetyModule,
   ],
 })
 export class AppModule {}

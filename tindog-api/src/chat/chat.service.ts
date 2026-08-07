@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PetMediaType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { SafetyService } from '../safety/safety.service';
 import {
   StreamChatService,
   StreamUserProfile,
@@ -18,6 +19,7 @@ export class ChatService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly stream: StreamChatService,
+    private readonly safetyService: SafetyService,
   ) {}
 
   async getToken(userId: string) {
@@ -35,6 +37,10 @@ export class ChatService {
     this.requireStream();
     const { members, channelName, channelImage, other } =
       await this.loadMatchChannelContext(userId, matchId);
+
+    if (other?.id) {
+      await this.safetyService.assertNotBlocked(userId, other.id);
+    }
 
     const channel = await this.stream.ensureMatchChannel({
       matchId,

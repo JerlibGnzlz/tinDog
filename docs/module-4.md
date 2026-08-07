@@ -34,6 +34,7 @@
 Ver [module-5.md](./module-5.md) — Stream Chat (online, typing, adjuntos).
 
 ## Próximo slice
-1. Like back desde grilla de likes recibidos
-2. Read receipts / push
+1. ~~Like back desde grilla de likes recibidos~~ (hecho en app)
+2. Push — ver [module-6.md](./module-6.md)
 3. Localización ES del SDK Stream
+4. Geolocalización real / Rewind / Super like / Top Picks
