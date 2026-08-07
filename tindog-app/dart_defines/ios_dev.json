@@ -1,3 +1,4 @@
 {
-  "API_BASE_URL": "http://localhost:3000"
+  "API_BASE_URL": "http://localhost:3000",
+  "STREAM_API_KEY": "7dyyv59e574y"
 }

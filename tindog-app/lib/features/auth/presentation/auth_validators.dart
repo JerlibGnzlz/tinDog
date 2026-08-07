@@ -2,10 +2,46 @@ final _emailRegex = RegExp(
   r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
 );
 
+/// Typos frecuentes de dominio → sugerencia.
+const _emailDomainTypos = <String, String>{
+  'gmmail.com': 'gmail.com',
+  'gmal.com': 'gmail.com',
+  'gamil.com': 'gmail.com',
+  'gnail.com': 'gmail.com',
+  'gmai.com': 'gmail.com',
+  'gmail.co': 'gmail.com',
+  'gmail.con': 'gmail.com',
+  'gmail.cm': 'gmail.com',
+  'hotmial.com': 'hotmail.com',
+  'hotmal.com': 'hotmail.com',
+  'hotmail.co': 'hotmail.com',
+  'hotmail.con': 'hotmail.com',
+  'outlok.com': 'outlook.com',
+  'outllok.com': 'outlook.com',
+  'outlook.co': 'outlook.com',
+  'yahooo.com': 'yahoo.com',
+  'yaho.com': 'yahoo.com',
+  'icloud.co': 'icloud.com',
+};
+
+String? _emailTypoSuggestion(String email) {
+  final at = email.lastIndexOf('@');
+  if (at < 0) return null;
+  final local = email.substring(0, at);
+  final domain = email.substring(at + 1).toLowerCase();
+  final suggestion = _emailDomainTypos[domain];
+  if (suggestion == null || suggestion == domain) return null;
+  return '$local@$suggestion';
+}
+
 String? validateEmail(String? value) {
-  final trimmed = value?.trim() ?? '';
+  final trimmed = value?.trim().toLowerCase() ?? '';
   if (trimmed.isEmpty) return 'El email es requerido';
   if (!_emailRegex.hasMatch(trimmed)) return 'Ingresa un email válido';
+  final suggested = _emailTypoSuggestion(trimmed);
+  if (suggested != null) {
+    return 'Parece un error de tipeo. ¿Quisiste decir $suggested?';
+  }
   return null;
 }
 

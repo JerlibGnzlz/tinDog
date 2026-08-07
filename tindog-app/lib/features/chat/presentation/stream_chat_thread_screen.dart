@@ -1,0 +1,358 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:stream_chat_flutter/stream_chat_flutter.dart';
+import '../../../core/network/session_handler.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/tindog_loader.dart';
+import '../../matching/data/chat_models.dart';
+import '../../matching/data/discover_candidate.dart';
+import '../data/chat_repository.dart';
+import 'stream_chat_providers.dart';
+import 'widgets/stream_chat_icebreakers.dart';
+import 'widgets/tindog_channel_status.dart';
+import 'widgets/tindog_message_leading.dart';
+import 'widgets/tindog_message_sender.dart';
+
+class StreamChatThreadScreen extends ConsumerStatefulWidget {
+  const StreamChatThreadScreen({
+    super.key,
+    required this.matchId,
+    this.thread,
+  });
+
+  final String matchId;
+  final MatchThread? thread;
+
+  @override
+  ConsumerState<StreamChatThreadScreen> createState() =>
+      _StreamChatThreadScreenState();
+}
+
+class _StreamChatThreadScreenState
+    extends ConsumerState<StreamChatThreadScreen> {
+  Channel? _channel;
+  Object? _error;
+  bool _loading = true;
+  StreamChatUserDto? _ensureOther;
+  Map<String, StreamChatUserDto> _membersById = const {};
+
+  String get _petName =>
+      widget.thread?.otherPet.name ?? _ensureOther?.name ?? 'Chat';
+
+  String? get _otherPhoto {
+    // Preferí datos frescos de ensure/members (el thread puede traer fotos cacheadas).
+    final ownerId = widget.thread?.otherPet.ownerUserId ?? _ensureOther?.id;
+    if (ownerId != null) {
+      final fromMember = _membersById[ownerId]?.image?.trim();
+      if (fromMember != null && fromMember.isNotEmpty) return fromMember;
+    }
+    final fromEnsure = _ensureOther?.image?.trim();
+    if (fromEnsure != null && fromEnsure.isNotEmpty) return fromEnsure;
+    final fromThread = widget.thread?.otherPet.photoUrls;
+    if (fromThread != null && fromThread.isNotEmpty) return fromThread.first;
+    return null;
+  }
+
+  DiscoverCandidate? get _otherPet {
+    final threadPet = widget.thread?.otherPet;
+    if (threadPet != null) return threadPet;
+    if (_ensureOther == null) return null;
+    return DiscoverCandidate(
+      id: _ensureOther!.id,
+      name: _ensureOther!.name,
+      photoUrls: [
+        if (_ensureOther!.image != null &&
+            _ensureOther!.image!.trim().isNotEmpty)
+          _ensureOther!.image!,
+      ],
+      ownerUserId: _ensureOther!.id,
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openChannel());
+  }
+
+  Future<void> _openChannel() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final client = await ref.read(streamChatClientProvider.future);
+      if (client == null) {
+        throw StateError('Stream no conectado. Volvé a iniciar sesión.');
+      }
+
+      final ensured = await ref
+          .read(chatRepositoryProvider)
+          .ensureChannel(widget.matchId);
+
+      final channel = client.channel(
+        ensured.channelType,
+        id: ensured.channelId,
+      );
+      await channel.watch();
+
+      final membersById = {
+        for (final m in ensured.members) m.id: m,
+      };
+
+      if (membersById.isNotEmpty) {
+        try {
+          await client.queryUsers(
+            filter: Filter.in_('id', membersById.keys.toList()),
+            presence: true,
+          );
+        } catch (_) {
+          // Best-effort
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _channel = channel;
+        _ensureOther = ensured.other;
+        _membersById = membersById;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      if (isSessionError(e)) {
+        handleSessionExpired(ref, context, e);
+        return;
+      }
+      setState(() {
+        _error = e;
+        _loading = false;
+      });
+    }
+  }
+
+  Message _displayMessage(BuildContext context, Message message) {
+    final client = StreamChat.of(context).client;
+    final senderId = message.user?.id;
+    final live = senderId != null ? client.state.users[senderId] : null;
+
+    return resolveIncomingSender(
+      message: message,
+      currentUser: client.state.currentUser,
+      otherPet: _otherPet,
+      liveSender: live,
+      membersById: _membersById,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(
+        backgroundColor: AppColors.surface,
+        body: Center(
+          child: TindogLoader(message: 'Abriendo chat…'),
+        ),
+      );
+    }
+
+    if (_error != null || _channel == null) {
+      return Scaffold(
+        backgroundColor: AppColors.surface,
+        appBar: AppBar(
+          backgroundColor: AppColors.surface,
+          foregroundColor: AppColors.textPrimary,
+          title: Text(_petName),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  readableError(_error ?? 'No se pudo abrir el chat'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.red.shade700),
+                ),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: _openChannel,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                  ),
+                  child: const Text('Reintentar'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final channel = _channel!;
+    final otherPhoto = _otherPhoto;
+    final otherName = _petName;
+
+    return StreamChannel(
+      channel: channel,
+      child: StreamComponentFactory(
+        builders: StreamComponentBuilders(
+          extensions: streamChatComponentBuilders(
+            messageLeading: (context, props) {
+              final me = StreamChat.of(context).currentUser?.id;
+              final senderId = props.message.user?.id;
+              if (senderId == null || senderId == me) {
+                return DefaultStreamMessageLeading(props: props);
+              }
+              final member = _membersById[senderId];
+              return TindogMessageLeading(
+                props: props,
+                imageUrl: member?.image ?? otherPhoto,
+                name: member?.name ?? otherName,
+              );
+            },
+          ),
+        ),
+        child: Scaffold(
+          backgroundColor: AppColors.surface,
+          appBar: StreamChannelHeader(
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_rounded),
+              color: AppColors.textPrimary,
+              onPressed: () => Navigator.of(context).maybePop(),
+            ),
+            automaticallyImplyLeading: false,
+            // Título = con quién hablás. Avatar en trailing evita overflow del AppBar.
+            title: Text(
+              _petName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
+            ),
+            subtitle: TindogChannelStatus(channel: channel),
+            trailing: Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: _HeaderPetAvatar(name: _petName, imageUrl: otherPhoto),
+            ),
+          ),
+          body: Column(
+            children: [
+              Expanded(
+                child: StreamMessageListView(
+                  messageBuilder: (context, message, props) {
+                    final display = _displayMessage(context, message);
+                    return DefaultStreamMessageItem(
+                      props: props.copyWith(message: display),
+                    );
+                  },
+                  builders: StreamMessageListViewBuilders(
+                    empty: (_) => _EmptyMatchHint(petName: _petName),
+                  ),
+                ),
+              ),
+              BetterStreamBuilder<List<Message>>(
+                stream: channel.state!.messagesStream,
+                initialData: channel.state!.messages,
+                builder: (context, messages) {
+                  if (messages.isNotEmpty) return const SizedBox.shrink();
+                  return StreamChatIcebreakers(channel: channel);
+                },
+              ),
+              StreamMessageComposer(
+                enableVoiceRecording: false,
+                allowedAttachmentPickerTypes: const [
+                  AttachmentPickerType.images,
+                  AttachmentPickerType.videos,
+                  AttachmentPickerType.files,
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderPetAvatar extends StatelessWidget {
+  const _HeaderPetAvatar({required this.name, this.imageUrl});
+
+  final String name;
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = imageUrl?.trim();
+    if (url != null && url.isNotEmpty) {
+      return CircleAvatar(
+        radius: 16,
+        backgroundColor: AppColors.border,
+        backgroundImage: NetworkImage(url),
+      );
+    }
+    final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : '?';
+    return CircleAvatar(
+      radius: 16,
+      backgroundColor: AppColors.primary.withValues(alpha: 0.2),
+      child: Text(
+        initial,
+        style: const TextStyle(
+          color: AppColors.primary,
+          fontWeight: FontWeight.w700,
+          fontSize: 14,
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyMatchHint extends StatelessWidget {
+  const _EmptyMatchHint({required this.petName});
+
+  final String petName;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.pets_rounded,
+              size: 40,
+              color: AppColors.primary.withValues(alpha: 0.9),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              '¡Match con $petName!',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Coordiná un paseo o mandá una foto. '
+              'Vas a ver cuándo está en línea o escribiendo.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.textSecondary.withValues(alpha: 0.9),
+                height: 1.35,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

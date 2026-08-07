@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/auth/auth_navigation.dart';
-import '../../../core/feedback/app_feedback.dart';
 import '../../../core/network/session_handler.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/models/swipe_preview_media.dart';
 import '../../../shared/widgets/app_logo.dart';
 import '../../../shared/widgets/pet_photo_thumbnail_strip.dart';
-import '../../../shared/widgets/swipe_preview_actions.dart';
 import '../../../shared/widgets/swipe_preview_card.dart';
 import '../../../shared/widgets/tindog_filled_button.dart';
 import '../../../shared/widgets/tindog_gradient_progress_bar.dart';
@@ -41,6 +39,11 @@ class HomeScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('tinDog'),
         actions: [
+          IconButton(
+            onPressed: () => context.go('/discover'),
+            icon: const Icon(Icons.local_fire_department_rounded),
+            tooltip: 'Deslizar / Matches',
+          ),
           IconButton(
             onPressed: () => context.go('/profile'),
             icon: const Icon(Icons.edit_outlined),
@@ -135,7 +138,6 @@ class _HomeBody extends StatefulWidget {
 }
 
 class _HomeBodyState extends State<_HomeBody> {
-  final _previewController = SwipePreviewCardController();
   int _mediaIndex = 0;
 
   int get _safeMediaIndex {
@@ -155,54 +157,11 @@ class _HomeBodyState extends State<_HomeBody> {
     }
   }
 
-  void _onPreviewDecision(SwipePreviewDecision decision) {
-    showTindogInfoSnackBar(
-      context,
-      decision == SwipePreviewDecision.like
-          ? 'Vista previa: así se verá un LIKE'
-          : 'Vista previa: así se verá un PASS',
-    );
-  }
-
-  double _cardHeight(BuildContext context) {
-    final media = MediaQuery.of(context);
-    final bodyHeight = media.size.height -
-        media.padding.top -
-        media.padding.bottom -
-        kToolbarHeight;
-    const bottomCta = 56.0 + 36.0;
-    const textBlock = 88.0;
-    const verticalPadding = 16.0;
-    const cardExtra = 12.0;
-    const thumbsBlock = 68.0 + 12.0;
-    const actionsBlock = 54.0 + 12.0;
-    const bannerBlock = 78.0 + 12.0;
-
-    final hasMedia = widget.mediaItems.isNotEmpty;
-    final hasThumbs = hasMedia && widget.mediaItems.length > 1;
-    final showCompletionBanner = widget.profile != null &&
-        widget.pet != null &&
-        profileCoreCompletionPercent(
-              profile: widget.profile!,
-              pet: widget.pet!,
-            ) <
-            100;
-
-    var reserved = bottomCta + textBlock + verticalPadding + cardExtra;
-    if (hasThumbs) reserved += thumbsBlock;
-    if (hasMedia) reserved += actionsBlock;
-    if (showCompletionBanner) reserved += bannerBlock;
-
-    return (bodyHeight - reserved).clamp(250.0, 380.0);
-  }
-
   @override
   Widget build(BuildContext context) {
     final hasPetProfile = widget.petName != null && widget.petName!.isNotEmpty;
     final hasMedia = widget.mediaItems.isNotEmpty;
-    final hasVideos = widget.mediaItems.any((item) => item.isVideo);
     final hasThumbs = hasMedia && widget.mediaItems.length > 1;
-    final cardHeight = _cardHeight(context);
     final showCompletionBanner = widget.profile != null &&
         widget.pet != null &&
         profileCoreCompletionPercent(
@@ -210,12 +169,14 @@ class _HomeBodyState extends State<_HomeBody> {
               pet: widget.pet!,
             ) <
             100;
+    final breed = widget.pet?.breed?.trim();
+    final bio = widget.profile?.bio?.trim();
 
     return Column(
       children: [
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            padding: const EdgeInsets.fromLTRB(10, 6, 10, 0),
             child: Column(
               children: [
                 if (showCompletionBanner)
@@ -225,22 +186,29 @@ class _HomeBodyState extends State<_HomeBody> {
                     onTap: widget.onEdit,
                   ),
                 if (hasMedia)
-                  SwipePreviewCard(
-                    controller: _previewController,
-                    mediaItems: widget.mediaItems,
-                    mediaIndex: _safeMediaIndex,
-                    petName: widget.petName,
-                    maxHeight: cardHeight,
-                    onMediaIndexChanged: (index) =>
-                        setState(() => _mediaIndex = index),
-                    onPreviewDecision: _onPreviewDecision,
+                  Expanded(
+                    child: SwipePreviewCard(
+                      mediaItems: widget.mediaItems,
+                      mediaIndex: _safeMediaIndex,
+                      petName: widget.petName,
+                      petAge: widget.pet?.age,
+                      subtitle: (breed != null && breed.isNotEmpty)
+                          ? breed
+                          : null,
+                      bio: (bio != null && bio.isNotEmpty) ? bio : null,
+                      expand: true,
+                      borderRadius: 18,
+                      onInfoTap: widget.onEdit,
+                      onMediaIndexChanged: (index) =>
+                          setState(() => _mediaIndex = index),
+                    ),
                   )
                 else
                   const Expanded(
                     child: Center(child: AppLogo(size: 96)),
                   ),
                 if (hasThumbs) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   PetPhotoThumbnailStrip(
                     mediaItems: widget.mediaItems,
                     selectedIndex: _safeMediaIndex,
@@ -248,26 +216,21 @@ class _HomeBodyState extends State<_HomeBody> {
                         setState(() => _mediaIndex = index),
                   ),
                 ],
-                if (hasMedia) ...[
-                  const SizedBox(height: 12),
-                  SwipePreviewActions(
-                    compact: true,
-                    onPass: _previewController.previewPass,
-                    onLike: _previewController.previewLike,
-                  ),
-                ],
-                const Spacer(),
+                const SizedBox(height: 8),
                 Text(
                   hasPetProfile
-                      ? '¡Hola, ${widget.petName}!'
-                      : 'Bienvenido a tinDog',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
+                      ? hasMedia
+                          ? 'Así te ven al deslizar'
+                          : 'Subí fotos para ver la vista previa'
+                      : 'Completá el perfil de tu mascota',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
                       ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 6),
                 if (widget.errorMessage != null) ...[
+                  const SizedBox(height: 4),
                   Text(
                     widget.errorMessage!,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -275,32 +238,39 @@ class _HomeBodyState extends State<_HomeBody> {
                         ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 6),
                 ],
-                Text(
-                  hasPetProfile
-                      ? hasMedia
-                          ? hasVideos
-                              ? 'Vista previa con fotos y videos. Así te verán en el match.'
-                              : 'Así te verán otras mascotas. El match real llega en una próxima actualización.'
-                          : 'Tu perfil está listo. Subí fotos o videos para ver la vista previa.'
-                      : 'Completá el perfil de tu mascota para continuar.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                const SizedBox(height: 4),
               ],
             ),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
-          child: TindogFilledButton(
-            onPressed: widget.onEdit,
-            child: Text(hasPetProfile ? 'Editar perfil' : 'Completar perfil'),
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+          child: Column(
+            children: [
+              if (hasPetProfile && hasMedia) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.go('/discover'),
+                    icon: const Icon(Icons.local_fire_department_rounded),
+                    label: const Text('Ir a Desliza'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.accent,
+                      side: const BorderSide(color: AppColors.accent),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+              TindogFilledButton(
+                onPressed: widget.onEdit,
+                child: Text(
+                  hasPetProfile ? 'Editar perfil' : 'Completar perfil',
+                ),
+              ),
+            ],
           ),
         ),
       ],

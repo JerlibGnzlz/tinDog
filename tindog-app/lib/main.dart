@@ -5,6 +5,8 @@ import 'core/constants/app_constants.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/tindog_scroll_behavior.dart';
+import 'features/chat/presentation/stream_chat_providers.dart';
+import 'features/chat/presentation/tindog_stream_theme.dart';
 
 void main() {
   if (kDebugMode) {
@@ -19,12 +21,21 @@ class TinDogApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final streamClient = ref.watch(streamChatClientProvider).valueOrNull;
 
     return MaterialApp.router(
       title: 'tinDog',
       theme: AppTheme.light,
       scrollBehavior: const TindogScrollBehavior(),
       routerConfig: router,
+      builder: (context, child) {
+        final content = child ?? const SizedBox.shrink();
+        if (streamClient == null) return content;
+        return wrapWithTindogStreamTheme(
+          client: streamClient,
+          child: content,
+        );
+      },
     );
   }
 }

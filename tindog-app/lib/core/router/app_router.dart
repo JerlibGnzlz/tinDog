@@ -8,6 +8,11 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/auth/presentation/welcome_screen.dart';
+import '../../features/chat/presentation/stream_chat_thread_screen.dart';
+import '../../features/matching/presentation/chats_screen.dart';
+import '../../features/matching/presentation/discover_screen.dart';
+import '../../features/matching/presentation/likes_screen.dart';
+import '../../features/matching/data/chat_models.dart';
 import '../../features/profile/presentation/profile_hub_screen.dart';
 import '../../features/profile/presentation/profile_section_screens.dart';
 import '../../features/profile/presentation/profile_screens.dart';
@@ -75,6 +80,19 @@ final routerProvider = Provider<GoRouter>((ref) {
             const LegalDocumentScreen(type: LegalDocumentType.terms),
       ),
       GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
+      GoRoute(path: '/discover', builder: (_, _) => const DiscoverScreen()),
+      GoRoute(path: '/likes', builder: (_, _) => const LikesScreen()),
+      GoRoute(path: '/chats', builder: (_, _) => const ChatsScreen()),
+      GoRoute(
+        path: '/chats/:matchId',
+        builder: (context, state) {
+          final matchId = state.pathParameters['matchId']!;
+          final thread = state.extra is MatchThread
+              ? state.extra! as MatchThread
+              : null;
+          return StreamChatThreadScreen(matchId: matchId, thread: thread);
+        },
+      ),
       GoRoute(
         path: '/profile',
         builder: (_, _) => const ProfileHubScreen(),

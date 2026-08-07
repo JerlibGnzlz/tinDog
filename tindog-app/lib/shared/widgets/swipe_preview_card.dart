@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
 import '../models/swipe_preview_media.dart';
+import 'pet_card_overlay.dart';
 import 'pet_video_player_screen.dart';
 import 'pet_photo_viewer_screen.dart';
 
@@ -29,7 +30,13 @@ class SwipePreviewCard extends StatefulWidget {
     required this.mediaItems,
     required this.mediaIndex,
     this.petName,
+    this.petAge,
+    this.subtitle,
+    this.bio,
     this.maxHeight = 420,
+    this.borderRadius = 16,
+    this.expand = false,
+    this.onInfoTap,
     this.controller,
     this.onMediaIndexChanged,
     this.onPreviewDecision,
@@ -38,7 +45,14 @@ class SwipePreviewCard extends StatefulWidget {
   final List<SwipePreviewMediaItem> mediaItems;
   final int mediaIndex;
   final String? petName;
+  final int? petAge;
+  final String? subtitle;
+  final String? bio;
   final double maxHeight;
+  final double borderRadius;
+  /// Si true, llena el alto disponible (preview home más “full-bleed”).
+  final bool expand;
+  final VoidCallback? onInfoTap;
   final SwipePreviewCardController? controller;
   final ValueChanged<int>? onMediaIndexChanged;
   final ValueChanged<SwipePreviewDecision>? onPreviewDecision;
@@ -143,6 +157,8 @@ class _SwipePreviewCardState extends State<SwipePreviewCard>
   }
 
   bool _shouldUseCardMode(double dragX) {
+    // Sin callback de like/pass (ej. home) solo se deslizan fotos, no la carta.
+    if (widget.onPreviewDecision == null) return false;
     if (!_hasMultipleItems) return true;
     if (_dragIntent == _DragIntent.card) return true;
 
@@ -607,203 +623,194 @@ class _SwipePreviewCardState extends State<SwipePreviewCard>
 
   @override
   Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(widget.borderRadius);
+
     if (widget.mediaItems.isEmpty) {
-      return SizedBox(
-        height: widget.maxHeight,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: AppColors.card,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: const Center(
-            child: Icon(Icons.pets, size: 56, color: AppColors.textSecondary),
-          ),
+      final empty = DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: radius,
+          border: Border.all(color: AppColors.border),
+        ),
+        child: const Center(
+          child: Icon(Icons.pets, size: 56, color: AppColors.textSecondary),
         ),
       );
+      if (widget.expand) {
+        return SizedBox.expand(child: empty);
+      }
+      return SizedBox(height: widget.maxHeight, child: empty);
     }
 
     final rotation = _cardDragX * 0.00085;
     final likeOpacity = _cardDragX > 0 ? _stampOpacity(_cardDragX) : 0.0;
     final passOpacity = _cardDragX < 0 ? _stampOpacity(_cardDragX) : 0.0;
-    final stampTop = widget.maxHeight * 0.14;
     final hasMultipleItems = widget.mediaItems.length > 1;
 
-    return SizedBox(
-      height: widget.maxHeight + 12,
-      width: double.infinity,
-      child: Align(
-        alignment: Alignment.center,
-        child: SizedBox(
-          height: widget.maxHeight,
-          width: double.infinity,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final cardWidth = constraints.maxWidth;
+    final card = LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = constraints.maxWidth;
+        final cardHeight =
+            widget.expand ? constraints.maxHeight : widget.maxHeight;
+        final stampTop = cardHeight * 0.14;
 
-              return GestureDetector(
-                onTapDown: _onTapDown,
-                onTapUp: _onTapUp,
-                onHorizontalDragStart: _onHorizontalDragStart,
-                onHorizontalDragUpdate: (details) =>
-                    _onHorizontalDragUpdate(details, cardWidth),
-                onHorizontalDragEnd: (details) =>
-                    _onHorizontalDragEnd(details, cardWidth),
-                onHorizontalDragCancel: () => _onHorizontalDragEnd(
-                  DragEndDetails(primaryVelocity: 0, velocity: Velocity.zero),
-                  cardWidth,
-                ),
-                child: Transform.translate(
-                  offset: Offset(_cardDragX, 0),
-                  child: Transform.rotate(
-                    angle: rotation,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
-                          child: SizedBox(
-                            height: widget.maxHeight,
-                            width: double.infinity,
-                            child: _buildMediaCarousel(cardWidth),
+        return GestureDetector(
+          onTapDown: _onTapDown,
+          onTapUp: _onTapUp,
+          onHorizontalDragStart: _onHorizontalDragStart,
+          onHorizontalDragUpdate: (details) =>
+              _onHorizontalDragUpdate(details, cardWidth),
+          onHorizontalDragEnd: (details) =>
+              _onHorizontalDragEnd(details, cardWidth),
+          onHorizontalDragCancel: () => _onHorizontalDragEnd(
+            DragEndDetails(primaryVelocity: 0, velocity: Velocity.zero),
+            cardWidth,
+          ),
+          child: Transform.translate(
+            offset: Offset(_cardDragX, 0),
+            child: Transform.rotate(
+              angle: rotation,
+              child: Stack(
+                fit: StackFit.expand,
+                clipBehavior: Clip.none,
+                children: [
+                  ClipRRect(
+                    borderRadius: radius,
+                    child: _buildMediaCarousel(cardWidth),
+                  ),
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: radius,
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.15),
+                              Colors.black.withValues(alpha: 0.62),
+                            ],
+                            stops: const [0.45, 0.72, 1],
                           ),
                         ),
-                    Positioned.fill(
+                      ),
+                    ),
+                  ),
+                  if (widget.petName != null && widget.petName!.isNotEmpty)
+                    Positioned(
+                      left: 16,
+                      right: 16,
+                      bottom: 18,
+                      child: PetCardOverlay(
+                        name: widget.petName!,
+                        age: widget.petAge,
+                        subtitle: widget.subtitle,
+                        bio: widget.bio,
+                        onInfoTap: widget.onInfoTap,
+                        nameFontSize: widget.expand ? 30 : 26,
+                      ),
+                    ),
+                  Positioned(
+                    top: stampTop,
+                    left: 20,
+                    child: IgnorePointer(
+                      child: _SwipeStamp(
+                        label: 'NOPE',
+                        color: const Color(0xFFEF5350),
+                        opacity: passOpacity,
+                        rotation: -0.4,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: stampTop,
+                    right: 20,
+                    child: IgnorePointer(
+                      child: _SwipeStamp(
+                        label: 'LIKE',
+                        color: AppColors.accent,
+                        opacity: likeOpacity,
+                        rotation: 0.4,
+                      ),
+                    ),
+                  ),
+                  if (hasMultipleItems) ...[
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      right: 10,
+                      child: IgnorePointer(
+                        child: Row(
+                          children:
+                              List.generate(widget.mediaItems.length, (i) {
+                            final active = i == _mediaIndex;
+                            return Expanded(
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 240),
+                                curve: Curves.easeOutCubic,
+                                height: active ? 3.5 : 2.5,
+                                margin: EdgeInsets.only(
+                                  right: i == widget.mediaItems.length - 1
+                                      ? 0
+                                      : 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: active
+                                      ? Colors.white
+                                      : Colors.white.withValues(alpha: 0.32),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 14,
+                      right: 14,
                       child: IgnorePointer(
                         child: DecoratedBox(
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(24),
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withValues(alpha: 0.45),
-                              ],
-                              stops: const [0.55, 1],
-                            ),
+                            color: Colors.black.withValues(alpha: 0.42),
+                            borderRadius: BorderRadius.circular(999),
                           ),
-                        ),
-                      ),
-                    ),
-                    if (widget.petName != null && widget.petName!.isNotEmpty)
-                      Positioned(
-                        left: 16,
-                        right: 16,
-                        bottom: 16,
-                        child: IgnorePointer(
-                          child: Text(
-                            widget.petName!,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
                             ),
-                          ),
-                        ),
-                      ),
-                    Positioned(
-                      top: stampTop,
-                      left: 20,
-                      child: IgnorePointer(
-                        child: _SwipeStamp(
-                          label: 'NOPE',
-                          color: const Color(0xFFEF5350),
-                          opacity: passOpacity,
-                          rotation: -0.4,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: stampTop,
-                      right: 20,
-                      child: IgnorePointer(
-                        child: _SwipeStamp(
-                          label: 'LIKE',
-                          color: AppColors.accent,
-                          opacity: likeOpacity,
-                          rotation: 0.4,
-                        ),
-                      ),
-                    ),
-                    if (hasMultipleItems) ...[
-                      Positioned(
-                        top: 10,
-                        left: 10,
-                        right: 10,
-                        child: IgnorePointer(
-                          child: Row(
-                            children:
-                                List.generate(widget.mediaItems.length, (i) {
-                              final active = i == _mediaIndex;
-                              return Expanded(
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 240),
-                                  curve: Curves.easeOutCubic,
-                                  height: active ? 3.5 : 2.5,
-                                  margin: EdgeInsets.only(
-                                    right: i == widget.mediaItems.length - 1
-                                        ? 0
-                                        : 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: active
-                                        ? Colors.white
-                                        : Colors.white.withValues(alpha: 0.32),
-                                    borderRadius: BorderRadius.circular(999),
-                                    boxShadow: active
-                                        ? [
-                                            BoxShadow(
-                                              color: Colors.white
-                                                  .withValues(alpha: 0.35),
-                                              blurRadius: 4,
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                ),
-                              );
-                            }),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        top: 14,
-                        right: 14,
-                        child: IgnorePointer(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.42),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              child: Text(
-                                '${_mediaIndex + 1}/${widget.mediaItems.length}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.3,
-                                ),
+                            child: Text(
+                              '${_mediaIndex + 1}/${widget.mediaItems.length}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.3,
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ],
-                      ],
                     ),
-                  ),
-                ),
-              );
-            },
+                  ],
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
+    );
+
+    if (widget.expand) {
+      return SizedBox.expand(child: card);
+    }
+
+    return SizedBox(
+      height: widget.maxHeight,
+      width: double.infinity,
+      child: card,
     );
   }
 }

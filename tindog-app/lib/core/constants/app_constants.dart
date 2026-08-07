@@ -4,5 +4,11 @@ class AppConstants {
     defaultValue: 'http://localhost:3000',
   );
 
+  /// Key pública de Stream (el Secret solo vive en Nest).
+  static const streamApiKey = String.fromEnvironment(
+    'STREAM_API_KEY',
+    defaultValue: '',
+  );
+
   static const tokenKey = 'access_token';
 }
