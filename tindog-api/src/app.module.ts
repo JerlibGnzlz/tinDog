@@ -2,7 +2,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
+import { ChatModule } from './chat/chat.module';
 import { MediaModule } from './media/media.module';
+import { MatchingModule } from './matching/matching.module';
 import { PetsModule } from './pets/pets.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProfilesModule } from './profiles/profiles.module';
@@ -28,6 +30,8 @@ const nodeEnv = process.env.NODE_ENV ?? 'development';
     ProfilesModule,
     PetsModule,
     MediaModule,
+    MatchingModule,
+    ChatModule,
   ],
 })
 export class AppModule {}
