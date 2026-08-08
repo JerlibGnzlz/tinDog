@@ -104,6 +104,7 @@ class PushNotificationsService {
   }
 
   void _handleMessage(RemoteMessage message) {
+    // match | message — ambos llevan matchId para deep link al chat
     final matchId = message.data['matchId']?.trim();
     if (matchId == null || matchId.isEmpty) return;
     onOpenMatch?.call(matchId);
