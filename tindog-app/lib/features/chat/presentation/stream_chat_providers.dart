@@ -28,6 +28,20 @@ class StreamChatClientNotifier extends AsyncNotifier<StreamChatClient?> {
     final loggedIn = await ref.watch(authSessionProvider.future);
     if (!loggedIn) return null;
 
+    ref.onDispose(_disconnect);
+
+    try {
+      return await _connect();
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('Stream connect falló: $e');
+      }
+      Error.throwWithStackTrace(e, st);
+    }
+  }
+
+  Future<StreamChatClient> _connect() async {
+    _disconnect();
     final creds = await ref.read(chatRepositoryProvider).fetchToken();
     final client = StreamChatClient(
       creds.apiKey,
@@ -52,13 +66,12 @@ class StreamChatClientNotifier extends AsyncNotifier<StreamChatClient?> {
     } catch (_) {}
 
     _client = client;
-    ref.onDispose(_disconnect);
     return client;
   }
 
   Future<void> reconnect() async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(build);
+    state = await AsyncValue.guard(_connect);
   }
 
   void _disconnect() {

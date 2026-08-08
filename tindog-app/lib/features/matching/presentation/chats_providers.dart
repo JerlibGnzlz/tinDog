@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
-import '../../../core/network/session_handler.dart';
+import '../../chat/presentation/stream_chat_errors.dart';
 import '../../chat/presentation/stream_chat_providers.dart';
 import '../data/chat_models.dart';
 import '../data/matching_repository.dart';
@@ -170,4 +170,4 @@ final chatMessagesProvider = FutureProvider.autoDispose
   return ref.watch(matchingRepositoryProvider).listMessages(matchId);
 });
 
-String chatErrorMessage(Object error) => readableError(error);
+String chatErrorMessage(Object error) => streamChatErrorMessage(error);

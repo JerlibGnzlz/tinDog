@@ -75,7 +75,16 @@ String _translateMessage(String message, {int? status}) {
         'Demasiadas solicitudes. Intenta más tarde.',
     'Contraseña actualizada correctamente':
         'Contraseña actualizada correctamente',
+    'Stream Chat no está configurado en el servidor.':
+        'El chat no está disponible ahora. Probá de nuevo en un momento.',
   };
+
+  if (status == 503 ||
+      lower.contains('stream chat no está configurado') ||
+      lower.contains('service unavailable')) {
+    return 'El chat no está disponible ahora. Probá de nuevo en un momento.';
+  }
+
   return translations[message] ?? message;
 }
 

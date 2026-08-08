@@ -16,8 +16,10 @@ import '../../matching/presentation/delete_conversation.dart';
 import '../../notifications/data/devices_repository.dart';
 import '../../safety/presentation/safety_sheets.dart';
 import '../data/chat_repository.dart';
+import 'stream_chat_errors.dart';
 import 'stream_chat_providers.dart';
 import 'widgets/chat_presence_avatar.dart';
+import 'widgets/stream_chat_error_panel.dart';
 import 'widgets/stream_chat_icebreakers.dart';
 import 'widgets/tindog_channel_status.dart';
 import 'widgets/tindog_chat_attachments.dart';
@@ -129,6 +131,22 @@ class _StreamChatThreadScreenState
     }
   }
 
+  Future<StreamChatClient> _requireStreamClient() async {
+    final current = ref.read(streamChatClientProvider);
+    if (current.hasError || current.valueOrNull == null) {
+      await ref.read(streamChatClientProvider.notifier).reconnect();
+    }
+    final client = ref.read(streamChatClientProvider).valueOrNull;
+    if (client != null) return client;
+
+    // Último intento vía future (puede lanzar con el error real).
+    final viaFuture = await ref.read(streamChatClientProvider.future);
+    if (viaFuture == null) {
+      throw StateError('Stream no conectado. Volvé a iniciar sesión.');
+    }
+    return viaFuture;
+  }
+
   Future<void> _openChannel() async {
     setState(() {
       _loading = true;
@@ -136,10 +154,7 @@ class _StreamChatThreadScreenState
     });
 
     try {
-      final client = await ref.read(streamChatClientProvider.future);
-      if (client == null) {
-        throw StateError('Stream no conectado. Volvé a iniciar sesión.');
-      }
+      final client = await _requireStreamClient();
 
       final ensured = await ref
           .read(chatRepositoryProvider)
@@ -219,6 +234,7 @@ class _StreamChatThreadScreenState
     } catch (e) {
       if (!mounted) return;
       if (isSessionError(e)) {
+        setState(() => _loading = false);
         handleSessionExpired(ref, context, e);
         return;
       }
@@ -327,6 +343,9 @@ class _StreamChatThreadScreenState
     }
 
     if (_error != null || _channel == null) {
+      final failure = classifyStreamChatError(
+        _error ?? StateError('No se pudo abrir el chat'),
+      );
       return Scaffold(
         backgroundColor: AppColors.surface,
         appBar: AppBar(
@@ -334,28 +353,16 @@ class _StreamChatThreadScreenState
           foregroundColor: AppColors.textPrimary,
           title: Text(_petName),
         ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  readableError(_error ?? 'No se pudo abrir el chat'),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.red.shade700),
-                ),
-                const SizedBox(height: 12),
-                FilledButton(
-                  onPressed: _openChannel,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                  ),
-                  child: const Text('Reintentar'),
-                ),
-              ],
-            ),
-          ),
+        body: StreamChatErrorPanel(
+          error: _error ?? StateError(failure.message),
+          onRetry: _openChannel,
+          onBack: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/chats');
+            }
+          },
         ),
       );
     }

@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/tindog_loader.dart';
+import '../../chat/presentation/stream_chat_errors.dart';
+import '../../chat/presentation/stream_chat_providers.dart';
 import '../../chat/presentation/widgets/chat_presence_avatar.dart';
 import '../../chat/presentation/widgets/tindog_chat_list_subtitle.dart';
 import '../../chat/presentation/widgets/tindog_chat_unread_badge.dart';
@@ -22,6 +24,7 @@ class ChatsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Activa listeners Stream (mensajes → refresh de previews).
     ref.watch(chatsRealtimeInvalidatorProvider);
+    final streamAsync = ref.watch(streamChatClientProvider);
     final matchesAsync = ref.watch(matchesProvider);
     final receivedCount =
         ref.watch(likesSummaryProvider).valueOrNull?.receivedCount ?? 0;
@@ -112,6 +115,7 @@ class ChatsScreen extends ConsumerWidget {
                     threads.where((t) => !t.hasMessages).toList();
                 final conversations =
                     threads.where((t) => t.hasMessages).toList();
+                final streamIssue = streamAsync.hasError;
 
                 return RefreshIndicator(
                   color: AppColors.primary,
@@ -120,11 +124,57 @@ class ChatsScreen extends ConsumerWidget {
                     ref.invalidate(matchesProvider);
                     ref.invalidate(likesSummaryProvider);
                     ref.invalidate(receivedLikesProvider);
+                    if (streamIssue) {
+                      await ref
+                          .read(streamChatClientProvider.notifier)
+                          .reconnect();
+                    }
                     await ref.read(matchesProvider.future);
                   },
                   child: ListView(
                     padding: const EdgeInsets.only(bottom: 12),
                     children: [
+                      if (streamIssue)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                          child: Material(
+                            color: AppColors.card,
+                            borderRadius: BorderRadius.circular(14),
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.cloud_off_outlined,
+                                    color: AppColors.primaryDark,
+                                    size: 22,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      streamConnectionBannerMessage(
+                                        streamAsync.error,
+                                      ),
+                                      style: const TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 12,
+                                        height: 1.35,
+                                      ),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => ref
+                                        .read(
+                                          streamChatClientProvider.notifier,
+                                        )
+                                        .reconnect(),
+                                    child: const Text('Reconectar'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
                       const Padding(
                         padding: EdgeInsets.fromLTRB(20, 16, 20, 10),
                         child: Text(
