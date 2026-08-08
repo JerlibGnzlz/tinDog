@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/session/user_data_cache.dart';
+import '../../notifications/presentation/push_notifications.dart';
 import '../data/auth_exception.dart';
 import '../data/auth_repository.dart';
 
@@ -34,6 +35,7 @@ class AuthSessionNotifier extends AsyncNotifier<bool> {
           .login(email: email, password: password);
       state = const AsyncData(true);
       _clearUserDataCache();
+      await ref.read(pushNotificationsProvider).syncTokenIfLoggedIn();
       return true;
     } on AuthException catch (e) {
       ref.read(authFailureProvider.notifier).state = AuthFailure(
@@ -60,6 +62,7 @@ class AuthSessionNotifier extends AsyncNotifier<bool> {
           .register(email: email, password: password);
       state = const AsyncData(true);
       _clearUserDataCache();
+      await ref.read(pushNotificationsProvider).syncTokenIfLoggedIn();
       return true;
     } on AuthException catch (e) {
       ref.read(authFailureProvider.notifier).state = AuthFailure(
@@ -79,6 +82,7 @@ class AuthSessionNotifier extends AsyncNotifier<bool> {
 
   Future<void> logout() async {
     ref.read(authFailureProvider.notifier).state = null;
+    await ref.read(pushNotificationsProvider).clearTokenOnLogout();
     state = const AsyncData(false);
     await ref.read(authRepositoryProvider).logout();
     _clearUserDataCache();

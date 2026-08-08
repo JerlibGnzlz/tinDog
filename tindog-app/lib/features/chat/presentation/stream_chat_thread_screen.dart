@@ -130,6 +130,22 @@ class _StreamChatThreadScreenState
         id: ensured.channelId,
       );
       await channel.watch(presence: true);
+      // Refresca presencia de los miembros al entrar (sin esperar al teclado).
+      try {
+        final memberIds = channel.state?.members
+                .map((m) => m.userId)
+                .whereType<String>()
+                .where((id) => id.isNotEmpty)
+                .toList(growable: false) ??
+            const <String>[];
+        if (memberIds.isNotEmpty) {
+          await client.queryUsers(
+            filter: Filter.in_('id', memberIds),
+            presence: true,
+          );
+        }
+      } catch (_) {}
+
       await _markChannelRead(channel);
       // Segundo intento cuando el state ya tiene mensajes cargados.
       await Future<void>.delayed(const Duration(milliseconds: 400));
@@ -141,6 +157,19 @@ class _StreamChatThreadScreenState
         if (type == EventType.messageNew ||
             type == EventType.notificationMessageNew) {
           unawaited(_markChannelRead(channel));
+        }
+        // Mantener En línea / Desconectado al día mientras el chat está abierto.
+        if (type == EventType.userPresenceChanged ||
+            type == EventType.userUpdated) {
+          final ids = ensured.members.map((m) => m.id).toList(growable: false);
+          if (ids.isNotEmpty) {
+            unawaited(
+              client.queryUsers(
+                filter: Filter.in_('id', ids),
+                presence: true,
+              ),
+            );
+          }
         }
       });
 

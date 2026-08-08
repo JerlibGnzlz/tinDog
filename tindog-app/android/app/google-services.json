@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "865832497533",
+    "project_id": "tindog-dev-eb3a1",
+    "storage_bucket": "tindog-dev-eb3a1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:865832497533:android:206bc2133e86bfe954dc14",
+        "android_client_info": {
+          "package_name": "com.tindog.tindog_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDmyhmoOk50orwpTObongVAhixijYFm2nQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

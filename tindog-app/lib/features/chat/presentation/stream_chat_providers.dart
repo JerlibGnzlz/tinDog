@@ -43,6 +43,14 @@ class StreamChatClientNotifier extends AsyncNotifier<StreamChatClient?> {
       creds.token,
     );
 
+    // Suscribirse a la propia presencia apenas conecta (antes de abrir un chat).
+    try {
+      await client.queryUsers(
+        filter: Filter.equal('id', creds.user.id),
+        presence: true,
+      );
+    } catch (_) {}
+
     _client = client;
     ref.onDispose(_disconnect);
     return client;

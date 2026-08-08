@@ -6,7 +6,7 @@ import 'tindog_typing_label.dart';
 
 /// Subtítulo del header: no repite el nombre del perro.
 /// - Alguien escribe → «está escribiendo…» animado
-/// - Si no → «En línea» / «Desconectado»
+/// - Si no → «En línea» / «Desconectado» (presencia Stream)
 class TindogChannelStatus extends StatelessWidget {
   const TindogChannelStatus({
     super.key,
@@ -38,10 +38,12 @@ class TindogChannelStatus extends StatelessWidget {
             .toList(growable: false);
 
         if (othersTyping.isNotEmpty) {
-          return TindogTypingLabel(style: textStyle.copyWith(
-            color: AppColors.primaryDark,
-            fontWeight: FontWeight.w600,
-          ));
+          return TindogTypingLabel(
+            style: textStyle.copyWith(
+              color: AppColors.primaryDark,
+              fontWeight: FontWeight.w600,
+            ),
+          );
         }
 
         return BetterStreamBuilder<List<Member>>(
@@ -64,13 +66,12 @@ class TindogChannelStatus extends StatelessWidget {
               return _statusLabel(other?.user?.online ?? false);
             }
 
+            // Solo presencia Stream (no watchers: pueden quedar “fantasma”).
             return BetterStreamBuilder<Map<String, User>>(
               stream: usersState.usersStream,
               initialData: usersState.users,
               builder: (context, users) {
-                final online = users[otherUserId]?.online ??
-                    other?.user?.online ??
-                    false;
+                final online = users[otherUserId]?.online ?? false;
                 return _statusLabel(online);
               },
             );

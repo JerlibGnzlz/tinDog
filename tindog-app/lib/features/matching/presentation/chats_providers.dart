@@ -21,15 +21,14 @@ final matchesProvider =
 
   if (client != null) {
     // Limpia no-leídos huérfanos (canales Stream que ya no están en matches).
-    // Eso deja el badge "1" pegado aunque abras Firulais/Luna.
     unawaited(_clearOrphanUnread(client, threads));
 
     if (threads.isNotEmpty) {
       await _syncStreamPresence(client, threads);
-      final watched = await _watchMatchChannels(client, threads);
-      ref.onDispose(() {
-        unawaited(watched.cancel());
-      });
+      // Watch con presencia, pero NO stopWatching al dispose: eso apagaba
+      // “En línea” al refrescar la lista. La presencia la mantiene
+      // streamPresenceKeeperProvider.
+      await _watchMatchChannels(client, threads);
     }
   }
 
@@ -115,25 +114,10 @@ Future<void> _syncStreamPresence(
   }
 }
 
-class _ChannelWatchBundle {
-  _ChannelWatchBundle(this._channels);
-
-  final List<Channel> _channels;
-
-  Future<void> cancel() async {
-    for (final ch in _channels) {
-      try {
-        await ch.stopWatching();
-      } catch (_) {}
-    }
-  }
-}
-
-Future<_ChannelWatchBundle> _watchMatchChannels(
+Future<void> _watchMatchChannels(
   StreamChatClient client,
   List<MatchThread> threads,
 ) async {
-  final channels = <Channel>[];
   for (final thread in threads) {
     try {
       final channel = client.channel(
@@ -141,12 +125,10 @@ Future<_ChannelWatchBundle> _watchMatchChannels(
         id: 'match-${thread.id}',
       );
       await channel.watch(presence: true);
-      channels.add(channel);
     } catch (_) {
       // Best-effort por canal.
     }
   }
-  return _ChannelWatchBundle(channels);
 }
 
 /// Marca leídos canales messaging con unread que no corresponden a un match actual.

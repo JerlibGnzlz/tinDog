@@ -179,14 +179,17 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   right: 0,
                   child: Container(
                     padding: EdgeInsets.only(top: topInset),
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          AppColors.surface.withValues(alpha: 0.92),
-                          AppColors.surface.withValues(alpha: 0),
+                          AppColors.surface,
+                          Color(0xE6F9F1E1), // ~90%
+                          Color(0x99F9F1E1), // ~60%
+                          Color(0x00F9F1E1),
                         ],
+                        stops: [0, 0.35, 0.7, 1],
                       ),
                     ),
                     child: _DiscoverTopBar(
@@ -286,6 +289,18 @@ class _DiscoverTopBar extends StatelessWidget {
 
   static const _modes = DiscoverMode.values;
 
+  static List<Shadow> get _readShadow => [
+        Shadow(
+          color: AppColors.surface.withValues(alpha: 0.95),
+          blurRadius: 8,
+        ),
+        Shadow(
+          color: AppColors.surface.withValues(alpha: 0.9),
+          blurRadius: 2,
+          offset: const Offset(0, 0.5),
+        ),
+      ];
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -294,9 +309,10 @@ class _DiscoverTopBar extends StatelessWidget {
         children: [
           IconButton(
             onPressed: () => context.go('/home'),
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_rounded,
               color: AppColors.textPrimary,
+              shadows: _readShadow,
             ),
             tooltip: 'Volver a mi perfil',
           ),
@@ -318,13 +334,13 @@ class _DiscoverTopBar extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
                         color: selected
-                            ? AppColors.primary.withValues(alpha: 0.22)
+                            ? AppColors.primary.withValues(alpha: 0.28)
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(999),
                         border: selected
                             ? Border.all(
                                 color:
-                                    AppColors.primary.withValues(alpha: 0.4),
+                                    AppColors.primary.withValues(alpha: 0.45),
                               )
                             : null,
                       ),
@@ -334,10 +350,11 @@ class _DiscoverTopBar extends StatelessWidget {
                           style: TextStyle(
                             color: selected
                                 ? AppColors.primaryDark
-                                : AppColors.textSecondary,
+                                : AppColors.textPrimary,
                             fontWeight:
-                                selected ? FontWeight.w700 : FontWeight.w500,
+                                selected ? FontWeight.w700 : FontWeight.w600,
                             fontSize: 14,
+                            shadows: selected ? null : _readShadow,
                           ),
                         ),
                       ),
@@ -353,9 +370,10 @@ class _DiscoverTopBar extends StatelessWidget {
               isLabelVisible: filtersActive,
               smallSize: 8,
               backgroundColor: AppColors.accent,
-              child: const Icon(
+              child: Icon(
                 Icons.tune_rounded,
                 color: AppColors.primaryDark,
+                shadows: _readShadow,
               ),
             ),
             tooltip: 'Filtros',

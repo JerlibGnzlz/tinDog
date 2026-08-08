@@ -49,6 +49,8 @@ dependencies:
   collection: ^1.19.1
   geolocator: ^14.0.2
   stream_chat_localizations: ^10.2.0
+  firebase_core: ^4.13.0
+  firebase_messaging: ^16.5.0
 
 dev_dependencies:
   flutter_test:

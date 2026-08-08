@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../chat/presentation/stream_presence_keeper.dart';
 import 'chats_providers.dart';
 import 'likes_providers.dart';
 import 'widgets/discover_bottom_nav.dart';
@@ -53,6 +54,8 @@ class _MatchingShellState extends ConsumerState<MatchingShell> {
 
   @override
   Widget build(BuildContext context) {
+    // Presencia Stream viva mientras estás logueado en el shell.
+    ref.watch(streamPresenceKeeperProvider);
     // Mantener Stream escuchando aunque no estés en la pestaña Chats.
     ref.watch(chatsRealtimeInvalidatorProvider);
     final receivedCount =
