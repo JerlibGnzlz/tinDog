@@ -11,6 +11,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { SafetyModule } from './safety/safety.module';
 import { UsersModule } from './users/users.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 
 const nodeEnv = process.env.NODE_ENV ?? 'development';
 
@@ -36,6 +37,7 @@ const nodeEnv = process.env.NODE_ENV ?? 'development';
     ChatModule,
     SafetyModule,
     DevicesModule,
+    WebhooksModule,
   ],
 })
 export class AppModule {}

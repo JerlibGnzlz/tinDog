@@ -78,6 +78,14 @@ export class StreamChatService implements OnModuleInit {
     return `match-${matchId}`;
   }
 
+  /** Verifica X-Signature de Stream y parsea el JSON del webhook. */
+  verifyAndParseWebhook<T = unknown>(rawBody: Buffer, signature: string): T {
+    return this.requireClient().verifyAndParseWebhook(
+      rawBody,
+      signature,
+    ) as T;
+  }
+
   async ensureMatchChannel(params: {
     matchId: string;
     members: StreamUserProfile[];

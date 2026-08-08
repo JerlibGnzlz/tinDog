@@ -7,6 +7,8 @@ export type PushPayload = {
   title: string;
   body: string;
   data?: Record<string, string>;
+  /** Canal Android (debe existir en la app). */
+  androidChannelId?: string;
 };
 
 @Injectable()
@@ -89,7 +91,13 @@ export class PushService implements OnModuleInit {
       where: { userId },
       select: { id: true, token: true },
     });
-    if (devices.length === 0) return;
+    if (devices.length === 0) {
+      this.logger.warn(`Push sin device_tokens user=${userId}`);
+      return;
+    }
+    this.logger.log(
+      `FCM → user=${userId} devices=${devices.length} title="${payload.title}"`,
+    );
 
     const staleIds: string[] = [];
 
@@ -106,7 +114,7 @@ export class PushService implements OnModuleInit {
             android: {
               priority: 'high',
               notification: {
-                channelId: 'tindog_matches',
+                channelId: payload.androidChannelId ?? 'tindog_matches',
                 sound: 'default',
               },
             },
@@ -149,6 +157,24 @@ export class PushService implements OnModuleInit {
         type: 'match',
         matchId: params.matchId,
       },
+      androidChannelId: 'tindog_matches',
+    });
+  }
+
+  async notifyChatMessage(params: {
+    recipientUserId: string;
+    senderName: string;
+    body: string;
+    matchId: string;
+  }): Promise<void> {
+    await this.sendToUser(params.recipientUserId, {
+      title: `Nuevo mensaje de ${params.senderName}`,
+      body: params.body,
+      data: {
+        type: 'message',
+        matchId: params.matchId,
+      },
+      androidChannelId: 'tindog_chat',
     });
   }
 }
