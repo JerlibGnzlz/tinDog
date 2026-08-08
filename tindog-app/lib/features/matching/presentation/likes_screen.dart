@@ -202,21 +202,36 @@ class _LikesGrid extends ConsumerWidget {
         ),
       ),
       data: (items) {
+        Future<void> refresh() async {
+          ref.invalidate(provider);
+          ref.invalidate(likesSummaryProvider);
+          await ref.read(provider.future);
+        }
+
         if (items.isEmpty) {
-          return LikesEmptyState(
-            title: emptyTitle,
-            subtitle: emptySubtitle,
+          return RefreshIndicator(
+            color: AppColors.primary,
+            backgroundColor: AppColors.card,
+            onRefresh: refresh,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                SizedBox(
+                  height: MediaQuery.sizeOf(context).height * 0.55,
+                  child: LikesEmptyState(
+                    title: emptyTitle,
+                    subtitle: emptySubtitle,
+                  ),
+                ),
+              ],
+            ),
           );
         }
 
         return RefreshIndicator(
           color: AppColors.primary,
           backgroundColor: AppColors.card,
-          onRefresh: () async {
-            ref.invalidate(provider);
-            ref.invalidate(likesSummaryProvider);
-            await ref.read(provider.future);
-          },
+          onRefresh: refresh,
           child: GridView.builder(
             padding: const EdgeInsets.fromLTRB(14, 4, 14, 84),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

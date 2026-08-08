@@ -29,13 +29,19 @@ class _MatchingShellState extends ConsumerState<MatchingShell> {
 
   Timer? _likesPoll;
 
+  void _refreshLikes() {
+    ref.invalidate(likesSummaryProvider);
+    ref.invalidate(receivedLikesProvider);
+    ref.invalidate(sentLikesProvider);
+  }
+
   @override
   void initState() {
     super.initState();
-    // Sin push FCM aún: refrescar badge de likes recibidos periódicamente.
+    // Sin push FCM aún: refrescar badge + listas de likes periódicamente.
     _likesPoll = Timer.periodic(const Duration(seconds: 12), (_) {
       if (!mounted) return;
-      ref.invalidate(likesSummaryProvider);
+      _refreshLikes();
     });
   }
 
@@ -66,7 +72,7 @@ class _MatchingShellState extends ConsumerState<MatchingShell> {
             likesBadge: receivedCount > 0 ? receivedCount : null,
             chatsBadge: unreadChats > 0 ? unreadChats : null,
             onSelected: (tab) {
-              ref.invalidate(likesSummaryProvider);
+              _refreshLikes();
               final target = _tabs.indexOf(tab);
               if (target < 0) return;
               widget.navigationShell.goBranch(

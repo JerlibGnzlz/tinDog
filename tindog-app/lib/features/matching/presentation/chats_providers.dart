@@ -19,18 +19,24 @@ final matchesProvider =
     client = null;
   }
 
-  if (client != null && threads.isNotEmpty) {
-    await _syncStreamPresence(client, threads);
-    final watched = await _watchMatchChannels(client, threads);
-    ref.onDispose(() {
-      unawaited(watched.cancel());
-    });
+  if (client != null) {
+    // Limpia no-leídos huérfanos (canales Stream que ya no están en matches).
+    // Eso deja el badge "1" pegado aunque abras Firulais/Luna.
+    unawaited(_clearOrphanUnread(client, threads));
+
+    if (threads.isNotEmpty) {
+      await _syncStreamPresence(client, threads);
+      final watched = await _watchMatchChannels(client, threads);
+      ref.onDispose(() {
+        unawaited(watched.cancel());
+      });
+    }
   }
 
   return threads;
 });
 
-/// Mensajes no leídos (Stream). Vive mientras el shell lo observe.
+/// No leídos solo de matches conocidos (no usa totalUnreadCount global de Stream).
 final unreadChatsCountProvider = StreamProvider.autoDispose<int>((ref) async* {
   final client = await ref.watch(streamChatClientProvider.future);
   if (client == null) {
@@ -38,8 +44,23 @@ final unreadChatsCountProvider = StreamProvider.autoDispose<int>((ref) async* {
     return;
   }
 
-  yield client.state.totalUnreadCount;
-  yield* client.state.totalUnreadCountStream;
+  // Reacciona cuando cambia la lista de matches.
+  ref.watch(matchesProvider);
+
+  int sumForKnownMatches() {
+    final threads = ref.read(matchesProvider).valueOrNull;
+    if (threads == null || threads.isEmpty) return 0;
+    var total = 0;
+    for (final thread in threads) {
+      final key = 'messaging:match-${thread.id}';
+      final channel = client.state.channels[key];
+      total += channel?.state?.unreadCount ?? 0;
+    }
+    return total;
+  }
+
+  yield sumForKnownMatches();
+  yield* client.on().map((_) => sumForKnownMatches());
 });
 
 /// Escucha mensajes Stream y refresca la lista (preview / «Tu turno») en vivo.
@@ -126,6 +147,33 @@ Future<_ChannelWatchBundle> _watchMatchChannels(
     }
   }
   return _ChannelWatchBundle(channels);
+}
+
+/// Marca leídos canales messaging con unread que no corresponden a un match actual.
+Future<void> _clearOrphanUnread(
+  StreamChatClient client,
+  List<MatchThread> threads,
+) async {
+  final known = threads.map((t) => 'match-${t.id}').toSet();
+  try {
+    final channels = await client.queryChannelsOnline(
+      filter: Filter.equal('type', 'messaging'),
+      state: true,
+      watch: false,
+      paginationParams: const PaginationParams(limit: 30),
+    );
+    for (final channel in channels) {
+      final id = channel.id;
+      final unread = channel.state?.unreadCount ?? 0;
+      if (id == null || unread <= 0) continue;
+      if (known.contains(id)) continue;
+      try {
+        await channel.markRead();
+      } catch (_) {}
+    }
+  } catch (_) {
+    // Best-effort: el badge igual usa solo matches conocidos.
+  }
 }
 
 final chatMessagesProvider = FutureProvider.autoDispose

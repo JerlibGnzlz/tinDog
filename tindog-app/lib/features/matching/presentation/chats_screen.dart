@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/tindog_loader.dart';
 import '../../chat/presentation/widgets/chat_presence_avatar.dart';
 import '../../chat/presentation/widgets/tindog_chat_list_subtitle.dart';
+import '../../chat/presentation/widgets/tindog_chat_unread_badge.dart';
 import '../../safety/presentation/safety_sheets.dart';
 import '../data/chat_models.dart';
 import 'chats_providers.dart';
@@ -370,58 +371,70 @@ class _MessageRow extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              ChatPresenceAvatar(
-                photoUrl: photo,
-                streamUserId: ownerId,
-                radius: 28,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      thread.otherPet.name,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
+          child: TindogChatHasUnread(
+            matchId: thread.id,
+            builder: (context, hasUnread) {
+              return Row(
+                children: [
+                  ChatPresenceAvatar(
+                    photoUrl: photo,
+                    streamUserId: ownerId,
+                    radius: 28,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          thread.otherPet.name,
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontWeight:
+                                hasUnread ? FontWeight.w800 : FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        ChatPresenceLabel(streamUserId: ownerId),
+                        const SizedBox(height: 2),
+                        TindogChatListSubtitle(
+                          matchId: thread.id,
+                          otherUserId: ownerId,
+                          fallbackPreview: preview,
+                          emphasize: hasUnread,
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (hasUnread) ...[
+                    TindogChatUnreadBadge(matchId: thread.id),
+                  ] else if (yourTurn) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: const Text(
+                        'Tu turno',
+                        style: TextStyle(
+                          color: AppColors.primaryDark,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    ChatPresenceLabel(streamUserId: ownerId),
-                    const SizedBox(height: 2),
-                    TindogChatListSubtitle(
-                      matchId: thread.id,
-                      otherUserId: ownerId,
-                      fallbackPreview: preview,
-                    ),
                   ],
-                ),
-              ),
-              if (yourTurn)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.35),
-                    ),
-                  ),
-                  child: const Text(
-                    'Tu turno',
-                    style: TextStyle(
-                      color: AppColors.primaryDark,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-            ],
+                ],
+              );
+            },
           ),
         ),
       ),

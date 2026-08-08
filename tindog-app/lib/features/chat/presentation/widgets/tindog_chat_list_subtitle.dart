@@ -10,11 +10,13 @@ class TindogChatListSubtitle extends StatelessWidget {
     required this.matchId,
     required this.fallbackPreview,
     this.otherUserId,
+    this.emphasize = false,
   });
 
   final String matchId;
   final String fallbackPreview;
   final String? otherUserId;
+  final bool emphasize;
 
   @override
   Widget build(BuildContext context) {
@@ -64,9 +66,10 @@ class TindogChatListSubtitle extends StatelessWidget {
       value,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: const TextStyle(
-        color: AppColors.textSecondary,
+      style: TextStyle(
+        color: emphasize ? AppColors.textPrimary : AppColors.textSecondary,
         fontSize: 13,
+        fontWeight: emphasize ? FontWeight.w700 : FontWeight.w400,
       ),
     );
   }

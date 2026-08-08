@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -47,6 +49,7 @@ class _StreamChatThreadScreenState
   StreamChatUserDto? _ensureOther;
   Map<String, StreamChatUserDto> _membersById = const {};
   final _composerController = StreamMessageComposerController();
+  StreamSubscription<Event>? _readSub;
 
   String get _petName =>
       widget.thread?.otherPet.name ?? _ensureOther?.name ?? 'Chat';
@@ -89,8 +92,21 @@ class _StreamChatThreadScreenState
 
   @override
   void dispose() {
+    _readSub?.cancel();
+    final channel = _channel;
+    if (channel != null) {
+      unawaited(_markChannelRead(channel));
+    }
     _composerController.dispose();
     super.dispose();
+  }
+
+  Future<void> _markChannelRead(Channel channel) async {
+    try {
+      await channel.markRead();
+    } catch (_) {
+      // Best-effort.
+    }
   }
 
   Future<void> _openChannel() async {
@@ -114,11 +130,19 @@ class _StreamChatThreadScreenState
         id: ensured.channelId,
       );
       await channel.watch(presence: true);
-      try {
-        await channel.markRead();
-      } catch (_) {
-        // Best-effort: marca como leído al abrir el chat.
-      }
+      await _markChannelRead(channel);
+      // Segundo intento cuando el state ya tiene mensajes cargados.
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+      await _markChannelRead(channel);
+
+      await _readSub?.cancel();
+      _readSub = channel.on().listen((event) {
+        final type = event.type;
+        if (type == EventType.messageNew ||
+            type == EventType.notificationMessageNew) {
+          unawaited(_markChannelRead(channel));
+        }
+      });
 
       final membersById = {
         for (final m in ensured.members) m.id: m,
@@ -321,6 +345,16 @@ class _StreamChatThreadScreenState
             children: [
               Expanded(
                 child: StreamMessageListView(
+                  messageFilter: (message) {
+                    // Oculta soft-deletes ("Message deleted") y shadowed.
+                    if (message.isDeleted || message.deletedAt != null) {
+                      return false;
+                    }
+                    final me = StreamChat.of(context).currentUser?.id;
+                    final isMine = me != null && message.user?.id == me;
+                    if (message.shadowed && !isMine) return false;
+                    return true;
+                  },
                   config: const StreamMessageListViewConfiguration(
                     swipeToReply: true,
                   ),

@@ -79,8 +79,8 @@ Future<void> showTindogMessageActions({
         await Clipboard.setData(ClipboardData(text: text));
       }
     case DeleteMessage():
-      await channel.deleteMessage(selected.message);
     case HardDeleteMessage():
+      // Hard delete: desaparece del chat (sin "Message deleted").
       await channel.deleteMessage(selected.message, hard: true);
     case PinMessage():
       await channel.pinMessage(selected.message);
