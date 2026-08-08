@@ -9,6 +9,7 @@ import {
 import { PetMediaType, Prisma, ChatMessageType } from '@prisma/client';
 import { ChatService } from '../chat/chat.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { PushService } from '../devices/push.service';
 import { SafetyService } from '../safety/safety.service';
 import { SendMessageDto } from './dto/send-message.dto';
 
@@ -82,6 +83,7 @@ export class MatchingService {
     @Inject(forwardRef(() => ChatService))
     private readonly chatService: ChatService,
     private readonly safetyService: SafetyService,
+    private readonly pushService: PushService,
   ) {}
 
   async discover(
@@ -639,7 +641,39 @@ export class MatchingService {
       update: {},
     });
     void this.chatService.ensureChannelForMatchPets(petAId, petBId, match.id);
+    void this.notifyMatchPush(match.id, petAId, petBId);
     return match;
+  }
+
+  private async notifyMatchPush(
+    matchId: string,
+    petAId: string,
+    petBId: string,
+  ) {
+    try {
+      const pets = await this.prisma.pet.findMany({
+        where: { id: { in: [petAId, petBId] } },
+        select: { id: true, userId: true, name: true },
+      });
+      const petA = pets.find((p) => p.id === petAId);
+      const petB = pets.find((p) => p.id === petBId);
+      if (!petA || !petB) return;
+
+      await Promise.all([
+        this.pushService.notifyMatch({
+          recipientUserId: petA.userId,
+          otherPetName: petB.name?.trim() || 'Alguien',
+          matchId,
+        }),
+        this.pushService.notifyMatch({
+          recipientUserId: petB.userId,
+          otherPetName: petA.name?.trim() || 'Alguien',
+          matchId,
+        }),
+      ]);
+    } catch {
+      // Best-effort: el match ya está creado.
+    }
   }
 
   private orderedPair(a: string, b: string): [string, string] {

@@ -3,40 +3,40 @@
 ## Objetivo
 Avisar al usuario cuando:
 1. Hay un **match** nuevo
-2. Llega un **mensaje** de chat (app en background / cerrada)
+2. Llega un **mensaje** de chat (app en background / cerrada) — pendiente
 
-## Entra (cuando se implemente)
+## Entra
 | Área | Entregable |
 |---|---|
-| App | `firebase_core` + `firebase_messaging` (Android + iOS) |
-| App | Pedir permiso; guardar FCM token |
-| API | `POST /devices` — registrar token por `userId` |
-| API | Tabla `device_tokens` (user_id, token, platform, updated_at) |
-| API | Enviar push al crear match y/o vía webhook Stream → Nest → FCM |
-| App | Tap en notificación → abrir `/chats/:matchId` |
+| App | `firebase_core` + `firebase_messaging` (Android) |
+| App | Pedir permiso; `POST /devices` con FCM token |
+| App | Tap en notificación de match → `/chats/:matchId` |
+| API | Tabla `device_tokens` |
+| API | `POST /devices`, `DELETE /devices` |
+| API | Push al crear match (Firebase Admin) |
 
-## Env (placeholders)
+## Env
 ```
-# Nest
+# Nest (.env.development — no commitear)
 FIREBASE_PROJECT_ID=
 FIREBASE_CLIENT_EMAIL=
 FIREBASE_PRIVATE_KEY=
 
-# App (FlutterFire / google-services)
+# App
 # android/app/google-services.json
-# ios/Runner/GoogleService-Info.plist
 ```
+
+## Estado
+**En progreso.** Push de **match** listo en Android. Falta push de **mensaje** (Stream webhook → Nest → FCM) e iOS (APNs).
+
+## Cómo probar (Android)
+1. API con `FIREBASE_*` y `npm run start:dev` → log `Firebase Admin listo`
+2. App: full reinstall (plugin nativo) + login → aceptar notificaciones
+3. En log: `FCM token registrado…`
+4. Otro usuario hace like mutuo → push “¡Es un match!”
+5. Tap en la notificación → abre el chat
 
 ## NO entra aún
 - Marketing push / campañas
 - Email / SMS
-- Rich media notifications complejas
-
-## Estado
-**Pendiente.** El chat realtime (Stream) ya funciona con la app abierta; falta push en background.
-
-## Orden sugerido
-1. Proyecto Firebase + configs Android/iOS
-2. Guardar tokens en Nest
-3. Push de match (Nest al crear match)
-4. Push de mensaje (Stream webhook o Nest)
+- Rich media complejas

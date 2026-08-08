@@ -20,6 +20,7 @@ model User {
   blocksReceived     UserBlock[]          @relation("BlocksReceived")
   reportsCreated     UserReport[]         @relation("ReportsCreated")
   reportsReceived    UserReport[]         @relation("ReportsReceived")
+  deviceTokens       DeviceToken[]
 
   @@map("users")
 }
@@ -207,4 +208,19 @@ model UserReport {
   @@index([reportedId, createdAt])
   @@index([reporterId])
   @@map("user_reports")
+}
+
+/// Token FCM por dispositivo (push).
+model DeviceToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String
+  platform  String   @default("android")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("device_tokens")
 }
