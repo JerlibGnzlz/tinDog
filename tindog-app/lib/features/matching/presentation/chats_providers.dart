@@ -75,14 +75,21 @@ final chatsRealtimeInvalidatorProvider = Provider.autoDispose<void>((ref) {
         type == EventType.messageUpdated ||
         type == EventType.messageDeleted ||
         type == EventType.notificationMessageNew;
-    if (!isMessageEvent) return;
+    // Canal borrado (bloqueo / unmatch del otro) → refrescar lista sola.
+    final isChannelGone = type == EventType.channelDeleted ||
+        type == EventType.notificationChannelDeleted ||
+        type == EventType.notificationRemovedFromChannel;
+    if (!isMessageEvent && !isChannelGone) return;
 
     debounce?.cancel();
-    debounce = Timer(const Duration(milliseconds: 400), () {
-      if (!disposed) {
-        ref.invalidate(matchesProvider);
-      }
-    });
+    debounce = Timer(
+      Duration(milliseconds: isChannelGone ? 80 : 400),
+      () {
+        if (!disposed) {
+          ref.invalidate(matchesProvider);
+        }
+      },
+    );
   });
 
   ref.onDispose(() {

@@ -160,7 +160,7 @@ Future<SafetyActionResult?> _confirmAndBlock({
         title: const Text('¿Bloquear?'),
         content: Text(
           'Vas a dejar de ver a $otherName en Desliza, Likes y Chats. '
-          'El match se elimina.',
+          'El match y el chat se eliminan.',
           style: const TextStyle(color: AppColors.textSecondary, height: 1.35),
         ),
         actions: [
@@ -401,7 +401,8 @@ Future<void> showSafetyInfoSheet(BuildContext context) {
               const SizedBox(height: 10),
               const Text(
                 'En cualquier chat podés reportar o bloquear a la otra persona. '
-                'Al bloquear, desaparece de Desliza, Likes y Chats.',
+                'Al bloquear, desaparece de Desliza, Likes y Chats, y el chat '
+                'se elimina por completo.',
                 style: TextStyle(
                   color: AppColors.textSecondary,
                   height: 1.4,

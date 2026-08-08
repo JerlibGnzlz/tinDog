@@ -12,6 +12,8 @@ import '../../matching/data/chat_models.dart';
 import '../../matching/data/discover_candidate.dart';
 import '../../matching/presentation/chats_providers.dart';
 import '../../matching/presentation/likes_providers.dart';
+import '../../matching/presentation/delete_conversation.dart';
+import '../../notifications/data/devices_repository.dart';
 import '../../safety/presentation/safety_sheets.dart';
 import '../data/chat_repository.dart';
 import 'stream_chat_providers.dart';
@@ -50,6 +52,7 @@ class _StreamChatThreadScreenState
   Map<String, StreamChatUserDto> _membersById = const {};
   final _composerController = StreamMessageComposerController();
   StreamSubscription<Event>? _readSub;
+  Timer? _activeChatHeartbeat;
 
   String get _petName =>
       widget.thread?.otherPet.name ?? _ensureOther?.name ?? 'Chat';
@@ -93,12 +96,29 @@ class _StreamChatThreadScreenState
   @override
   void dispose() {
     _readSub?.cancel();
+    _stopActiveChatPresence();
     final channel = _channel;
     if (channel != null) {
       unawaited(_markChannelRead(channel));
     }
     _composerController.dispose();
     super.dispose();
+  }
+
+  void _startActiveChatPresence() {
+    _activeChatHeartbeat?.cancel();
+    final matchId = widget.matchId;
+    final devices = ref.read(devicesRepositoryProvider);
+    unawaited(devices.setActiveChat(matchId));
+    _activeChatHeartbeat = Timer.periodic(const Duration(seconds: 90), (_) {
+      unawaited(devices.setActiveChat(matchId));
+    });
+  }
+
+  void _stopActiveChatPresence() {
+    _activeChatHeartbeat?.cancel();
+    _activeChatHeartbeat = null;
+    unawaited(ref.read(devicesRepositoryProvider).setActiveChat(null));
   }
 
   Future<void> _markChannelRead(Channel channel) async {
@@ -189,6 +209,7 @@ class _StreamChatThreadScreenState
       }
 
       if (!mounted) return;
+      _startActiveChatPresence();
       setState(() {
         _channel = channel;
         _ensureOther = ensured.other;
@@ -238,15 +259,59 @@ class _StreamChatThreadScreenState
     if (!mounted || result == null) return;
 
     if (result.removedFromChats) {
-      ref.invalidate(matchesProvider);
-      ref.invalidate(receivedLikesProvider);
-      ref.invalidate(sentLikesProvider);
-      ref.invalidate(likesSummaryProvider);
-      if (context.canPop()) {
-        context.pop();
-      } else {
-        context.go('/chats');
-      }
+      await _leaveChatAfterRemoval();
+    }
+  }
+
+  Future<void> _deleteConversation() async {
+    final thread = widget.thread ??
+        MatchThread(
+          id: widget.matchId,
+          matchedAt: DateTime.now().toUtc(),
+          otherPet: DiscoverCandidate(
+            id: _ensureOther?.id ?? widget.matchId,
+            name: _petName,
+            photoUrls: [
+              if (_otherPhoto != null && _otherPhoto!.isNotEmpty) _otherPhoto!,
+            ],
+            ownerUserId: _ensureOther?.id,
+          ),
+          hasMessages: true,
+          lastMessage: null,
+        );
+    final deleted = await confirmAndDeleteConversation(
+      context: context,
+      ref: ref,
+      thread: thread,
+    );
+    if (!mounted || !deleted) return;
+    await _leaveChatAfterRemoval();
+  }
+
+  Future<void> _leaveChatAfterRemoval() async {
+    final channel = _channel;
+    _channel = null;
+    if (channel != null) {
+      unawaited(() async {
+        try {
+          await channel.stopWatching();
+        } catch (_) {}
+        channel.dispose();
+      }());
+    }
+    ref.invalidate(matchesProvider);
+    ref.invalidate(receivedLikesProvider);
+    ref.invalidate(sentLikesProvider);
+    ref.invalidate(likesSummaryProvider);
+    // Forzar fetch antes de volver para que Chats no muestre el match viejo.
+    try {
+      await ref.read(matchesProvider.future);
+    } catch (_) {}
+    if (!mounted) return;
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/chats');
     }
   }
 
@@ -356,6 +421,28 @@ class _StreamChatThreadScreenState
                     Icons.shield_outlined,
                     color: AppColors.textSecondary,
                   ),
+                ),
+                PopupMenuButton<String>(
+                  tooltip: 'Más',
+                  icon: const Icon(
+                    Icons.more_vert_rounded,
+                    color: AppColors.textSecondary,
+                  ),
+                  color: AppColors.card,
+                  onSelected: (value) {
+                    if (value == 'delete') {
+                      unawaited(_deleteConversation());
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text(
+                        'Eliminar conversación',
+                        style: TextStyle(color: Colors.red.shade700),
+                      ),
+                    ),
+                  ],
                 ),
                 Padding(
                   padding: const EdgeInsets.only(right: 8),

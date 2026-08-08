@@ -11,6 +11,7 @@ import '../../chat/presentation/widgets/tindog_chat_unread_badge.dart';
 import '../../safety/presentation/safety_sheets.dart';
 import '../data/chat_models.dart';
 import 'chats_providers.dart';
+import 'delete_conversation.dart';
 import 'likes_providers.dart';
 import 'widgets/chats_likes_shortcut_card.dart';
 
@@ -153,6 +154,11 @@ class ChatsScreen extends ConsumerWidget {
                                   '/chats/${thread.id}',
                                   extra: thread,
                                 ),
+                                onLongPress: () => confirmAndDeleteConversation(
+                                  context: context,
+                                  ref: ref,
+                                  thread: thread,
+                                ),
                               ),
                             ),
                             if (newMatches.isEmpty)
@@ -191,6 +197,11 @@ class ChatsScreen extends ConsumerWidget {
                               '/chats/${thread.id}',
                               extra: thread,
                             ),
+                            onDelete: () => confirmAndDeleteConversation(
+                              context: context,
+                              ref: ref,
+                              thread: thread,
+                            ),
                           ),
                         ),
                     ],
@@ -206,10 +217,15 @@ class ChatsScreen extends ConsumerWidget {
 }
 
 class _NewMatchCard extends StatelessWidget {
-  const _NewMatchCard({required this.thread, required this.onTap});
+  const _NewMatchCard({
+    required this.thread,
+    required this.onTap,
+    this.onLongPress,
+  });
 
   final MatchThread thread;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -221,6 +237,7 @@ class _NewMatchCard extends StatelessWidget {
       padding: const EdgeInsets.only(right: 10),
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(14),
         child: SizedBox(
           width: 84,
@@ -351,10 +368,15 @@ class _NewMatchPresenceDot extends StatelessWidget {
 }
 
 class _MessageRow extends StatelessWidget {
-  const _MessageRow({required this.thread, required this.onTap});
+  const _MessageRow({
+    required this.thread,
+    required this.onTap,
+    required this.onDelete,
+  });
 
   final MatchThread thread;
   final VoidCallback onTap;
+  final Future<bool> Function() onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -365,76 +387,88 @@ class _MessageRow extends StatelessWidget {
     final yourTurn = thread.lastMessage != null && !thread.lastMessage!.fromMe;
     final ownerId = thread.otherPet.ownerUserId;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: TindogChatHasUnread(
-            matchId: thread.id,
-            builder: (context, hasUnread) {
-              return Row(
-                children: [
-                  ChatPresenceAvatar(
-                    photoUrl: photo,
-                    streamUserId: ownerId,
-                    radius: 28,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          thread.otherPet.name,
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontWeight:
-                                hasUnread ? FontWeight.w800 : FontWeight.w700,
-                            fontSize: 15,
+    return Dismissible(
+      key: ValueKey('chat-${thread.id}'),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) => onDelete(),
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        color: Colors.red.shade700,
+        child: const Icon(Icons.delete_outline_rounded, color: Colors.white),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: TindogChatHasUnread(
+              matchId: thread.id,
+              builder: (context, hasUnread) {
+                return Row(
+                  children: [
+                    ChatPresenceAvatar(
+                      photoUrl: photo,
+                      streamUserId: ownerId,
+                      radius: 28,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            thread.otherPet.name,
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontWeight: hasUnread
+                                  ? FontWeight.w800
+                                  : FontWeight.w700,
+                              fontSize: 15,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          ChatPresenceLabel(streamUserId: ownerId),
+                          const SizedBox(height: 2),
+                          TindogChatListSubtitle(
+                            matchId: thread.id,
+                            otherUserId: ownerId,
+                            fallbackPreview: preview,
+                            emphasize: hasUnread,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (hasUnread) ...[
+                      TindogChatUnreadBadge(matchId: thread.id),
+                    ] else if (yourTurn) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.35),
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        ChatPresenceLabel(streamUserId: ownerId),
-                        const SizedBox(height: 2),
-                        TindogChatListSubtitle(
-                          matchId: thread.id,
-                          otherUserId: ownerId,
-                          fallbackPreview: preview,
-                          emphasize: hasUnread,
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (hasUnread) ...[
-                    TindogChatUnreadBadge(matchId: thread.id),
-                  ] else if (yourTurn) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.35),
+                        child: const Text(
+                          'Tu turno',
+                          style: TextStyle(
+                            color: AppColors.primaryDark,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                      child: const Text(
-                        'Tu turno',
-                        style: TextStyle(
-                          color: AppColors.primaryDark,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
+                    ],
                   ],
-                ],
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),

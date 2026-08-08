@@ -77,6 +77,10 @@ class MatchingRepository {
         .toList(growable: false);
   }
 
+  Future<void> deleteMatch(String matchId) async {
+    await _dio.delete<Map<String, dynamic>>('/matches/$matchId');
+  }
+
   Future<List<ChatMessage>> listMessages(String matchId) async {
     final response = await _dio.get<List<dynamic>>(
       '/matches/$matchId/messages',

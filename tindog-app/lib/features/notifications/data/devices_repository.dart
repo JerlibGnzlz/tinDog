@@ -33,4 +33,16 @@ class DevicesRepository {
       // Best-effort al logout.
     }
   }
+
+  /// `matchId` null = ya no está viendo un chat (omitir push de ese match).
+  Future<void> setActiveChat(String? matchId) async {
+    try {
+      await _dio.put<Map<String, dynamic>>(
+        '/devices/active-chat',
+        data: {'matchId': matchId},
+      );
+    } catch (_) {
+      // Best-effort: si falla, como máximo llega un push de más.
+    }
+  }
 }
