@@ -13,10 +13,24 @@ class MatchingRepository {
 
   final Dio _dio;
 
-  Future<List<DiscoverCandidate>> discover({int limit = 20}) async {
+  Future<List<DiscoverCandidate>> discover({
+    int limit = 20,
+    String mode = 'for_you',
+    String? breed,
+    int? minAge,
+    int? maxAge,
+    int? maxKm,
+  }) async {
     final response = await _dio.get<List<dynamic>>(
       '/discover',
-      queryParameters: {'limit': limit},
+      queryParameters: {
+        'limit': limit,
+        'mode': mode,
+        if (breed?.trim().isNotEmpty == true) 'breed': breed!.trim(),
+        'minAge': ?minAge,
+        'maxAge': ?maxAge,
+        'maxKm': ?maxKm,
+      },
     );
     final raw = response.data ?? const [];
     return raw

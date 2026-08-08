@@ -24,6 +24,34 @@ final safetyRepositoryProvider = Provider<SafetyRepository>((ref) {
   return SafetyRepository(ref.watch(apiClientProvider));
 });
 
+class BlockedUser {
+  const BlockedUser({
+    required this.userId,
+    required this.displayName,
+    required this.blockedAt,
+    this.photoUrl,
+    this.petId,
+  });
+
+  final String userId;
+  final String displayName;
+  final String blockedAt;
+  final String? photoUrl;
+  final String? petId;
+
+  factory BlockedUser.fromJson(Map<String, dynamic> json) {
+    return BlockedUser(
+      userId: json['userId'] as String,
+      displayName: (json['displayName'] as String?)?.trim().isNotEmpty == true
+          ? (json['displayName'] as String).trim()
+          : 'Usuario',
+      blockedAt: json['blockedAt'] as String? ?? '',
+      photoUrl: json['photoUrl'] as String?,
+      petId: json['petId'] as String?,
+    );
+  }
+}
+
 class SafetyRepository {
   SafetyRepository(this._dio);
 
@@ -38,6 +66,15 @@ class SafetyRepository {
 
   Future<void> unblockUser(String userId) async {
     await _dio.delete<Map<String, dynamic>>('/safety/blocks/$userId');
+  }
+
+  Future<List<BlockedUser>> listBlockedUsers() async {
+    final response = await _dio.get<List<dynamic>>('/safety/blocks');
+    final raw = response.data ?? const [];
+    return raw
+        .whereType<Map<String, dynamic>>()
+        .map(BlockedUser.fromJson)
+        .toList(growable: false);
   }
 
   Future<void> reportUser({

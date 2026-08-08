@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/auth/auth_navigation.dart';
 import '../../../core/network/session_handler.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../shared/models/swipe_preview_media.dart';
-import '../../../shared/widgets/app_logo.dart';
-import '../../../shared/widgets/pet_photo_thumbnail_strip.dart';
-import '../../../shared/widgets/swipe_preview_card.dart';
-import '../../../shared/widgets/tindog_filled_button.dart';
-import '../../../shared/widgets/tindog_gradient_progress_bar.dart';
 import '../../../shared/widgets/tindog_loader.dart';
+import '../../pets/data/pet_media_model.dart';
 import '../../pets/data/pet_model.dart';
+import '../../safety/presentation/safety_sheets.dart';
 import '../data/profile_model.dart';
 import 'profile_providers.dart';
+import 'widgets/home_profile_action_row.dart';
+import 'widgets/home_profile_avatar.dart';
+import 'widgets/home_profile_promo_carousel.dart';
+import 'widgets/home_settings_sheet.dart';
 
+/// Tab Perfil (/home): hub estilo Tinder con colores tinDog.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -36,305 +36,234 @@ class HomeScreen extends ConsumerWidget {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('tinDog'),
-        actions: [
-          IconButton(
-            onPressed: () => context.go('/discover'),
-            icon: const Icon(Icons.local_fire_department_rounded),
-            tooltip: 'Deslizar / Matches',
-          ),
-          IconButton(
-            onPressed: () => context.go('/profile'),
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Editar perfil',
-          ),
-          IconButton(
-            onPressed: () => signOutToWelcome(ref, context),
-            icon: const Icon(Icons.logout),
-            tooltip: 'Salir',
-          ),
-        ],
-      ),
+      backgroundColor: AppColors.surface,
       body: petAsync.when(
         loading: () => const Center(child: TindogLoader(message: 'Cargando…')),
-        error: (error, _) => _HomeBody(
-          onEdit: () => context.go('/profile'),
+        error: (error, _) => _HomeProfileBody(
           errorMessage: readableError(error),
+          onEdit: () => context.go('/profile'),
         ),
-        data: (pet) => photosAsync.when(
-          loading: () => const Center(child: TindogLoader(message: 'Cargando…')),
-          error: (_, _) => _HomeBody(
+        data: (pet) {
+          final photos = photosAsync.valueOrNull ?? const <PetMediaModel>[];
+          final videos = videosAsync.valueOrNull ?? const <PetMediaModel>[];
+          final profile = profileAsync.valueOrNull;
+          return _HomeProfileBody(
             pet: pet,
-            profile: profileAsync.valueOrNull,
-            petName: pet.name,
-            mediaItems: buildSwipePreviewMedia(
-              photos: const [],
-              videos: const [],
-              fallbackPhotoUrl: pet.photoUrl,
-            ),
+            profile: profile,
+            photos: photos,
+            videos: videos,
             onEdit: () => context.go('/profile'),
-          ),
-          data: (photos) => videosAsync.when(
-            loading: () => _HomeBody(
-              pet: pet,
-              profile: profileAsync.valueOrNull,
-              petName: pet.name,
-              mediaItems: buildSwipePreviewMedia(
-                photos: photos,
-                videos: const [],
-                fallbackPhotoUrl: pet.photoUrl,
-              ),
-              onEdit: () => context.go('/profile'),
-            ),
-            error: (_, _) => _HomeBody(
-              pet: pet,
-              profile: profileAsync.valueOrNull,
-              petName: pet.name,
-              mediaItems: buildSwipePreviewMedia(
-                photos: photos,
-                videos: const [],
-                fallbackPhotoUrl: pet.photoUrl,
-              ),
-              onEdit: () => context.go('/profile'),
-            ),
-            data: (videos) => _HomeBody(
-              pet: pet,
-              profile: profileAsync.valueOrNull,
-              petName: pet.name,
-              mediaItems: buildSwipePreviewMedia(
-                photos: photos,
-                videos: videos,
-                fallbackPhotoUrl: pet.photoUrl,
-              ),
-              onEdit: () => context.go('/profile'),
-            ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 }
 
-class _HomeBody extends StatefulWidget {
-  const _HomeBody({
+class _HomeProfileBody extends ConsumerWidget {
+  const _HomeProfileBody({
     required this.onEdit,
     this.pet,
     this.profile,
-    this.petName,
-    this.mediaItems = const [],
+    this.photos = const [],
+    this.videos = const [],
     this.errorMessage,
   });
 
   final VoidCallback onEdit;
   final PetModel? pet;
   final ProfileModel? profile;
-  final String? petName;
-  final List<SwipePreviewMediaItem> mediaItems;
+  final List<PetMediaModel> photos;
+  final List<PetMediaModel> videos;
   final String? errorMessage;
 
-  @override
-  State<_HomeBody> createState() => _HomeBodyState();
-}
-
-class _HomeBodyState extends State<_HomeBody> {
-  int _mediaIndex = 0;
-
-  int get _safeMediaIndex {
-    if (widget.mediaItems.isEmpty) return 0;
-    return _mediaIndex.clamp(0, widget.mediaItems.length - 1);
+  String? get _photoUrl {
+    final primary = photos.where((p) => p.isPrimary).map((p) => p.url);
+    if (primary.isNotEmpty) return primary.first;
+    if (photos.isNotEmpty) return photos.first.url;
+    return pet?.photoUrl;
   }
 
-  @override
-  void didUpdateWidget(_HomeBody oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.mediaItems.length != oldWidget.mediaItems.length) {
-      final lastIndex =
-          widget.mediaItems.isEmpty ? 0 : widget.mediaItems.length - 1;
-      if (_mediaIndex > lastIndex) {
-        setState(() => _mediaIndex = lastIndex);
+  String get _title {
+    final name = pet?.name?.trim();
+    if (name == null || name.isEmpty) {
+      final owner = profile?.name?.trim();
+      if (owner != null && owner.isNotEmpty) return owner;
+      return 'Tu mascota';
+    }
+    if (pet?.age != null) return '$name, ${pet!.age}';
+    return name;
+  }
+
+  String get _nudgeText {
+    if (profile != null && pet != null) {
+      final percent = profileCoreCompletionPercent(
+        profile: profile!,
+        pet: pet!,
+      );
+      if (percent < 100) {
+        return profileCoreCompletionMessage(profile: profile!, pet: pet!);
       }
     }
+    if (videos.isEmpty) {
+      return '¡Novedad! Añadí videos a tu perfil y mostrá la personalidad '
+          'de tu mascota.';
+    }
+    if (photos.length < 2) {
+      return 'Sumá más fotos para que tu perfil destaque en Desliza.';
+    }
+    return 'Así te ven otros tutores. Mantené tu perfil al día.';
   }
 
   @override
-  Widget build(BuildContext context) {
-    final hasPetProfile = widget.petName != null && widget.petName!.isNotEmpty;
-    final hasMedia = widget.mediaItems.isNotEmpty;
-    final hasThumbs = hasMedia && widget.mediaItems.length > 1;
-    final showCompletionBanner = widget.profile != null &&
-        widget.pet != null &&
-        profileCoreCompletionPercent(
-              profile: widget.profile!,
-              pet: widget.pet!,
-            ) <
-            100;
-    final breed = widget.pet?.breed?.trim();
-    final bio = widget.profile?.bio?.trim();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final top = MediaQuery.paddingOf(context).top;
 
     return Column(
       children: [
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(10, 6, 10, 0),
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(20, top + 12, 20, 12),
             child: Column(
               children: [
-                if (showCompletionBanner)
-                  _ProfileCompletionBanner(
-                    profile: widget.profile!,
-                    pet: widget.pet!,
-                    onTap: widget.onEdit,
-                  ),
-                if (hasMedia)
-                  Expanded(
-                    child: SwipePreviewCard(
-                      mediaItems: widget.mediaItems,
-                      mediaIndex: _safeMediaIndex,
-                      petName: widget.petName,
-                      petAge: widget.pet?.age,
-                      subtitle: (breed != null && breed.isNotEmpty)
-                          ? breed
-                          : null,
-                      bio: (bio != null && bio.isNotEmpty) ? bio : null,
-                      expand: true,
-                      borderRadius: 18,
-                      onInfoTap: widget.onEdit,
-                      onMediaIndexChanged: (index) =>
-                          setState(() => _mediaIndex = index),
-                    ),
-                  )
-                else
-                  const Expanded(
-                    child: Center(child: AppLogo(size: 96)),
-                  ),
-                if (hasThumbs) ...[
-                  const SizedBox(height: 10),
-                  PetPhotoThumbnailStrip(
-                    mediaItems: widget.mediaItems,
-                    selectedIndex: _safeMediaIndex,
-                    onSelected: (index) =>
-                        setState(() => _mediaIndex = index),
-                  ),
-                ],
-                const SizedBox(height: 8),
-                Text(
-                  hasPetProfile
-                      ? hasMedia
-                          ? 'Así te ven al deslizar'
-                          : 'Subí fotos para ver la vista previa'
-                      : 'Completá el perfil de tu mascota',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                  textAlign: TextAlign.center,
+                HomeProfileAvatar(
+                  photoUrl: _photoUrl,
+                  onEdit: onEdit,
                 ),
-                if (widget.errorMessage != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.errorMessage!,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.red.shade700,
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        _title,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
                         ),
+                      ),
+                    ),
+                    if (pet?.name?.trim().isNotEmpty == true) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.check_rounded,
+                          size: 14,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 14),
+                _NudgeBubble(text: _nudgeText, onTap: onEdit),
+                if (errorMessage != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    errorMessage!,
                     textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.red.shade700, fontSize: 13),
                   ),
                 ],
-                const SizedBox(height: 4),
+                const SizedBox(height: 28),
+                HomeProfileActionRow(
+                  onSettings: () => showHomeSettingsSheet(
+                    context: context,
+                    ref: ref,
+                  ),
+                  onAddMedia: () => context.push('/profile/photos'),
+                  onSafety: () => showSafetyInfoSheet(context),
+                ),
+                const SizedBox(height: 28),
               ],
             ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-          child: Column(
-            children: [
-              if (hasPetProfile && hasMedia) ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => context.go('/discover'),
-                    icon: const Icon(Icons.local_fire_department_rounded),
-                    label: const Text('Ir a Desliza'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.accent,
-                      side: const BorderSide(color: AppColors.accent),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ],
-              TindogFilledButton(
-                onPressed: widget.onEdit,
-                child: Text(
-                  hasPetProfile ? 'Editar perfil' : 'Completar perfil',
-                ),
-              ),
-            ],
-          ),
+        HomeProfilePromoCarousel(
+          slides: [
+            HomePromoSlide(
+              title: 'Añadir vídeo',
+              subtitle: 'Subí un video corto y mostrá cómo es tu mascota.',
+              cta: 'Subir vídeo',
+              icon: Icons.videocam_rounded,
+              onCta: () => context.push('/profile/videos'),
+            ),
+            HomePromoSlide(
+              title: 'Más fotos',
+              subtitle: 'Los perfiles con varias fotos reciben más likes.',
+              cta: 'Añadir fotos',
+              icon: Icons.photo_library_rounded,
+              onCta: () => context.push('/profile/photos'),
+            ),
+            HomePromoSlide(
+              title: 'Completá tu perfil',
+              subtitle: 'Datos, ubicación y bio ayudan a mejores matches.',
+              cta: 'Editar perfil',
+              icon: Icons.pets_rounded,
+              onCta: onEdit,
+            ),
+            HomePromoSlide(
+              title: 'Empezá a deslizar',
+              subtitle: 'Cuando tu perfil esté listo, buscá nuevos amigos.',
+              cta: 'Ir a Desliza',
+              icon: Icons.local_fire_department_rounded,
+              onCta: () => context.go('/discover'),
+            ),
+          ],
         ),
       ],
     );
   }
 }
 
-class _ProfileCompletionBanner extends StatelessWidget {
-  const _ProfileCompletionBanner({
-    required this.profile,
-    required this.pet,
-    required this.onTap,
-  });
+class _NudgeBubble extends StatelessWidget {
+  const _NudgeBubble({required this.text, required this.onTap});
 
-  final ProfileModel profile;
-  final PetModel pet;
+  final String text;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final progress = profileCoreCompletionProgress(
-      profile: profile,
-      pet: pet,
-    );
-    final message = profileCoreCompletionMessage(profile: profile, pet: pet);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: Ink(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.border),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 320),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: LinearGradient(
+            colors: [
+              AppColors.primary.withValues(alpha: 0.95),
+              AppColors.primaryDark,
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryDark.withValues(alpha: 0.28),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        message,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                    ),
-                    const Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppColors.textSecondary,
-                      size: 20,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                TindogGradientProgressBar(value: progress, height: 6),
-              ],
-            ),
+          ],
+        ),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            height: 1.35,
           ),
         ),
       ),

@@ -74,8 +74,19 @@ class ChatPresenceLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = StreamChat.maybeOf(context)?.client.state;
     final userId = streamUserId;
-    if (state == null || userId == null || userId.isEmpty) {
+    if (userId == null || userId.isEmpty) {
       return const SizedBox.shrink();
+    }
+
+    if (state == null) {
+      return Text(
+        '…',
+        style: TextStyle(
+          color: AppColors.textSecondary.withValues(alpha: 0.7),
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      );
     }
 
     return BetterStreamBuilder<Map<String, User>>(

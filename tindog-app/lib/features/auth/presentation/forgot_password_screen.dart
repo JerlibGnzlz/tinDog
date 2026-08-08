@@ -100,8 +100,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       title: _emailSent ? 'Revisá tu email' : 'Recuperar contraseña',
       subtitle: Text(
         _emailSent
-            ? 'Si $email está registrado en tinDog, te enviamos un código de 6 dígitos. Vence en 15 minutos.'
-            : 'Te enviaremos un código para restablecer tu contraseña.',
+            ? 'Te enviamos un código de 6 dígitos a $email. Vence en 15 minutos.'
+            : 'Ingresá el email de tu cuenta tinDog y te enviamos un código.',
         textAlign: TextAlign.center,
       ),
       showBackButton: true,
@@ -169,14 +169,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         ),
         const SizedBox(height: 16),
         Text(
-          'Si no recibís el código en unos minutos, revisá la carpeta de spam '
+          'Si no recibís el código en unos minutos, revisá spam '
           'y verificá que el email sea el correcto.',
-          style: _helperStyle(context),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '¿Nunca te registraste con este email? Creá una cuenta nueva.',
           style: _helperStyle(context),
           textAlign: TextAlign.center,
         ),
@@ -186,10 +180,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           child: const Text('Ingresar código'),
         ),
         TindogTextButton(
-          onPressed: _isLoading ? null : () => context.go('/register'),
-          child: const Text('Crear cuenta'),
-        ),
-        TindogTextButton(
           onPressed: _isLoading
               ? null
               : () => setState(() {
@@ -197,6 +187,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     _errorMessage = null;
                   }),
           child: const Text('Usar otro email'),
+        ),
+        TindogTextButton(
+          onPressed: _isLoading ? null : () => context.go('/login'),
+          child: const Text('Volver al login'),
         ),
       ],
     );

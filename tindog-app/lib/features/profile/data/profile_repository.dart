@@ -22,6 +22,9 @@ class ProfileRepository {
     String? bio,
     String? avatarUrl,
     String? location,
+    double? latitude,
+    double? longitude,
+    bool clearCoordinates = false,
   }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
       '/profiles/me',
@@ -30,6 +33,9 @@ class ProfileRepository {
         'bio': ?bio,
         'avatarUrl': ?avatarUrl,
         'location': ?location,
+        'latitude': ?latitude,
+        'longitude': ?longitude,
+        if (clearCoordinates) 'clearCoordinates': true,
       },
     );
     return ProfileModel.fromJson(response.data!);

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/session_handler.dart';
 import '../data/discover_candidate.dart';
 import '../data/matching_repository.dart';
+import 'discover_filters.dart';
 
 enum DiscoverSwipeDecision { like, pass }
 
@@ -30,13 +31,20 @@ class DiscoverDeckState {
   bool get isEmpty => remaining.isEmpty && !isLoading;
 }
 
+final discoverFiltersProvider =
+    StateProvider<DiscoverFilters>((ref) => const DiscoverFilters());
+
 class DiscoverDeckNotifier extends StateNotifier<DiscoverDeckState> {
-  DiscoverDeckNotifier(this._repo)
+  DiscoverDeckNotifier(this._repo, this._ref)
       : super(const DiscoverDeckState(remaining: [], isLoading: true)) {
     reload();
+    _ref.listen<DiscoverFilters>(discoverFiltersProvider, (prev, next) {
+      if (prev != next) reload();
+    });
   }
 
   final MatchingRepository _repo;
+  final Ref _ref;
 
   Future<void> reload() async {
     state = DiscoverDeckState(
@@ -45,7 +53,14 @@ class DiscoverDeckNotifier extends StateNotifier<DiscoverDeckState> {
       errorMessage: null,
     );
     try {
-      final candidates = await _repo.discover();
+      final filters = _ref.read(discoverFiltersProvider);
+      final candidates = await _repo.discover(
+        mode: filters.mode.apiValue,
+        breed: filters.breed,
+        minAge: filters.minAge,
+        maxAge: filters.maxAge,
+        maxKm: filters.mode == DiscoverMode.near ? filters.maxKm : null,
+      );
       state = DiscoverDeckState(remaining: candidates);
     } catch (e) {
       state = DiscoverDeckState(
@@ -61,7 +76,6 @@ class DiscoverDeckNotifier extends StateNotifier<DiscoverDeckState> {
 
     final rest = state.remaining.skip(1).toList(growable: false);
 
-    // Optimistic UI: avanzar ya; si falla la API, recargar.
     state = DiscoverDeckState(
       remaining: rest,
       lastDecision: decision,
@@ -93,5 +107,5 @@ class DiscoverDeckNotifier extends StateNotifier<DiscoverDeckState> {
 
 final discoverDeckProvider =
     StateNotifierProvider<DiscoverDeckNotifier, DiscoverDeckState>((ref) {
-  return DiscoverDeckNotifier(ref.watch(matchingRepositoryProvider));
+  return DiscoverDeckNotifier(ref.watch(matchingRepositoryProvider), ref);
 });

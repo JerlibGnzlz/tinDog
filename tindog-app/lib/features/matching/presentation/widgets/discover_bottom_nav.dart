@@ -8,14 +8,14 @@ class DiscoverBottomNav extends StatelessWidget {
     super.key,
     required this.active,
     required this.onSelected,
-    this.likesBadge = 1,
-    this.chatsBadge = true,
+    this.likesBadge,
+    this.chatsBadge,
   });
 
   final DiscoverNavTab active;
   final ValueChanged<DiscoverNavTab> onSelected;
   final int? likesBadge;
-  final bool chatsBadge;
+  final int? chatsBadge;
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +65,7 @@ class DiscoverBottomNav extends StatelessWidget {
                   icon: Icons.chat_bubble_outline_rounded,
                   label: 'Chats',
                   selected: active == DiscoverNavTab.chats,
-                  showDot: chatsBadge,
+                  badgeCount: chatsBadge,
                   onTap: () => onSelected(DiscoverNavTab.chats),
                 ),
                 _Item(
@@ -90,7 +90,6 @@ class _Item extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.badgeCount,
-    this.showDot = false,
   });
 
   final IconData icon;
@@ -98,7 +97,6 @@ class _Item extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
   final int? badgeCount;
-  final bool showDot;
 
   @override
   Widget build(BuildContext context) {
@@ -150,19 +148,6 @@ class _Item extends StatelessWidget {
                               fontWeight: FontWeight.w800,
                               height: 1,
                             ),
-                          ),
-                        ),
-                      ),
-                    if (showDot)
-                      Positioned(
-                        top: -2,
-                        right: -2,
-                        child: Container(
-                          width: 7,
-                          height: 7,
-                          decoration: const BoxDecoration(
-                            color: AppColors.accent,
-                            shape: BoxShape.circle,
                           ),
                         ),
                       ),

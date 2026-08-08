@@ -6,6 +6,7 @@ import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/tindog_loader.dart';
 import '../../chat/presentation/widgets/chat_presence_avatar.dart';
+import '../../chat/presentation/widgets/tindog_chat_list_subtitle.dart';
 import '../../safety/presentation/safety_sheets.dart';
 import '../data/chat_models.dart';
 import 'chats_providers.dart';
@@ -17,6 +18,8 @@ class ChatsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Activa listeners Stream (mensajes → refresh de previews).
+    ref.watch(chatsRealtimeInvalidatorProvider);
     final matchesAsync = ref.watch(matchesProvider);
     final receivedCount =
         ref.watch(likesSummaryProvider).valueOrNull?.receivedCount ?? 0;
@@ -390,14 +393,10 @@ class _MessageRow extends StatelessWidget {
                     const SizedBox(height: 2),
                     ChatPresenceLabel(streamUserId: ownerId),
                     const SizedBox(height: 2),
-                    Text(
-                      preview,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                      ),
+                    TindogChatListSubtitle(
+                      matchId: thread.id,
+                      otherUserId: ownerId,
+                      fallbackPreview: preview,
                     ),
                   ],
                 ),

@@ -18,6 +18,7 @@ import '../../features/matching/data/chat_models.dart';
 import '../../features/profile/presentation/profile_hub_screen.dart';
 import '../../features/profile/presentation/profile_section_screens.dart';
 import '../../features/profile/presentation/profile_screens.dart';
+import '../../features/safety/presentation/blocked_users_screen.dart';
 
 const _publicRoutes = {
   '/welcome',
@@ -161,6 +162,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'location',
             builder: (_, _) => const ProfileLocationScreen(),
+          ),
+          GoRoute(
+            path: 'blocked',
+            builder: (_, _) => const BlockedUsersScreen(),
           ),
         ],
       ),

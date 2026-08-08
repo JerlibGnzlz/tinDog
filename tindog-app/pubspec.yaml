@@ -47,6 +47,7 @@ dependencies:
   video_player: ^2.11.1
   stream_chat_flutter: ^10.2.0
   collection: ^1.19.1
+  geolocator: ^14.0.2
 
 dev_dependencies:
   flutter_test:

@@ -1,16 +1,24 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import 'chats_providers.dart';
 import 'likes_providers.dart';
 import 'widgets/discover_bottom_nav.dart';
 
 /// Shell fijo: la bottom bar no se recrea al cambiar de tab.
-class MatchingShell extends ConsumerWidget {
+class MatchingShell extends ConsumerStatefulWidget {
   const MatchingShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
+  @override
+  ConsumerState<MatchingShell> createState() => _MatchingShellState();
+}
+
+class _MatchingShellState extends ConsumerState<MatchingShell> {
   static const _tabs = <DiscoverNavTab>[
     DiscoverNavTab.discover,
     DiscoverNavTab.explore,
@@ -19,27 +27,52 @@ class MatchingShell extends ConsumerWidget {
     DiscoverNavTab.profile,
   ];
 
+  Timer? _likesPoll;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    // Sin push FCM aún: refrescar badge de likes recibidos periódicamente.
+    _likesPoll = Timer.periodic(const Duration(seconds: 12), (_) {
+      if (!mounted) return;
+      ref.invalidate(likesSummaryProvider);
+    });
+  }
+
+  @override
+  void dispose() {
+    _likesPoll?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Mantener Stream escuchando aunque no estés en la pestaña Chats.
+    ref.watch(chatsRealtimeInvalidatorProvider);
     final receivedCount =
         ref.watch(likesSummaryProvider).valueOrNull?.receivedCount ?? 0;
-    final index = navigationShell.currentIndex.clamp(0, _tabs.length - 1);
+    final unreadChats =
+        ref.watch(unreadChatsCountProvider).valueOrNull ?? 0;
+    final index =
+        widget.navigationShell.currentIndex.clamp(0, _tabs.length - 1);
 
     return ColoredBox(
       color: AppColors.surface,
       child: Column(
         children: [
-          Expanded(child: navigationShell),
+          Expanded(child: widget.navigationShell),
           DiscoverBottomNav(
             active: _tabs[index],
             likesBadge: receivedCount > 0 ? receivedCount : null,
-            chatsBadge: false,
+            chatsBadge: unreadChats > 0 ? unreadChats : null,
             onSelected: (tab) {
+              ref.invalidate(likesSummaryProvider);
               final target = _tabs.indexOf(tab);
               if (target < 0) return;
-              navigationShell.goBranch(
+              widget.navigationShell.goBranch(
                 target,
-                initialLocation: target == navigationShell.currentIndex,
+                initialLocation:
+                    target == widget.navigationShell.currentIndex,
               );
             },
           ),

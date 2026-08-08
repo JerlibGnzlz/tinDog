@@ -2,9 +2,10 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'tindog_typing_label.dart';
 
 /// Subtítulo del header: no repite el nombre del perro.
-/// - Alguien escribe → «está escribiendo…»
+/// - Alguien escribe → «está escribiendo…» animado
 /// - Si no → «En línea» / «Desconectado»
 class TindogChannelStatus extends StatelessWidget {
   const TindogChannelStatus({
@@ -25,7 +26,8 @@ class TindogChannelStatus extends StatelessWidget {
     final channelState = channel.state;
     if (channelState == null) return const SizedBox.shrink();
 
-    final myId = StreamChat.maybeOf(context)?.currentUser?.id;
+    final client = StreamChat.maybeOf(context)?.client;
+    final myId = client?.state.currentUser?.id;
 
     return BetterStreamBuilder<Map<User, Event>>(
       stream: channelState.typingEventsStream,
@@ -36,15 +38,10 @@ class TindogChannelStatus extends StatelessWidget {
             .toList(growable: false);
 
         if (othersTyping.isNotEmpty) {
-          return Text(
-            'está escribiendo…',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: textStyle.copyWith(
-              color: AppColors.primaryDark,
-              fontWeight: FontWeight.w600,
-            ),
-          );
+          return TindogTypingLabel(style: textStyle.copyWith(
+            color: AppColors.primaryDark,
+            fontWeight: FontWeight.w600,
+          ));
         }
 
         return BetterStreamBuilder<List<Member>>(
@@ -52,19 +49,46 @@ class TindogChannelStatus extends StatelessWidget {
           initialData: channelState.members,
           builder: (context, members) {
             final other = members.firstWhereOrNull((m) => m.userId != myId);
-            final online = other?.user?.online ?? false;
-            return Text(
-              online ? 'En línea' : 'Desconectado',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: textStyle.copyWith(
-                color: online ? AppColors.primaryDark : AppColors.textSecondary,
-                fontWeight: online ? FontWeight.w600 : FontWeight.w400,
-              ),
+            final otherUserId = other?.userId;
+            if (otherUserId == null || otherUserId.isEmpty) {
+              return Text(
+                'Desconectado',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: textStyle,
+              );
+            }
+
+            final usersState = client?.state;
+            if (usersState == null) {
+              return _statusLabel(other?.user?.online ?? false);
+            }
+
+            return BetterStreamBuilder<Map<String, User>>(
+              stream: usersState.usersStream,
+              initialData: usersState.users,
+              builder: (context, users) {
+                final online = users[otherUserId]?.online ??
+                    other?.user?.online ??
+                    false;
+                return _statusLabel(online);
+              },
             );
           },
         );
       },
+    );
+  }
+
+  Widget _statusLabel(bool online) {
+    return Text(
+      online ? 'En línea' : 'Desconectado',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: textStyle.copyWith(
+        color: online ? AppColors.primaryDark : AppColors.textSecondary,
+        fontWeight: online ? FontWeight.w600 : FontWeight.w400,
+      ),
     );
   }
 }

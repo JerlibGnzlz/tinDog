@@ -3,25 +3,49 @@ final _emailRegex = RegExp(
 );
 
 /// Typos frecuentes de dominio → sugerencia.
+/// Mantener en sync con tindog-api email-typo.ts
 const _emailDomainTypos = <String, String>{
+  // Gmail
   'gmmail.com': 'gmail.com',
   'gmal.com': 'gmail.com',
   'gamil.com': 'gmail.com',
   'gnail.com': 'gmail.com',
+  'gmnail.com': 'gmail.com',
+  'gmaill.com': 'gmail.com',
   'gmai.com': 'gmail.com',
+  'gmaul.com': 'gmail.com',
+  'gmil.com': 'gmail.com',
+  'gogglemail.com': 'gmail.com',
+  'googlemail.co': 'gmail.com',
   'gmail.co': 'gmail.com',
   'gmail.con': 'gmail.com',
   'gmail.cm': 'gmail.com',
+  'gmail.om': 'gmail.com',
+  'gmail.comm': 'gmail.com',
+  // Hotmail / Outlook / Live
   'hotmial.com': 'hotmail.com',
   'hotmal.com': 'hotmail.com',
+  'hotnail.com': 'hotmail.com',
+  'hotmaill.com': 'hotmail.com',
   'hotmail.co': 'hotmail.com',
   'hotmail.con': 'hotmail.com',
+  'hotmail.cm': 'hotmail.com',
   'outlok.com': 'outlook.com',
   'outllok.com': 'outlook.com',
+  'outlokk.com': 'outlook.com',
   'outlook.co': 'outlook.com',
+  'outlook.con': 'outlook.com',
+  'outlook.cm': 'outlook.com',
+  'live.con': 'live.com',
+  // Yahoo / iCloud
   'yahooo.com': 'yahoo.com',
   'yaho.com': 'yahoo.com',
+  'yahoo.con': 'yahoo.com',
+  'yahoo.cm': 'yahoo.com',
+  'yahoocom.com': 'yahoo.com',
   'icloud.co': 'icloud.com',
+  'icloud.con': 'icloud.com',
+  'icoud.com': 'icloud.com',
 };
 
 String? _emailTypoSuggestion(String email) {

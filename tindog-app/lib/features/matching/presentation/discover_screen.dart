@@ -5,9 +5,12 @@ import '../../../core/feedback/app_feedback.dart';
 import '../../../core/network/session_handler.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/tindog_loader.dart';
+import '../../profile/presentation/profile_providers.dart';
+import 'discover_filters.dart';
 import 'discover_providers.dart';
 import 'widgets/discover_actions.dart';
 import 'widgets/discover_card.dart';
+import 'widgets/discover_filters_sheet.dart';
 import 'widgets/match_celebration_dialog.dart';
 
 class DiscoverScreen extends ConsumerStatefulWidget {
@@ -47,11 +50,26 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }
   }
 
+  Future<void> _openFilters() async {
+    final current = ref.read(discoverFiltersProvider);
+    final next = await showDiscoverFiltersSheet(
+      context: context,
+      current: current,
+    );
+    if (next == null || !mounted) return;
+    ref.read(discoverFiltersProvider.notifier).state = next;
+  }
+
   @override
   Widget build(BuildContext context) {
     final deck = ref.watch(discoverDeckProvider);
+    final filters = ref.watch(discoverFiltersProvider);
+    final profile = ref.watch(myProfileProvider).valueOrNull;
+    final pet = ref.watch(myPetProvider).valueOrNull;
     final current = deck.current;
     final topInset = MediaQuery.paddingOf(context).top;
+    final hasGps = profile?.hasGps ?? false;
+    final hasOwnBreed = (pet?.breed ?? '').trim().isNotEmpty;
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -95,7 +113,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   )
                 else if (current != null)
                   DiscoverCard(
-                    key: ValueKey(current.id),
+                    key: ValueKey('${filters.mode.apiValue}-${current.id}'),
                     candidate: current,
                     controller: _cardController,
                     storyTopInset: topInset + 52,
@@ -124,51 +142,36 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     ),
                   )
                 else
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.pets_rounded,
-                            size: 64,
-                            color: AppColors.primary.withValues(alpha: 0.7),
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'No hay más perfiles por ahora',
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Volvé más tarde o completá tu perfil para aparecer ante otros.',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 13,
-                              height: 1.35,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 20),
-                          FilledButton(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                            ),
-                            onPressed: () => ref
-                                .read(discoverDeckProvider.notifier)
-                                .reload(),
-                            child: const Text('Actualizar'),
-                          ),
-                        ],
-                      ),
+                  _EmptyDiscover(
+                    title: filters.mode == DiscoverMode.play
+                        ? 'Modo juego vacío'
+                        : 'No hay más perfiles',
+                    subtitle: filters.emptyMessage(
+                      hasGps: hasGps,
+                      hasOwnBreed: hasOwnBreed,
                     ),
+                    primaryLabel: filters.mode == DiscoverMode.near && !hasGps
+                        ? 'Activar GPS'
+                        : filters.mode == DiscoverMode.breed &&
+                                !hasOwnBreed &&
+                                (filters.breed == null ||
+                                    filters.breed!.trim().isEmpty)
+                            ? 'Elegir raza'
+                            : 'Actualizar',
+                    onPrimary: () async {
+                      if (filters.mode == DiscoverMode.near && !hasGps) {
+                        context.push('/profile/location');
+                        return;
+                      }
+                      if (filters.mode == DiscoverMode.breed &&
+                          (filters.breed == null ||
+                              filters.breed!.trim().isEmpty) &&
+                          !hasOwnBreed) {
+                        await _openFilters();
+                        return;
+                      }
+                      ref.read(discoverDeckProvider.notifier).reload();
+                    },
                   ),
                 Positioned(
                   top: 0,
@@ -186,7 +189,15 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         ],
                       ),
                     ),
-                    child: const _DiscoverTopBar(),
+                    child: _DiscoverTopBar(
+                      mode: filters.mode,
+                      filtersActive: filters.hasExtraFilters,
+                      onModeSelected: (mode) {
+                        ref.read(discoverFiltersProvider.notifier).state =
+                            filters.copyWith(mode: mode);
+                      },
+                      onOpenFilters: _openFilters,
+                    ),
                   ),
                 ),
               ],
@@ -198,10 +209,82 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   }
 }
 
-class _DiscoverTopBar extends StatelessWidget {
-  const _DiscoverTopBar();
+class _EmptyDiscover extends StatelessWidget {
+  const _EmptyDiscover({
+    required this.title,
+    required this.subtitle,
+    required this.primaryLabel,
+    required this.onPrimary,
+  });
 
-  static const _tabs = ['Para ti', 'Cerca', 'Razas', 'Juego'];
+  final String title;
+  final String subtitle;
+  final String primaryLabel;
+  final VoidCallback onPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.pets_rounded,
+              size: 64,
+              color: AppColors.primary.withValues(alpha: 0.7),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+                height: 1.35,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: onPrimary,
+              child: Text(primaryLabel),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DiscoverTopBar extends StatelessWidget {
+  const _DiscoverTopBar({
+    required this.mode,
+    required this.onModeSelected,
+    required this.onOpenFilters,
+    this.filtersActive = false,
+  });
+
+  final DiscoverMode mode;
+  final ValueChanged<DiscoverMode> onModeSelected;
+  final VoidCallback onOpenFilters;
+  final bool filtersActive;
+
+  static const _modes = DiscoverMode.values;
 
   @override
   Widget build(BuildContext context) {
@@ -221,31 +304,43 @@ class _DiscoverTopBar extends StatelessWidget {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: _tabs.length,
+              itemCount: _modes.length,
               separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
-                final selected = index == 0;
-                return Container(
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? AppColors.primary.withValues(alpha: 0.22)
-                        : Colors.transparent,
+                final tab = _modes[index];
+                final selected = tab == mode;
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
                     borderRadius: BorderRadius.circular(999),
-                    border: selected
-                        ? Border.all(color: AppColors.primary.withValues(alpha: 0.4))
-                        : null,
-                  ),
-                  child: Text(
-                    _tabs[index],
-                    style: TextStyle(
-                      color: selected
-                          ? AppColors.primaryDark
-                          : AppColors.textSecondary,
-                      fontWeight:
-                          selected ? FontWeight.w700 : FontWeight.w500,
-                      fontSize: 14,
+                    onTap: () => onModeSelected(tab),
+                    child: Ink(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? AppColors.primary.withValues(alpha: 0.22)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(999),
+                        border: selected
+                            ? Border.all(
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.4),
+                              )
+                            : null,
+                      ),
+                      child: Center(
+                        child: Text(
+                          tab.label,
+                          style: TextStyle(
+                            color: selected
+                                ? AppColors.primaryDark
+                                : AppColors.textSecondary,
+                            fontWeight:
+                                selected ? FontWeight.w700 : FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 );
@@ -253,13 +348,15 @@ class _DiscoverTopBar extends StatelessWidget {
             ),
           ),
           IconButton(
-            onPressed: () => showTindogInfoSnackBar(
-              context,
-              'Filtros — próximamente',
-            ),
-            icon: const Icon(
-              Icons.tune_rounded,
-              color: AppColors.primaryDark,
+            onPressed: onOpenFilters,
+            icon: Badge(
+              isLabelVisible: filtersActive,
+              smallSize: 8,
+              backgroundColor: AppColors.accent,
+              child: const Icon(
+                Icons.tune_rounded,
+                color: AppColors.primaryDark,
+              ),
             ),
             tooltip: 'Filtros',
           ),

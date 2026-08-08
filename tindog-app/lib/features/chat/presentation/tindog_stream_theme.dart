@@ -36,7 +36,7 @@ StreamTheme tindogStreamTheme() {
           return mine ? AppColors.primary : const Color(0xFFE8EFDF);
         }),
       ),
-            text: StreamMessageTextStyle(
+      text: StreamMessageTextStyle(
         textColor: StreamMessageLayoutProperty.resolveWith((p) {
           final mine = p.alignment == StreamMessageAlignment.end;
           return mine ? Colors.white : AppColors.textPrimary;
@@ -44,6 +44,23 @@ StreamTheme tindogStreamTheme() {
         linkColor: StreamMessageLayoutProperty.resolveWith((p) {
           final mine = p.alignment == StreamMessageAlignment.end;
           return mine ? Colors.white : AppColors.accent;
+        }),
+      ),
+      metadata: StreamMessageMetadataStyle(
+        timestampColor: StreamMessageLayoutProperty.resolveWith((p) {
+          final mine = p.alignment == StreamMessageAlignment.end;
+          // Verde oscuro sobre burbuja salvia (blanco casi no se ve).
+          return mine ? AppColors.primaryDark : AppColors.textSecondary;
+        }),
+        editedColor: StreamMessageLayoutProperty.resolveWith((p) {
+          final mine = p.alignment == StreamMessageAlignment.end;
+          return mine
+              ? AppColors.primaryDark.withValues(alpha: 0.85)
+              : AppColors.textSecondary;
+        }),
+        statusColor: StreamMessageLayoutProperty.resolveWith((p) {
+          final mine = p.alignment == StreamMessageAlignment.end;
+          return mine ? AppColors.primaryDark : AppColors.accent;
         }),
       ),
     ),
@@ -91,9 +108,25 @@ Widget wrapWithTindogStreamTheme({
         child: StreamChat(
           client: client,
           themeData: tindogStreamChatTheme(),
+          // Solo reacción ❤️ (love). Unique: un corazón por usuario.
+          configData: StreamChatConfigurationData(
+            reactionIconResolver: const _HeartOnlyReactionResolver(),
+            enforceUniqueReactions: true,
+          ),
           child: child,
         ),
       );
     },
   );
+}
+
+/// Una sola reacción rápida: ❤️
+class _HeartOnlyReactionResolver extends DefaultReactionIconResolver {
+  const _HeartOnlyReactionResolver();
+
+  @override
+  Set<String> get defaultReactions => const {'love'};
+
+  @override
+  Set<String> get supportedReactions => const {'love'};
 }

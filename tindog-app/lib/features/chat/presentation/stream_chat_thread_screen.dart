@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
+import '../../../core/feedback/app_feedback.dart';
 import '../../../core/network/session_handler.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/tindog_loader.dart';
@@ -15,6 +16,11 @@ import 'stream_chat_providers.dart';
 import 'widgets/chat_presence_avatar.dart';
 import 'widgets/stream_chat_icebreakers.dart';
 import 'widgets/tindog_channel_status.dart';
+import 'widgets/tindog_chat_attachments.dart';
+import 'widgets/tindog_composer_emoji.dart';
+import 'widgets/tindog_message_actions.dart';
+import 'widgets/tindog_message_edit.dart';
+import 'widgets/tindog_message_footer.dart';
 import 'widgets/tindog_message_leading.dart';
 import 'widgets/tindog_message_sender.dart';
 
@@ -40,6 +46,7 @@ class _StreamChatThreadScreenState
   bool _loading = true;
   StreamChatUserDto? _ensureOther;
   Map<String, StreamChatUserDto> _membersById = const {};
+  final _composerController = StreamMessageComposerController();
 
   String get _petName =>
       widget.thread?.otherPet.name ?? _ensureOther?.name ?? 'Chat';
@@ -80,6 +87,12 @@ class _StreamChatThreadScreenState
     WidgetsBinding.instance.addPostFrameCallback((_) => _openChannel());
   }
 
+  @override
+  void dispose() {
+    _composerController.dispose();
+    super.dispose();
+  }
+
   Future<void> _openChannel() async {
     setState(() {
       _loading = true;
@@ -100,7 +113,12 @@ class _StreamChatThreadScreenState
         ensured.channelType,
         id: ensured.channelId,
       );
-      await channel.watch();
+      await channel.watch(presence: true);
+      try {
+        await channel.markRead();
+      } catch (_) {
+        // Best-effort: marca como leído al abrir el chat.
+      }
 
       final membersById = {
         for (final m in ensured.members) m.id: m,
@@ -142,13 +160,14 @@ class _StreamChatThreadScreenState
     final senderId = message.user?.id;
     final live = senderId != null ? client.state.users[senderId] : null;
 
-    return resolveIncomingSender(
+    final withSender = resolveIncomingSender(
       message: message,
       currentUser: client.state.currentUser,
       otherPet: _otherPet,
       liveSender: live,
       membersById: _membersById,
     );
+    return withVisibleImageAttachments(withSender);
   }
 
   Future<void> _openSafety() async {
@@ -232,6 +251,12 @@ class _StreamChatThreadScreenState
       child: StreamComponentFactory(
         builders: StreamComponentBuilders(
           extensions: streamChatComponentBuilders(
+            messageComposerLeading: (context, props) {
+              return TindogComposerLeading(props: props);
+            },
+            messageFooter: (context, props) {
+              return TindogMessageFooter(props: props);
+            },
             messageLeading: (context, props) {
               final me = StreamChat.of(context).currentUser?.id;
               final senderId = props.message.user?.id;
@@ -296,10 +321,75 @@ class _StreamChatThreadScreenState
             children: [
               Expanded(
                 child: StreamMessageListView(
+                  config: const StreamMessageListViewConfiguration(
+                    swipeToReply: true,
+                  ),
+                  onReplyTap: (message) {
+                    _composerController.quotedMessage = message;
+                  },
+                  onEditMessageTap: (message) {
+                    if (!canEditChatMessage(
+                      message,
+                      currentUserId:
+                          StreamChat.of(context).currentUser?.id,
+                    )) {
+                      showTindogInfoSnackBar(
+                        context,
+                        'Solo podés editar durante '
+                        '${kChatEditWindow.inMinutes} minutos.',
+                      );
+                      return;
+                    }
+                    _composerController.editMessage(message);
+                  },
                   messageBuilder: (context, message, props) {
                     final display = _displayMessage(context, message);
+                    final me = StreamChat.of(context).currentUser?.id;
                     return DefaultStreamMessageItem(
-                      props: props.copyWith(message: display),
+                      props: props.copyWith(
+                        message: display,
+                        swipeToReply: true,
+                        onReplyTap: (msg) {
+                          _composerController.quotedMessage = msg;
+                        },
+                        onEditMessageTap: (msg) {
+                          if (!canEditChatMessage(
+                            msg,
+                            currentUserId: me,
+                          )) {
+                            showTindogInfoSnackBar(
+                              context,
+                              'Solo podés editar durante '
+                              '${kChatEditWindow.inMinutes} minutos.',
+                            );
+                            return;
+                          }
+                          _composerController.editMessage(msg);
+                        },
+                        onMessageActions: (ctx, msg) {
+                          showTindogMessageActions(
+                            context: ctx,
+                            message: msg,
+                            onEdit: (m) {
+                              if (!canEditChatMessage(
+                                m,
+                                currentUserId: me,
+                              )) {
+                                showTindogInfoSnackBar(
+                                  ctx,
+                                  'Solo podés editar durante '
+                                  '${kChatEditWindow.inMinutes} minutos.',
+                                );
+                                return;
+                              }
+                              _composerController.editMessage(m);
+                            },
+                            onReply: (m) {
+                              _composerController.quotedMessage = m;
+                            },
+                          );
+                        },
+                      ),
                     );
                   },
                   builders: StreamMessageListViewBuilders(
@@ -311,11 +401,13 @@ class _StreamChatThreadScreenState
                 ),
               ),
               StreamMessageComposer(
-                enableVoiceRecording: false,
+                messageComposerController: _composerController,
+                enableVoiceRecording: true,
+                onQuotedMessageCleared: _composerController.clearQuotedMessage,
                 allowedAttachmentPickerTypes: const [
                   AttachmentPickerType.images,
                   AttachmentPickerType.videos,
-                  AttachmentPickerType.files,
+                  AttachmentPickerType.command,
                 ],
               ),
             ],

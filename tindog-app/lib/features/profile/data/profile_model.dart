@@ -6,6 +6,8 @@ class ProfileModel {
     this.bio,
     this.avatarUrl,
     this.location,
+    this.latitude,
+    this.longitude,
   });
 
   final String id;
@@ -14,6 +16,14 @@ class ProfileModel {
   final String? bio;
   final String? avatarUrl;
   final String? location;
+  final double? latitude;
+  final double? longitude;
+
+  bool get hasGps =>
+      latitude != null &&
+      longitude != null &&
+      latitude!.isFinite &&
+      longitude!.isFinite;
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
     return ProfileModel(
@@ -23,6 +33,8 @@ class ProfileModel {
       bio: json['bio'] as String?,
       avatarUrl: json['avatarUrl'] as String?,
       location: json['location'] as String?,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
     );
   }
 
@@ -32,6 +44,8 @@ class ProfileModel {
       if (bio != null) 'bio': bio,
       if (avatarUrl != null) 'avatarUrl': avatarUrl,
       if (location != null) 'location': location,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
     };
   }
 }
