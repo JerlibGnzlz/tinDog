@@ -396,7 +396,11 @@ export class MatchingService {
       if (blocked.has(like.fromPet.userId)) continue;
       // Solo likes pendientes (aún no respondí con like).
       if (alreadyLikedBack.has(like.fromPetId)) continue;
-      const candidate = this.toCandidate(like.fromPet);
+      // Sin foto igual se muestra (placeholder en app); si no, el badge
+      // cuenta 1 y la grilla queda vacía.
+      const candidate = this.toCandidate(like.fromPet, null, {
+        requirePhoto: false,
+      });
       if (!candidate) continue;
       items.push({
         ...candidate,
@@ -408,25 +412,12 @@ export class MatchingService {
   }
 
   async likesSummary(userId: string): Promise<LikesSummaryDto> {
-    const myPet = await this.requireMyPet(userId);
-    const [sentCount, receivedRaw] = await Promise.all([
-      this.prisma.like.count({ where: { fromPetId: myPet.id } }),
-      this.prisma.like.findMany({
-        where: { toPetId: myPet.id },
-        select: { fromPetId: true },
-      }),
+    // Misma lógica que las listas (bloqueados / like back / nombre).
+    const [sent, received] = await Promise.all([
+      this.listSentLikes(userId),
+      this.listReceivedLikes(userId),
     ]);
-
-    const myOutgoing = await this.prisma.like.findMany({
-      where: { fromPetId: myPet.id },
-      select: { toPetId: true },
-    });
-    const likedBack = new Set(myOutgoing.map((l) => l.toPetId));
-    const receivedCount = receivedRaw.filter(
-      (l) => !likedBack.has(l.fromPetId),
-    ).length;
-
-    return { receivedCount, sentCount };
+    return { receivedCount: received.length, sentCount: sent.length };
   }
 
   async listMatches(userId: string): Promise<MatchThreadDto[]> {
@@ -674,7 +665,9 @@ export class MatchingService {
       };
     }>,
     distanceKm: number | null = null,
+    options: { requirePhoto?: boolean } = {},
   ): DiscoverCandidateDto | null {
+    const requirePhoto = options.requirePhoto ?? true;
     const name = pet.name?.trim();
     if (!name) return null;
 
@@ -685,7 +678,7 @@ export class MatchingService {
         ? [pet.photoUrl]
         : []),
     ];
-    if (photoUrls.length === 0) return null;
+    if (requirePhoto && photoUrls.length === 0) return null;
 
     return {
       id: pet.id,
