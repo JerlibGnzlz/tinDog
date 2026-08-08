@@ -17,8 +17,10 @@
 - Al migrar a Stream: mapear estos attachments al SDK; el upload puede seguir en Cloudinary o usar el de Stream
 
 - `GET /matches` — threads con otherPet + lastMessage
+- `DELETE /matches/:id` — unmatch (borra match + canal Stream; no bloquea)
 - `GET/POST /matches/:id/messages` — chat propio (tabla `chat_messages`)
 - App `/chats` (Matches nuevos + Mensajes) y `/chats/:matchId` (hilo)
+- App: swipe para eliminar conversación; menú ⋮ en el hilo
 - Bottom nav: Desliza · Likes · **Chats** · Perfil
 
 ## Cómo probar chat

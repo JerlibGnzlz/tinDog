@@ -33,6 +33,11 @@ export class ChatService {
     };
   }
 
+  /** Unmatch / bloqueo: elimina canal Stream (best-effort). */
+  async deleteChannelForMatch(matchId: string): Promise<void> {
+    await this.stream.deleteMatchChannel(matchId);
+  }
+
   async ensureChannel(userId: string, matchId: string) {
     this.requireStream();
     const { members, channelName, channelImage, other } =

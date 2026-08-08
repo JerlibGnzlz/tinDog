@@ -6,7 +6,7 @@ Permitir que un usuario **reporte** o **bloquee** a otro antes de publicar en ti
 ## API
 | Método | Ruta | Descripción |
 |---|---|---|
-| `POST` | `/safety/blocks` | `{ userId }` — bloquea; limpia likes/match |
+| `POST` | `/safety/blocks` | `{ userId }` — bloquea; limpia likes/match + canal Stream |
 | `DELETE` | `/safety/blocks/:userId` | Desbloquea |
 | `GET` | `/safety/blocks` | Lista de bloqueados |
 | `POST` | `/safety/reports` | `{ userId, reason, details?, matchId?, blockAlso? }` |
@@ -18,7 +18,9 @@ Permitir que un usuario **reporte** o **bloquee** a otro antes de publicar en ti
 - No aparece en Desliza / Likes / Chats (ambos sentidos)
 - Se elimina el match y likes entre sus mascotas
 - Se crea un pass para quien bloqueó
-- No se puede abrir canal Stream (`ensure`)
+- Se **borra el canal Stream** del match (`messaging:match-{id}`) — best-effort
+- No se puede volver a abrir canal Stream (`ensure` rechaza si hay bloqueo)
+- En la app: se sale del hilo y se deja de watchar el canal
 
 ## App
 - Escudo en lista **Chats** → info de seguridad

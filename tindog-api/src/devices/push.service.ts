@@ -16,10 +16,38 @@ export class PushService implements OnModuleInit {
   private readonly logger = new Logger(PushService.name);
   private ready = false;
 
+  /** Chat abierto en la app (in-memory; TTL evita estados huérfanos). */
+  private readonly activeChatByUser = new Map<
+    string,
+    { matchId: string; at: number }
+  >();
+  private static readonly ACTIVE_CHAT_TTL_MS = 3 * 60 * 1000;
+
   constructor(
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
   ) {}
+
+  /** La app avisa qué match tiene abierto para no spamear push. */
+  setActiveChat(userId: string, matchId?: string | null): { ok: true } {
+    const clean = matchId?.trim();
+    if (!clean) {
+      this.activeChatByUser.delete(userId);
+    } else {
+      this.activeChatByUser.set(userId, { matchId: clean, at: Date.now() });
+    }
+    return { ok: true };
+  }
+
+  isViewingChat(userId: string, matchId: string): boolean {
+    const row = this.activeChatByUser.get(userId);
+    if (!row || row.matchId !== matchId) return false;
+    if (Date.now() - row.at > PushService.ACTIVE_CHAT_TTL_MS) {
+      this.activeChatByUser.delete(userId);
+      return false;
+    }
+    return true;
+  }
 
   onModuleInit() {
     const projectId = this.config.get<string>('FIREBASE_PROJECT_ID')?.trim();

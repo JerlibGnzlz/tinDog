@@ -1,14 +1,24 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
+  Logger,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { ReportReason } from '@prisma/client';
+import { StreamChatService } from '../chat/stream-chat.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class SafetyService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(SafetyService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => StreamChatService))
+    private readonly streamChat: StreamChatService,
+  ) {}
 
   /** Usuarios con los que hay bloqueo (en cualquier dirección). */
   async relatedBlockedUserIds(userId: string): Promise<string[]> {
@@ -167,7 +177,7 @@ export class SafetyService {
     }));
   }
 
-  /** Quita likes, passes y match entre las mascotas de ambos usuarios. */
+  /** Quita likes, passes y match; borra el canal Stream del match. */
   private async cleanupRelationship(userA: string, userB: string) {
     const pets = await this.prisma.pet.findMany({
       where: { userId: { in: [userA, userB] } },
@@ -179,6 +189,11 @@ export class SafetyService {
 
     const [id1, id2] =
       petA.id < petB.id ? [petA.id, petB.id] : [petB.id, petA.id];
+
+    const match = await this.prisma.match.findUnique({
+      where: { petAId_petBId: { petAId: id1, petBId: id2 } },
+      select: { id: true },
+    });
 
     await this.prisma.$transaction([
       this.prisma.like.deleteMany({
@@ -209,5 +224,12 @@ export class SafetyService {
         update: {},
       }),
     ]);
+
+    if (match) {
+      await this.streamChat.deleteMatchChannel(match.id);
+      this.logger.log(
+        `Bloqueo: match ${match.id} limpiado (+ canal Stream)`,
+      );
+    }
   }
 }

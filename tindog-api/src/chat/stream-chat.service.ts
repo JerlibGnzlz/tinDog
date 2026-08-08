@@ -134,6 +134,26 @@ export class StreamChatService implements OnModuleInit {
     return { channelType: 'messaging', channelId };
   }
 
+  /**
+   * Borra el canal del match (bloqueo / unmatch).
+   * Best-effort: si Stream no está configurado o el canal no existe, no falla.
+   */
+  async deleteMatchChannel(matchId: string): Promise<void> {
+    if (!this.client) return;
+    const channelId = this.channelIdForMatch(matchId);
+    try {
+      const channel = this.client.channel('messaging', channelId);
+      await channel.delete();
+      this.logger.log(`Canal Stream eliminado: ${channelId}`);
+    } catch (err: unknown) {
+      this.logger.warn(
+        `No se pudo eliminar canal ${channelId}: ${
+          err instanceof Error ? err.message : err
+        }`,
+      );
+    }
+  }
+
   async queryMatchChannels(
     userId: string,
     matchIds: string[],

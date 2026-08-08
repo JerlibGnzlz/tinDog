@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -64,6 +65,14 @@ export class MatchingController {
   @Get('matches')
   listMatches(@CurrentUser() user: AuthUser) {
     return this.matchingService.listMatches(user.id);
+  }
+
+  @Delete('matches/:matchId')
+  unmatch(
+    @CurrentUser() user: AuthUser,
+    @Param('matchId', ParseUUIDPipe) matchId: string,
+  ) {
+    return this.matchingService.unmatch(user.id, matchId);
   }
 
   @Get('matches/:matchId/messages')

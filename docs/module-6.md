@@ -37,6 +37,7 @@ STREAM_API_SECRET=
    - Body: texto / preview de adjunto
    - Data: `type=message`, `matchId=…`
 3. Tap en la app → deep link `/chats/:matchId`.
+4. Si el destinatario tiene ese chat abierto, la app avisa con `PUT /devices/active-chat` y Nest **omite** el push.
 
 ### Configurar en Stream Dashboard (local)
 

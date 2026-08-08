@@ -422,6 +422,32 @@ export class MatchingService {
     return { receivedCount: received.length, sentCount: sent.length };
   }
 
+  /**
+   * Elimina el match (unmatch): likes cruzados + fila match + canal Stream.
+   * No bloquea: pueden volver a verse en Desliza.
+   */
+  async unmatch(userId: string, matchId: string) {
+    const myPet = await this.requireMyPet(userId);
+    const match = await this.requireMatchMember(matchId, myPet.id);
+    const otherPetId =
+      match.petAId === myPet.id ? match.petBId : match.petAId;
+
+    await this.prisma.$transaction([
+      this.prisma.like.deleteMany({
+        where: {
+          OR: [
+            { fromPetId: myPet.id, toPetId: otherPetId },
+            { fromPetId: otherPetId, toPetId: myPet.id },
+          ],
+        },
+      }),
+      this.prisma.match.delete({ where: { id: matchId } }),
+    ]);
+
+    await this.chatService.deleteChannelForMatch(matchId);
+    return { deleted: true, matchId };
+  }
+
   async listMatches(userId: string): Promise<MatchThreadDto[]> {
     const myPet = await this.requireMyPet(userId);
     const blocked = new Set(
