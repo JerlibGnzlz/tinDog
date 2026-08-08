@@ -48,6 +48,7 @@ dependencies:
   stream_chat_flutter: ^10.2.0
   collection: ^1.19.1
   geolocator: ^14.0.2
+  stream_chat_localizations: ^10.2.0
 
 dev_dependencies:
   flutter_test:
