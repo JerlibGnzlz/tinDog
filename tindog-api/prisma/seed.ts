@@ -14,7 +14,43 @@ if (nodeEnv === 'production') {
 const SEED_PASSWORD = 'password123';
 const SEED_DOMAIN = '@tindog.test';
 
-const seedUsers = [
+/** Coords aproximadas CABA / AMBA para probar modo Cerca. */
+const BA = {
+  obelisco: { lat: -34.6037, lng: -58.3816, label: 'Obelisco, Buenos Aires' },
+  palermo: { lat: -34.5735, lng: -58.4233, label: 'Palermo, Buenos Aires' },
+  villaUrquiza: {
+    lat: -34.5736,
+    lng: -58.487,
+    label: 'Villa Urquiza, Buenos Aires',
+  },
+  recoleta: { lat: -34.5875, lng: -58.3974, label: 'Recoleta, Buenos Aires' },
+  caballito: { lat: -34.6197, lng: -58.441, label: 'Caballito, Buenos Aires' },
+  belgrano: { lat: -34.5627, lng: -58.4584, label: 'Belgrano, Buenos Aires' },
+  sanIsidro: { lat: -34.4739, lng: -58.5116, label: 'San Isidro, Buenos Aires' },
+} as const;
+
+type SeedUser = {
+  slug: string;
+  email: string;
+  profile: {
+    name: string;
+    bio: string;
+    location: string;
+    latitude?: number;
+    longitude?: number;
+    avatarSource: string;
+  };
+  pet: {
+    name: string;
+    age: number;
+    breed: string;
+    color: string;
+    favoriteToy: string;
+    photoSource: string;
+  };
+};
+
+const seedUsers: SeedUser[] = [
   {
     slug: 'ana',
     email: `ana${SEED_DOMAIN}`,
@@ -22,6 +58,8 @@ const seedUsers = [
       name: 'Ana García',
       bio: 'Dueña de Luna, una golden muy sociable. Buscamos playdates en el parque.',
       location: 'Madrid, España',
+      latitude: 40.4168,
+      longitude: -3.7038,
       avatarSource: 'https://randomuser.me/api/portraits/women/65.jpg',
     },
     pet: {
@@ -38,8 +76,10 @@ const seedUsers = [
     email: `lucas${SEED_DOMAIN}`,
     profile: {
       name: 'Lucas Martínez',
-      bio: 'Rocky es un bulldog tranquilo. Nos gusta pasear por la ribera.',
-      location: 'Buenos Aires, Argentina',
+      bio: 'Rocky es un bulldog tranquilo. Nos gusta pasear por Palermo.',
+      location: BA.palermo.label,
+      latitude: BA.palermo.lat,
+      longitude: BA.palermo.lng,
       avatarSource: 'https://randomuser.me/api/portraits/men/32.jpg',
     },
     pet: {
@@ -56,15 +96,17 @@ const seedUsers = [
     email: `sofia${SEED_DOMAIN}`,
     profile: {
       name: 'Sofía López',
-      bio: 'Tengo dos gatos y un perro. Mimi adora conocer otros peludos.',
-      location: 'Ciudad de México, México',
+      bio: 'Mimi adora conocer otros peludos en Villa Urquiza.',
+      location: BA.villaUrquiza.label,
+      latitude: BA.villaUrquiza.lat,
+      longitude: BA.villaUrquiza.lng,
       avatarSource: 'https://randomuser.me/api/portraits/women/44.jpg',
     },
     pet: {
       name: 'Mimi',
       age: 2,
-      breed: 'Siamés',
-      color: 'Crema',
+      breed: 'Mestizo',
+      color: 'Marrón',
       favoriteToy: 'Ratón de juguete',
       photoSource: 'https://placedog.net/800/1000?id=3',
     },
@@ -74,8 +116,10 @@ const seedUsers = [
     email: `diego${SEED_DOMAIN}`,
     profile: {
       name: 'Diego Ruiz',
-      bio: 'Entrenador canino aficionado. Thor necesita amigos para correr.',
-      location: 'Barcelona, España',
+      bio: 'Thor necesita amigos para correr en Recoleta.',
+      location: BA.recoleta.label,
+      latitude: BA.recoleta.lat,
+      longitude: BA.recoleta.lng,
       avatarSource: 'https://randomuser.me/api/portraits/men/75.jpg',
     },
     pet: {
@@ -92,8 +136,10 @@ const seedUsers = [
     email: `valentina${SEED_DOMAIN}`,
     profile: {
       name: 'Valentina Pérez',
-      bio: 'Coco es un corgi curioso. Buscamos otros dueños responsables.',
-      location: 'Santiago, Chile',
+      bio: 'Coco es un corgi curioso del barrio Caballito.',
+      location: BA.caballito.label,
+      latitude: BA.caballito.lat,
+      longitude: BA.caballito.lng,
       avatarSource: 'https://randomuser.me/api/portraits/women/28.jpg',
     },
     pet: {
@@ -105,7 +151,67 @@ const seedUsers = [
       photoSource: 'https://placedog.net/800/1000?id=5',
     },
   },
-] as const;
+  {
+    slug: 'martin',
+    email: `martin${SEED_DOMAIN}`,
+    profile: {
+      name: 'Martín Gómez',
+      bio: 'Firulais pasea todas las tardes por Belgrano.',
+      location: BA.belgrano.label,
+      latitude: BA.belgrano.lat,
+      longitude: BA.belgrano.lng,
+      avatarSource: 'https://randomuser.me/api/portraits/men/41.jpg',
+    },
+    pet: {
+      name: 'Firulais',
+      age: 6,
+      breed: 'Labrador',
+      color: 'Negro',
+      favoriteToy: 'Pelota',
+      photoSource: 'https://placedog.net/800/1000?id=6',
+    },
+  },
+  {
+    slug: 'camila',
+    email: `camila${SEED_DOMAIN}`,
+    profile: {
+      name: 'Camila Torres',
+      bio: 'Nala busca amigos cerca del Obelisco.',
+      location: BA.obelisco.label,
+      latitude: BA.obelisco.lat,
+      longitude: BA.obelisco.lng,
+      avatarSource: 'https://randomuser.me/api/portraits/women/12.jpg',
+    },
+    pet: {
+      name: 'Nala',
+      age: 2,
+      breed: 'Beagle',
+      color: 'Tricolor',
+      favoriteToy: 'Cuerda',
+      photoSource: 'https://placedog.net/800/1000?id=7',
+    },
+  },
+  {
+    slug: 'tomas',
+    email: `tomas${SEED_DOMAIN}`,
+    profile: {
+      name: 'Tomás Vidal',
+      bio: 'Kiwi vive en San Isidro; ideal para probar distancias ~15 km.',
+      location: BA.sanIsidro.label,
+      latitude: BA.sanIsidro.lat,
+      longitude: BA.sanIsidro.lng,
+      avatarSource: 'https://randomuser.me/api/portraits/men/22.jpg',
+    },
+    pet: {
+      name: 'Kiwi',
+      age: 3,
+      breed: 'Border Collie',
+      color: 'Negro y blanco',
+      favoriteToy: 'Frisbee',
+      photoSource: 'https://placedog.net/800/1000?id=8',
+    },
+  },
+];
 
 let cloudinaryReady = false;
 
@@ -153,9 +259,9 @@ async function uploadSeedImage(
   } catch (error) {
     const message =
       typeof error === 'object' &&
-        error !== null &&
-        'message' in error &&
-        typeof (error as { message: unknown }).message === 'string'
+      error !== null &&
+      'message' in error &&
+      typeof (error as { message: unknown }).message === 'string'
         ? (error as { message: string }).message
         : String(error);
     console.warn(`  ⚠ No se pudo subir ${publicId} a Cloudinary: ${message}`);
@@ -202,6 +308,9 @@ async function main() {
       1000,
     );
 
+    const hasGps =
+      user.profile.latitude != null && user.profile.longitude != null;
+
     const created = await prisma.user.create({
       data: {
         email: user.email,
@@ -212,6 +321,13 @@ async function main() {
             bio: user.profile.bio,
             location: user.profile.location,
             avatarUrl,
+            ...(hasGps
+              ? {
+                  latitude: user.profile.latitude,
+                  longitude: user.profile.longitude,
+                  locationUpdatedAt: new Date(),
+                }
+              : {}),
           },
         },
         pet: {
@@ -228,15 +344,21 @@ async function main() {
       include: { profile: true, pet: true },
     });
 
+    const gpsNote = hasGps
+      ? ` [${user.profile.latitude}, ${user.profile.longitude}]`
+      : '';
     console.log(
-      `✓ ${created.email} — ${created.profile?.name} / ${created.pet?.name}`,
+      `✓ ${created.email} — ${created.profile?.name} / ${created.pet?.name}${gpsNote}`,
     );
   }
 
   console.log('\nSeed completado.');
   console.log(`Contraseña de todos los usuarios: ${SEED_PASSWORD}`);
   console.log(
-    'Usuarios de prueba: ana, lucas, sofia, diego, valentina @tindog.test',
+    'Usuarios: ana (Madrid), lucas/sofia/diego/valentina/martin/camila/tomas (BA) @tindog.test',
+  );
+  console.log(
+    'Para probar Cerca: seteá GPS del emulador en -34.6037, -58.3816 (Obelisco).',
   );
 }
 

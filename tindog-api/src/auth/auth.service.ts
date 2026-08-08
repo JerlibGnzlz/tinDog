@@ -8,15 +8,19 @@ import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { EmailDomainService } from './email-domain.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly emailDomainService: EmailDomainService,
   ) {}
 
   async register(dto: RegisterDto) {
+    await this.emailDomainService.assertDeliverableDomain(dto.email);
+
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) {
       throw new ConflictException('Este email ya está registrado');

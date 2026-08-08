@@ -75,6 +75,21 @@ export class SafetyService {
     await this.prisma.userBlock.deleteMany({
       where: { blockerId, blockedId },
     });
+
+    // Quitar el pass automático del bloqueo para que puedan volver a verse
+    // en Desliza (el match anterior no se restaura).
+    const pets = await this.prisma.pet.findMany({
+      where: { userId: { in: [blockerId, blockedId] } },
+      select: { id: true, userId: true },
+    });
+    const petA = pets.find((p) => p.userId === blockerId);
+    const petB = pets.find((p) => p.userId === blockedId);
+    if (petA && petB) {
+      await this.prisma.pass.deleteMany({
+        where: { fromPetId: petA.id, toPetId: petB.id },
+      });
+    }
+
     return { blocked: false, userId: blockedId };
   }
 

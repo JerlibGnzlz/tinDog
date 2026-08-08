@@ -12,6 +12,18 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SafetyService } from '../safety/safety.service';
 import { SendMessageDto } from './dto/send-message.dto';
 
+export type DiscoverMode = 'for_you' | 'near' | 'breed' | 'play';
+
+export type DiscoverOptions = {
+  limit?: number;
+  mode?: DiscoverMode;
+  breed?: string;
+  minAge?: number;
+  maxAge?: number;
+  /** Radio máximo en km para modo near (default 50). */
+  maxKm?: number;
+};
+
 export type DiscoverCandidateDto = {
   id: string;
   name: string;
@@ -72,11 +84,16 @@ export class MatchingService {
     private readonly safetyService: SafetyService,
   ) {}
 
-  async discover(userId: string, limit = 20): Promise<DiscoverCandidateDto[]> {
+  async discover(
+    userId: string,
+    options: DiscoverOptions = {},
+  ): Promise<DiscoverCandidateDto[]> {
     const myPet = await this.requireMyPet(userId);
-    const take = Math.min(Math.max(limit, 1), 50);
+    const take = Math.min(Math.max(options.limit ?? 20, 1), 50);
+    const mode = options.mode ?? 'for_you';
+    const maxKm = Math.min(Math.max(options.maxKm ?? 50, 1), 500);
 
-    const [liked, passed, blockedUserIds] = await Promise.all([
+    const [liked, passed, blockedUserIds, myProfile] = await Promise.all([
       this.prisma.like.findMany({
         where: { fromPetId: myPet.id },
         select: { toPetId: true },
@@ -86,6 +103,14 @@ export class MatchingService {
         select: { toPetId: true },
       }),
       this.safetyService.relatedBlockedUserIds(userId),
+      this.prisma.profile.findUnique({
+        where: { userId },
+        select: {
+          location: true,
+          latitude: true,
+          longitude: true,
+        },
+      }),
     ]);
 
     const excludedIds = [
@@ -94,19 +119,62 @@ export class MatchingService {
       ...passed.map((p) => p.toPetId),
     ];
 
-    const pets = await this.prisma.pet.findMany({
-      where: {
-        id: { notIn: excludedIds },
-        ...(blockedUserIds.length > 0
-          ? { userId: { notIn: blockedUserIds } }
-          : {}),
-        name: { not: null },
-        NOT: { name: '' },
-        OR: [
-          { photoUrl: { not: null } },
-          { media: { some: { type: PetMediaType.photo } } },
-        ],
-      },
+    const ageFilter: Prisma.IntFilter = {};
+    if (options.minAge != null) ageFilter.gte = options.minAge;
+    if (options.maxAge != null) ageFilter.lte = options.maxAge;
+
+    const breedQuery =
+      (options.breed?.trim() ||
+        (mode === 'breed' ? myPet.breed?.trim() : undefined)) ||
+      undefined;
+
+    const myLat = myProfile?.latitude ?? null;
+    const myLng = myProfile?.longitude ?? null;
+    const hasGps =
+      myLat != null &&
+      myLng != null &&
+      Number.isFinite(myLat) &&
+      Number.isFinite(myLng);
+
+    // Cerca: requiere GPS propio.
+    if (mode === 'near' && !hasGps) {
+      return [];
+    }
+
+    // Razas: sin raza propia ni filtro → vacío (la app pide elegir).
+    if (mode === 'breed' && !breedQuery) {
+      return [];
+    }
+
+    const where: Prisma.PetWhereInput = {
+      id: { notIn: excludedIds },
+      ...(blockedUserIds.length > 0
+        ? { userId: { notIn: blockedUserIds } }
+        : {}),
+      name: { not: null },
+      NOT: { name: '' },
+      OR: [
+        { photoUrl: { not: null } },
+        { media: { some: { type: PetMediaType.photo } } },
+      ],
+      ...(Object.keys(ageFilter).length > 0 ? { age: ageFilter } : {}),
+      ...(breedQuery
+        ? { breed: { contains: breedQuery, mode: 'insensitive' } }
+        : {}),
+      ...(mode === 'near'
+        ? {
+            user: {
+              profile: {
+                latitude: { not: null },
+                longitude: { not: null },
+              },
+            },
+          }
+        : {}),
+    };
+
+    let pets = await this.prisma.pet.findMany({
+      where,
       include: {
         media: {
           where: { type: PetMediaType.photo },
@@ -115,17 +183,83 @@ export class MatchingService {
         },
         user: {
           select: {
-            profile: { select: { location: true, bio: true } },
+            profile: {
+              select: {
+                location: true,
+                bio: true,
+                latitude: true,
+                longitude: true,
+              },
+            },
           },
         },
       },
       orderBy: { updatedAt: 'desc' },
-      take,
+      take: mode === 'near' || mode === 'play' ? Math.min(take * 3, 80) : take,
     });
 
-    return pets
-      .map((pet) => this.toCandidate(pet))
+    type PetRow = (typeof pets)[number];
+    type Scored = { pet: PetRow; distanceKm: number | null };
+
+    let scored: Scored[] = pets.map((pet) => {
+      const lat = pet.user.profile?.latitude ?? null;
+      const lng = pet.user.profile?.longitude ?? null;
+      let distanceKm: number | null = null;
+      if (
+        hasGps &&
+        lat != null &&
+        lng != null &&
+        Number.isFinite(lat) &&
+        Number.isFinite(lng)
+      ) {
+        distanceKm = this.haversineKm(myLat!, myLng!, lat, lng);
+      }
+      return { pet, distanceKm };
+    });
+
+    if (mode === 'near') {
+      scored = scored
+        .filter(
+          (s) => s.distanceKm != null && s.distanceKm <= maxKm,
+        )
+        .sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0));
+    } else if (mode === 'play') {
+      scored = this.shuffle(scored);
+    }
+
+    scored = scored.slice(0, take);
+
+    return scored
+      .map(({ pet, distanceKm }) => this.toCandidate(pet, distanceKm))
       .filter((c): c is DiscoverCandidateDto => c !== null);
+  }
+
+  /** Distancia en km entre dos puntos WGS84. */
+  private haversineKm(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ): number {
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const r = 6371;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) ** 2;
+    return r * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  private shuffle<T>(items: T[]): T[] {
+    const copy = [...items];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
   }
 
   async like(userId: string, toPetId: string) {
@@ -471,7 +605,14 @@ export class MatchingService {
     },
     user: {
       select: {
-        profile: { select: { location: true, bio: true } },
+        profile: {
+          select: {
+            location: true,
+            bio: true,
+            latitude: true,
+            longitude: true,
+          },
+        },
       },
     },
   };
@@ -519,10 +660,20 @@ export class MatchingService {
       include: {
         media: { select: { url: true } };
         user: {
-          select: { profile: { select: { location: true; bio: true } } };
+          select: {
+            profile: {
+              select: {
+                location: true;
+                bio: true;
+                latitude: true;
+                longitude: true;
+              };
+            };
+          };
         };
       };
     }>,
+    distanceKm: number | null = null,
   ): DiscoverCandidateDto | null {
     const name = pet.name?.trim();
     if (!name) return null;
@@ -543,8 +694,8 @@ export class MatchingService {
       breed: pet.breed,
       bio: pet.user.profile?.bio?.trim() || null,
       location: pet.user.profile?.location ?? null,
-      // TODO: geo real — por ahora null (la app oculta la línea si falta)
-      distanceKm: null,
+      distanceKm:
+        distanceKm != null ? Math.round(distanceKm * 10) / 10 : null,
       isActive: true,
       photoUrls,
       ownerUserId: pet.userId,

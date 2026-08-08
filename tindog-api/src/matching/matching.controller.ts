@@ -8,23 +8,13 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { AuthUser } from '../common/types/auth-user.type';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { DiscoverQueryDto } from './dto/discover-query.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { TargetPetDto } from './dto/target-pet.dto';
 import { MatchingService } from './matching.service';
-
-class DiscoverQueryDto {
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(50)
-  limit?: number;
-}
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -36,7 +26,14 @@ export class MatchingController {
     @CurrentUser() user: AuthUser,
     @Query() query: DiscoverQueryDto,
   ) {
-    return this.matchingService.discover(user.id, query.limit ?? 20);
+    return this.matchingService.discover(user.id, {
+      limit: query.limit ?? 20,
+      mode: query.mode ?? 'for_you',
+      breed: query.breed,
+      minAge: query.minAge,
+      maxAge: query.maxAge,
+      maxKm: query.maxKm,
+    });
   }
 
   @Post('likes')

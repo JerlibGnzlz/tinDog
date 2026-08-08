@@ -23,6 +23,7 @@ Permitir que un usuario **reporte** o **bloquee** a otro antes de publicar en ti
 ## App
 - Escudo en lista **Chats** → info de seguridad
 - Escudo en **hilo de chat** → Reportar / Bloquear
+- Perfil → Ajustes → **Bloqueados** → listar / desbloquear
 
 ## DB
 Tablas `user_blocks`, `user_reports` (migración `20260807223000_user_blocks_reports`).
@@ -30,4 +31,3 @@ Tablas `user_blocks`, `user_reports` (migración `20260807223000_user_blocks_rep
 ## NO entra aún
 - Panel admin para revisar reportes
 - Moderación automática / ban global
-- Lista UI de “usuarios bloqueados” en Perfil (API lista sí existe)

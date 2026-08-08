@@ -3,6 +3,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -12,9 +13,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-
-const GENERIC_FORGOT_MESSAGE =
-  'Si el email está registrado, recibirás un código para restablecer tu contraseña.';
+import { EmailDomainService } from './email-domain.service';
 
 @Injectable()
 export class PasswordResetService {
@@ -23,12 +22,17 @@ export class PasswordResetService {
     private readonly usersService: UsersService,
     private readonly mailService: MailService,
     private readonly config: ConfigService,
+    private readonly emailDomainService: EmailDomainService,
   ) {}
 
   async forgotPassword(dto: ForgotPasswordDto) {
+    await this.emailDomainService.assertDeliverableDomain(dto.email);
+
     const user = await this.usersService.findByEmail(dto.email);
     if (!user) {
-      return { message: GENERIC_FORGOT_MESSAGE };
+      throw new NotFoundException(
+        'No hay una cuenta registrada con ese email.',
+      );
     }
 
     await this.enforceHourlyRequestLimit(user.id);
@@ -53,7 +57,11 @@ export class PasswordResetService {
 
     await this.mailService.sendPasswordResetCode(user.email, code);
 
-    return { message: GENERIC_FORGOT_MESSAGE };
+    return {
+      message:
+        'Te enviamos un código de 6 dígitos a tu email. Vence en 15 minutos.',
+      sent: true,
+    };
   }
 
   async resetPassword(dto: ResetPasswordDto) {

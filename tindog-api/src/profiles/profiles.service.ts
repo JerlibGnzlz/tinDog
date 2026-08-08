@@ -20,9 +20,44 @@ export class ProfilesService {
   async updateByUserId(userId: string, dto: UpdateProfileDto) {
     await this.getByUserId(userId);
 
+    const {
+      clearCoordinates,
+      latitude,
+      longitude,
+      name,
+      bio,
+      avatarUrl,
+      location,
+    } = dto;
+
+    const data: {
+      name?: string;
+      bio?: string;
+      avatarUrl?: string;
+      location?: string;
+      latitude?: number | null;
+      longitude?: number | null;
+      locationUpdatedAt?: Date | null;
+    } = {};
+
+    if (name !== undefined) data.name = name;
+    if (bio !== undefined) data.bio = bio;
+    if (avatarUrl !== undefined) data.avatarUrl = avatarUrl;
+    if (location !== undefined) data.location = location;
+
+    if (clearCoordinates === true) {
+      data.latitude = null;
+      data.longitude = null;
+      data.locationUpdatedAt = null;
+    } else if (latitude !== undefined && longitude !== undefined) {
+      data.latitude = latitude;
+      data.longitude = longitude;
+      data.locationUpdatedAt = new Date();
+    }
+
     return this.prisma.profile.update({
       where: { userId },
-      data: dto,
+      data,
     });
   }
 
