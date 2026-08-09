@@ -2,11 +2,12 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'chat_time_format.dart';
 import 'tindog_typing_label.dart';
 
 /// Subtítulo del header: no repite el nombre del perro.
 /// - Alguien escribe → «está escribiendo…» animado
-/// - Si no → «En línea» / «Desconectado» (presencia Stream)
+/// - Si no → «En línea» / «Últ. vez …» (presencia Stream)
 class TindogChannelStatus extends StatelessWidget {
   const TindogChannelStatus({
     super.key,
@@ -63,7 +64,10 @@ class TindogChannelStatus extends StatelessWidget {
 
             final usersState = client?.state;
             if (usersState == null) {
-              return _statusLabel(other?.user?.online ?? false);
+              return _statusLabel(
+                online: other?.user?.online ?? false,
+                lastActive: other?.user?.lastActive,
+              );
             }
 
             // Solo presencia Stream (no watchers: pueden quedar “fantasma”).
@@ -71,8 +75,11 @@ class TindogChannelStatus extends StatelessWidget {
               stream: usersState.usersStream,
               initialData: usersState.users,
               builder: (context, users) {
-                final online = users[otherUserId]?.online ?? false;
-                return _statusLabel(online);
+                final user = users[otherUserId];
+                return _statusLabel(
+                  online: user?.online ?? false,
+                  lastActive: user?.lastActive,
+                );
               },
             );
           },
@@ -81,9 +88,9 @@ class TindogChannelStatus extends StatelessWidget {
     );
   }
 
-  Widget _statusLabel(bool online) {
+  Widget _statusLabel({required bool online, DateTime? lastActive}) {
     return Text(
-      online ? 'En línea' : 'Desconectado',
+      formatPresenceLabel(online: online, lastActive: lastActive),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: textStyle.copyWith(

@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'chat_time_format.dart';
 
 /// Avatar con punto de presencia Stream (verde = en línea).
 class ChatPresenceAvatar extends StatelessWidget {
@@ -78,7 +79,7 @@ class ChatPresenceAvatar extends StatelessWidget {
   }
 }
 
-/// Texto corto "En línea" / "Desconectado" según Stream.
+/// Texto corto de presencia Stream: En línea / Últ. vez … / Desconectado.
 class ChatPresenceLabel extends StatelessWidget {
   const ChatPresenceLabel({super.key, this.streamUserId});
 
@@ -107,9 +108,16 @@ class ChatPresenceLabel extends StatelessWidget {
       stream: state.usersStream,
       initialData: state.users,
       builder: (context, users) {
-        final online = users[userId]?.online ?? false;
+        final user = users[userId];
+        final online = user?.online ?? false;
+        final label = formatPresenceLabel(
+          online: online,
+          lastActive: user?.lastActive,
+        );
         return Text(
-          online ? 'En línea' : 'Desconectado',
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: online ? AppColors.primaryDark : AppColors.textSecondary,
             fontSize: 12,

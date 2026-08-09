@@ -45,4 +45,18 @@ class DevicesRepository {
       // Best-effort: si falla, como máximo llega un push de más.
     }
   }
+
+  Future<void> setChatMuted({
+    required String matchId,
+    required bool muted,
+  }) async {
+    try {
+      await _dio.put<Map<String, dynamic>>(
+        '/devices/muted-chat',
+        data: {'matchId': matchId, 'muted': muted},
+      );
+    } catch (_) {
+      // Best-effort: Stream mute igual aplica en el cliente.
+    }
+  }
 }

@@ -49,6 +49,39 @@ export class PushService implements OnModuleInit {
     return true;
   }
 
+  async setChatMuted(
+    userId: string,
+    matchId: string,
+    muted: boolean,
+  ): Promise<{ ok: true; muted: boolean }> {
+    const id = matchId.trim();
+    if (muted) {
+      await this.prisma.mutedChat.upsert({
+        where: { userId_matchId: { userId, matchId: id } },
+        create: { userId, matchId: id },
+        update: {},
+      });
+    } else {
+      await this.prisma.mutedChat.deleteMany({
+        where: { userId, matchId: id },
+      });
+    }
+    return { ok: true, muted };
+  }
+
+  async isChatMuted(userId: string, matchId: string): Promise<boolean> {
+    const row = await this.prisma.mutedChat.findUnique({
+      where: { userId_matchId: { userId, matchId } },
+      select: { id: true },
+    });
+    return row != null;
+  }
+
+  /** Limpia mutes de un match (unmatch / bloqueo). */
+  async clearMutesForMatch(matchId: string): Promise<void> {
+    await this.prisma.mutedChat.deleteMany({ where: { matchId } });
+  }
+
   onModuleInit() {
     const projectId = this.config.get<string>('FIREBASE_PROJECT_ID')?.trim();
     const clientEmail = this.config

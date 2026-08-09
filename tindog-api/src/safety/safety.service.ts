@@ -215,6 +215,13 @@ export class SafetyService {
       this.prisma.match.deleteMany({
         where: { petAId: id1, petBId: id2 },
       }),
+      ...(match
+        ? [
+            this.prisma.mutedChat.deleteMany({
+              where: { matchId: match.id },
+            }),
+          ]
+        : []),
       // Evitar que vuelva a aparecer en discover para quien bloqueó.
       this.prisma.pass.upsert({
         where: {

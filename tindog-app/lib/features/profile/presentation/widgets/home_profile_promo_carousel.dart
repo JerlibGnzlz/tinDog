@@ -73,7 +73,8 @@ class _HomeProfilePromoCarouselState extends State<HomeProfilePromoCarousel> {
           child: Column(
             children: [
               SizedBox(
-                height: 118,
+                // Título + subtítulo a 2 líneas (evita overflow en pantallas densas).
+                height: 136,
                 child: PageView.builder(
                   controller: _controller,
                   itemCount: widget.slides.length,
@@ -87,24 +88,29 @@ class _HomeProfilePromoCarouselState extends State<HomeProfilePromoCarousel> {
                           color: AppColors.primaryDark,
                           size: 28,
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 8),
                         Text(
                           slide.title,
                           textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: AppColors.textPrimary,
                             fontSize: 20,
                             fontWeight: FontWeight.w800,
+                            height: 1.2,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Text(
                           slide.subtitle,
                           textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 14,
-                            height: 1.35,
+                            height: 1.3,
                           ),
                         ),
                       ],

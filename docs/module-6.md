@@ -3,7 +3,7 @@
 ## Objetivo
 Avisar al usuario cuando:
 1. Hay un **match** nuevo
-2. Llega un **mensaje** de chat (app en background / cerrada)
+2. Llega un **mensaje** de chat (background / cerrada **y** foreground con banner local)
 
 ## Entra
 | Área | Entregable |
@@ -38,6 +38,8 @@ STREAM_API_SECRET=
    - Data: `type=message`, `matchId=…`
 3. Tap en la app → deep link `/chats/:matchId`.
 4. Si el destinatario tiene ese chat abierto, la app avisa con `PUT /devices/active-chat` y Nest **omite** el push.
+5. Si silenció el chat (`PUT /devices/muted-chat` + `channel.mute`), Nest también omite el push. Los mutes viven en tabla `muted_chats` (persisten reinicios).
+6. App en foreground: `FirebaseMessaging.onMessage` + `flutter_local_notifications` (canales `tindog_chat` / `tindog_matches`). Si el hilo de ese match está abierto, no se muestra banner.
 
 ### Configurar en Stream Dashboard (local)
 

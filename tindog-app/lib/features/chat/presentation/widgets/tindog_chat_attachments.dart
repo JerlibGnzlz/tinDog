@@ -1,20 +1,31 @@
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
-/// Convierte attachments de tipo `file` que son imágenes a `image`
-/// para que Stream los renderice como foto (no como documento).
-Message withVisibleImageAttachments(Message message) {
+/// Normaliza attachments para que Stream muestre foto/video (y abra galería).
+Message withVisibleMediaAttachments(Message message) {
   if (message.attachments.isEmpty) return message;
 
   var changed = false;
   final next = message.attachments.map((a) {
-    final fixed = asVisibleImageAttachment(a);
-    if (!identical(fixed, a)) changed = true;
-    return fixed;
+    final asImage = asVisibleImageAttachment(a);
+    if (!identical(asImage, a)) {
+      changed = true;
+      return asImage;
+    }
+    final asVideo = asVisibleVideoAttachment(a);
+    if (!identical(asVideo, a)) {
+      changed = true;
+      return asVideo;
+    }
+    return a;
   }).toList(growable: false);
 
   if (!changed) return message;
   return message.copyWith(attachments: next);
 }
+
+/// Alias histórico usado en el hilo.
+Message withVisibleImageAttachments(Message message) =>
+    withVisibleMediaAttachments(message);
 
 Attachment asVisibleImageAttachment(Attachment attachment) {
   if (attachment.type == AttachmentType.image) {
@@ -32,6 +43,20 @@ Attachment asVisibleImageAttachment(Attachment attachment) {
   return attachment.copyWith(
     type: AttachmentType.image,
     imageUrl: url ?? attachment.imageUrl,
+  );
+}
+
+Attachment asVisibleVideoAttachment(Attachment attachment) {
+  if (attachment.type == AttachmentType.video) {
+    return attachment;
+  }
+  if (!_looksLikeVideo(attachment)) return attachment;
+
+  final url = _firstUrl(attachment);
+  return attachment.copyWith(
+    type: AttachmentType.video,
+    assetUrl: url ?? attachment.assetUrl,
+    thumbUrl: attachment.thumbUrl ?? attachment.imageUrl,
   );
 }
 
@@ -56,4 +81,17 @@ bool _looksLikeImage(Attachment a) {
       name.endsWith('.heic') ||
       name.endsWith('.heif') ||
       name.endsWith('.bmp');
+}
+
+bool _looksLikeVideo(Attachment a) {
+  final mime = a.mimeType?.toLowerCase() ?? '';
+  if (mime.startsWith('video/')) return true;
+
+  final name = (a.title ?? a.file?.name ?? a.assetUrl ?? '').toLowerCase();
+  return name.endsWith('.mp4') ||
+      name.endsWith('.mov') ||
+      name.endsWith('.m4v') ||
+      name.endsWith('.webm') ||
+      name.endsWith('.mkv') ||
+      name.endsWith('.3gp');
 }

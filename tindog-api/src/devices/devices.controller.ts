@@ -4,6 +4,7 @@ import type { AuthUser } from '../common/types/auth-user.type';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RegisterDeviceDto } from './dto/register-device.dto';
 import { SetActiveChatDto } from './dto/set-active-chat.dto';
+import { SetMutedChatDto } from './dto/set-muted-chat.dto';
 import { PushService } from './push.service';
 
 @Controller('devices')
@@ -33,5 +34,11 @@ export class DevicesController {
   @Put('active-chat')
   setActiveChat(@CurrentUser() user: AuthUser, @Body() dto: SetActiveChatDto) {
     return this.pushService.setActiveChat(user.id, dto.matchId ?? null);
+  }
+
+  /** Silenciar push FCM de un match (además de channel.mute en Stream). */
+  @Put('muted-chat')
+  setMutedChat(@CurrentUser() user: AuthUser, @Body() dto: SetMutedChatDto) {
+    return this.pushService.setChatMuted(user.id, dto.matchId, dto.muted);
   }
 }

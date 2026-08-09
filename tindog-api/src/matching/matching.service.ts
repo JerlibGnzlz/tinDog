@@ -431,6 +431,7 @@ export class MatchingService {
     ]);
 
     await this.chatService.deleteChannelForMatch(matchId);
+    await this.pushService.clearMutesForMatch(matchId);
     return { deleted: true, matchId };
   }
 

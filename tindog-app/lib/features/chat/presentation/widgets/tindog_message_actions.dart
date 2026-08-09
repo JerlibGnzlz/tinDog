@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
+import '../../../../core/feedback/app_feedback.dart';
 import 'tindog_message_edit.dart';
 
 /// Menú largo-press con reacción ❤️ + acciones útiles (sin Flag/Mute/Block).
@@ -28,6 +29,8 @@ Future<void> showTindogMessageActions({
           action.props.value is! UnmuteUser &&
           action.props.value is! BlockUser &&
           action.props.value is! UnblockUser &&
+          action.props.value is! PinMessage &&
+          action.props.value is! UnpinMessage &&
           (action.props.value is! EditMessage ||
               canEditChatMessage(
                 action.props.value!.message,
@@ -77,15 +80,14 @@ Future<void> showTindogMessageActions({
       final text = selected.message.text?.trim();
       if (text != null && text.isNotEmpty) {
         await Clipboard.setData(ClipboardData(text: text));
+        if (context.mounted) {
+          showTindogInfoSnackBar(context, 'Mensaje copiado');
+        }
       }
     case DeleteMessage():
     case HardDeleteMessage():
       // Hard delete: desaparece del chat (sin "Message deleted").
       await channel.deleteMessage(selected.message, hard: true);
-    case PinMessage():
-      await channel.pinMessage(selected.message);
-    case UnpinMessage():
-      await channel.unpinMessage(selected.message);
     case MarkUnread():
       await channel.markUnread(selected.message.id);
     case ResendMessage():
@@ -102,6 +104,8 @@ Future<void> showTindogMessageActions({
           enforceUnique: enforceUnique,
         );
       }
+    case PinMessage():
+    case UnpinMessage():
     case ThreadReply():
     case FlagMessage():
     case MuteUser():

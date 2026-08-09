@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import '../../../core/theme/app_colors.dart';
+import 'widgets/tindog_media_gallery_preview.dart';
 
 /// Tema Stream con paleta tinDog (crema + verde salvia).
 StreamTheme tindogStreamTheme() {
@@ -112,6 +113,11 @@ Widget wrapWithTindogStreamTheme({
           configData: StreamChatConfigurationData(
             reactionIconResolver: const _HeartOnlyReactionResolver(),
             enforceUniqueReactions: true,
+          ),
+          componentBuilders: StreamComponentBuilders(
+            extensions: streamChatComponentBuilders(
+              mediaGalleryPreview: buildTindogMediaGalleryPreview,
+            ),
           ),
           child: child,
         ),

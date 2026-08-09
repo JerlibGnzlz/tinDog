@@ -82,8 +82,18 @@ npm run start:prod             # API con .env.production
 La app no usa estos archivos. Solo necesita la URL de la API:
 
 ```bash
-# Dev local
-flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:3000
+# Emulador Android
+flutter run -d emulator-5554 --dart-define-from-file=dart_defines/android_dev.json
+
+# Celular Android físico (USB + adb reverse — no depende del Wi‑Fi/firewall)
+# 1) API: cd tindog-api && npm run start:dev
+# 2) Túnel USB (cada vez que reconectás el cable):
+adb reverse tcp:3000 tcp:3000
+# 3) android_device.json → API_BASE_URL=http://127.0.0.1:3000
+flutter run -d <id_telefono> --dart-define-from-file=dart_defines/android_device.json
+
+# Alternativa por Wi‑Fi (sin cable): API_BASE_URL=http://IP_DE_LA_PC:3000
+# y abrir firewall: sudo ufw allow 3000/tcp
 
 # Prod (cuando despliegues la API)
 flutter build apk --dart-define=API_BASE_URL=https://api.tudominio.com

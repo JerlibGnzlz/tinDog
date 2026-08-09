@@ -29,6 +29,8 @@ Flutter dart_defines: solo `STREAM_API_KEY` (opcional; la key también viene en 
 - Chat HTTP / tabla `chat_messages` **eliminados** — única fuente: Stream
 - Si Stream falla: banner “Reconectar” en Chats; al abrir hilo → panel con reintento / volver
 - Lista Chats: preview en vivo (foto/video/voz); icebreakers “Rompe el hielo”; ticks **Visto**
+- Hilo: separadores **Hoy/Ayer**, buscar mensajes, silenciar push (`channel.mute` + `PUT /devices/muted-chat`)
+- Foto/video: galería Stream a pantalla completa (zoom / player)
 
 ## NO entra aún
 - Push iOS (APNs) — ver [module-6.md](./module-6.md)

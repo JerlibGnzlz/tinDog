@@ -14,17 +14,21 @@ import '../../matching/presentation/chats_providers.dart';
 import '../../matching/presentation/likes_providers.dart';
 import '../../matching/presentation/delete_conversation.dart';
 import '../../notifications/data/devices_repository.dart';
+import '../../notifications/presentation/push_notifications.dart';
 import '../../safety/presentation/safety_sheets.dart';
 import '../data/chat_repository.dart';
 import 'stream_chat_errors.dart';
 import 'stream_chat_providers.dart';
+import 'widgets/channel_search_sheet.dart';
 import 'widgets/chat_presence_avatar.dart';
+import 'widgets/chat_time_format.dart';
 import 'widgets/match_profile_sheet.dart';
 import 'widgets/stream_chat_error_panel.dart';
 import 'widgets/stream_chat_icebreakers.dart';
 import 'widgets/tindog_channel_status.dart';
 import 'widgets/tindog_chat_attachments.dart';
 import 'widgets/tindog_composer_emoji.dart';
+import 'widgets/tindog_recording_ongoing.dart';
 import 'widgets/tindog_message_actions.dart';
 import 'widgets/tindog_message_edit.dart';
 import 'widgets/tindog_message_footer.dart';
@@ -38,6 +42,7 @@ class StreamChatThreadScreen extends ConsumerStatefulWidget {
     this.thread,
   });
 
+
   final String matchId;
   final MatchThread? thread;
 
@@ -46,8 +51,8 @@ class StreamChatThreadScreen extends ConsumerStatefulWidget {
       _StreamChatThreadScreenState();
 }
 
-class _StreamChatThreadScreenState
-    extends ConsumerState<StreamChatThreadScreen> {
+class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
+    with WidgetsBindingObserver {
   Channel? _channel;
   Object? _error;
   bool _loading = true;
@@ -93,11 +98,13 @@ class _StreamChatThreadScreenState
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _openChannel());
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _readSub?.cancel();
     _stopActiveChatPresence();
     final channel = _channel;
@@ -108,10 +115,28 @@ class _StreamChatThreadScreenState
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Al minimizar, liberar "chat activo" para que lleguen pushes.
+    switch (state) {
+      case AppLifecycleState.resumed:
+        if (_channel != null && !_loading && _error == null) {
+          _startActiveChatPresence();
+        }
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.detached:
+        _stopActiveChatPresence();
+      case AppLifecycleState.inactive:
+        break;
+    }
+  }
+
   void _startActiveChatPresence() {
     _activeChatHeartbeat?.cancel();
     final matchId = widget.matchId;
     final devices = ref.read(devicesRepositoryProvider);
+    ref.read(pushNotificationsProvider).setActiveMatchId(matchId);
     unawaited(devices.setActiveChat(matchId));
     _activeChatHeartbeat = Timer.periodic(const Duration(seconds: 90), (_) {
       unawaited(devices.setActiveChat(matchId));
@@ -121,6 +146,7 @@ class _StreamChatThreadScreenState
   void _stopActiveChatPresence() {
     _activeChatHeartbeat?.cancel();
     _activeChatHeartbeat = null;
+    ref.read(pushNotificationsProvider).setActiveMatchId(null);
     unawaited(ref.read(devicesRepositoryProvider).setActiveChat(null));
   }
 
@@ -226,6 +252,15 @@ class _StreamChatThreadScreenState
 
       if (!mounted) return;
       _startActiveChatPresence();
+      // Sync mute Stream → Nest (por si el canal ya estaba muteado).
+      if (channel.isMuted) {
+        unawaited(
+          ref.read(devicesRepositoryProvider).setChatMuted(
+                matchId: widget.matchId,
+                muted: true,
+              ),
+        );
+      }
       setState(() {
         _channel = channel;
         _ensureOther = ensured.other;
@@ -258,7 +293,39 @@ class _StreamChatThreadScreenState
       liveSender: live,
       membersById: _membersById,
     );
-    return withVisibleImageAttachments(withSender);
+    return withVisibleMediaAttachments(withSender);
+  }
+
+  Future<void> _toggleMuteChat() async {
+    final channel = _channel;
+    if (channel == null) return;
+    final muted = channel.isMuted;
+    try {
+      if (muted) {
+        await channel.unmute();
+      } else {
+        await channel.mute();
+      }
+      await ref.read(devicesRepositoryProvider).setChatMuted(
+            matchId: widget.matchId,
+            muted: !muted,
+          );
+      if (!mounted) return;
+      showTindogInfoSnackBar(
+        context,
+        muted ? 'Notificaciones activadas' : 'Chat silenciado',
+      );
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+      showTindogErrorSnackBar(context, readableError(e));
+    }
+  }
+
+  Future<void> _openSearch() async {
+    final channel = _channel;
+    if (channel == null) return;
+    await showChannelSearchSheet(context: context, channel: channel);
   }
 
   Future<void> _openMatchProfile() async {
@@ -391,6 +458,9 @@ class _StreamChatThreadScreenState
             messageComposerLeading: (context, props) {
               return TindogComposerLeading(props: props);
             },
+            messageComposerInputCenter: (context, props) {
+              return TindogComposerInputCenter(props: props);
+            },
             messageFooter: (context, props) {
               return TindogMessageFooter(props: props);
             },
@@ -461,6 +531,10 @@ class _StreamChatThreadScreenState
                       unawaited(_deleteConversation());
                     } else if (value == 'profile') {
                       unawaited(_openMatchProfile());
+                    } else if (value == 'search') {
+                      unawaited(_openSearch());
+                    } else if (value == 'mute') {
+                      unawaited(_toggleMuteChat());
                     }
                   },
                   itemBuilder: (context) => [
@@ -469,6 +543,22 @@ class _StreamChatThreadScreenState
                       child: Text(
                         'Ver perfil',
                         style: TextStyle(color: AppColors.textPrimary),
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'search',
+                      child: Text(
+                        'Buscar en el chat',
+                        style: TextStyle(color: AppColors.textPrimary),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'mute',
+                      child: Text(
+                        channel.isMuted
+                            ? 'Activar notificaciones'
+                            : 'Silenciar notificaciones',
+                        style: const TextStyle(color: AppColors.textPrimary),
                       ),
                     ),
                     PopupMenuItem(
@@ -510,6 +600,7 @@ class _StreamChatThreadScreenState
                   },
                   config: const StreamMessageListViewConfiguration(
                     swipeToReply: true,
+                    showFloatingDateDivider: true,
                   ),
                   onReplyTap: (message) {
                     _composerController.quotedMessage = message;
@@ -584,9 +675,46 @@ class _StreamChatThreadScreenState
                       petName: _petName,
                       channel: channel,
                     ),
+                    // Sin chip "Hoy"; sí Ayer / fechas anteriores.
+                    dateDivider: _chatDateDivider,
+                    floatingDateDivider: _chatDateDivider,
                   ),
                 ),
               ),
+              if (channel.isMuted)
+                Material(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.notifications_off_outlined,
+                          size: 18,
+                          color: AppColors.primaryDark,
+                        ),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Notificaciones silenciadas',
+                            style: TextStyle(
+                              color: AppColors.primaryDark,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => unawaited(_toggleMuteChat()),
+                          child: const Text('Activar'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               StreamMessageComposer(
                 messageComposerController: _composerController,
                 enableVoiceRecording: true,
@@ -594,7 +722,6 @@ class _StreamChatThreadScreenState
                 allowedAttachmentPickerTypes: const [
                   AttachmentPickerType.images,
                   AttachmentPickerType.videos,
-                  AttachmentPickerType.command,
                 ],
               ),
             ],
@@ -603,6 +730,21 @@ class _StreamChatThreadScreenState
       ),
     );
   }
+}
+
+Widget _chatDateDivider(DateTime date) {
+  if (isSameCalendarDay(date, DateTime.now())) {
+    return const SizedBox.shrink();
+  }
+  return StreamDateDivider(
+    dateTime: date,
+    backgroundColor: AppColors.card,
+    textStyle: const TextStyle(
+      color: AppColors.textSecondary,
+      fontWeight: FontWeight.w700,
+      fontSize: 12,
+    ),
+  );
 }
 
 class _EmptyMatchHint extends StatelessWidget {

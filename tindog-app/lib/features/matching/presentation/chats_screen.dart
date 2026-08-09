@@ -9,6 +9,7 @@ import '../../chat/presentation/stream_chat_errors.dart';
 import '../../chat/presentation/stream_chat_providers.dart';
 import '../../chat/presentation/widgets/chat_presence_avatar.dart';
 import '../../chat/presentation/widgets/match_profile_sheet.dart';
+import '../../chat/presentation/widgets/tindog_chat_list_meta.dart';
 import '../../chat/presentation/widgets/tindog_chat_list_subtitle.dart';
 import '../../chat/presentation/widgets/tindog_chat_unread_badge.dart';
 import '../../safety/presentation/safety_sheets.dart';
@@ -503,31 +504,51 @@ class _MessageRow extends StatelessWidget {
                         ],
                       ),
                     ),
-                    if (hasUnread) ...[
-                      TindogChatUnreadBadge(matchId: thread.id),
-                    ] else if (yourTurn) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            TindogChatMutedIcon(matchId: thread.id),
+                            TindogChatListTimestamp(
+                              matchId: thread.id,
+                              fallback: thread.lastMessage?.createdAt ??
+                                  thread.matchedAt,
+                              emphasize: hasUnread,
+                            ),
+                          ],
                         ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                            color: AppColors.primary.withValues(alpha: 0.35),
+                        if (hasUnread) ...[
+                          const SizedBox(height: 8),
+                          TindogChatUnreadBadge(matchId: thread.id),
+                        ] else if (yourTurn) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: AppColors.primary.withValues(alpha: 0.35),
+                              ),
+                            ),
+                            child: const Text(
+                              'Tu turno',
+                              style: TextStyle(
+                                color: AppColors.primaryDark,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
-                        ),
-                        child: const Text(
-                          'Tu turno',
-                          style: TextStyle(
-                            color: AppColors.primaryDark,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
+                        ],
+                      ],
+                    ),
                   ],
                 );
               },

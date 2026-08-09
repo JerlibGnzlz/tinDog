@@ -81,15 +81,22 @@ export class StreamWebhookService {
       .filter((id) => id !== senderId);
 
     const body = this.previewBody(message);
-    const toNotify = recipients.filter((userId) => {
+    const toNotify: string[] = [];
+    for (const userId of recipients) {
       if (this.push.isViewingChat(userId, matchId)) {
         this.logger.log(
           `Skip push: user=${userId} ya está en match=${matchId}`,
         );
-        return false;
+        continue;
       }
-      return true;
-    });
+      if (await this.push.isChatMuted(userId, matchId)) {
+        this.logger.log(
+          `Skip push: user=${userId} silenció match=${matchId}`,
+        );
+        continue;
+      }
+      toNotify.push(userId);
+    }
 
     this.logger.log(
       `message.new match=${matchId} from=${senderId} → push a ${toNotify.length}/${recipients.length}`,

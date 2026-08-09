@@ -5,7 +5,11 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { StreamChat, Channel as StreamChannel } from 'stream-chat';
+import {
+  StreamChat,
+  Channel as StreamChannel,
+  type CommandVariants,
+} from 'stream-chat';
 
 export type StreamUserProfile = {
   id: string;
@@ -33,6 +37,31 @@ export class StreamChatService implements OnModuleInit {
     this.apiKey = apiKey;
     this.client = StreamChat.getInstance(apiKey, apiSecret);
     this.logger.log('Stream Chat client listo');
+    void this.disableGiphyCommand();
+  }
+
+  /** Quita /giphy del channel type `messaging` (MVP: no usamos GIFs). */
+  private async disableGiphyCommand(): Promise<void> {
+    try {
+      const client = this.requireClient();
+      const channelType = await client.getChannelType('messaging');
+      const commands = channelType.commands ?? [];
+      const names = commands
+        .map((c) => (typeof c === 'string' ? c : c.name))
+        .filter((name): name is CommandVariants => Boolean(name));
+      if (!names.includes('giphy')) return;
+
+      await client.updateChannelType('messaging', {
+        commands: names.filter((name) => name !== 'giphy'),
+      });
+      this.logger.log('Comando giphy desactivado en channel type messaging');
+    } catch (error) {
+      this.logger.warn(
+        `No se pudo desactivar giphy en Stream: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 
   isEnabled(): boolean {

@@ -43,6 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/build/
+
+# Defines locales del celular (IP / adb reverse); usar *.example.json
+dart_defines/android_device.json
 
 # Widget Preview related
 .widget_preview/

@@ -21,6 +21,7 @@ model User {
   reportsCreated     UserReport[]         @relation("ReportsCreated")
   reportsReceived    UserReport[]         @relation("ReportsReceived")
   deviceTokens       DeviceToken[]
+  mutedChats         MutedChat[]
 
   @@map("users")
 }
@@ -196,4 +197,18 @@ model DeviceToken {
   @@unique([token])
   @@index([userId])
   @@map("device_tokens")
+}
+
+/// Chat silenciado para push FCM (sobrevive reinicios de Nest).
+model MutedChat {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  matchId   String   @map("match_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, matchId])
+  @@index([userId])
+  @@index([matchId])
+  @@map("muted_chats")
 }
