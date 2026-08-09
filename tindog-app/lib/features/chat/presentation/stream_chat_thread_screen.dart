@@ -603,21 +603,22 @@ class _EmptyMatchHint extends StatelessWidget {
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                fontSize: 20,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Vas a ver cuándo está en línea o escribiendo. '
-              'Empezá con una frase rápida:',
+              'Vas a ver cuándo está en línea o escribiendo.\n'
+              'Elegí una frase o escribí la tuya abajo.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.textSecondary.withValues(alpha: 0.95),
-                height: 1.35,
+                height: 1.4,
+                fontSize: 14,
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 22),
             StreamChatIcebreakers(
               channel: channel,
               wrap: true,

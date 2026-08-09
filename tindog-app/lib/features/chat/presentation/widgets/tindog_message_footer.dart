@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
 
-/// Checks de envío: reloj → ✓ → ✓✓ → ✓✓ visto (estilo WhatsApp / tinDog).
+/// Checks de envío: reloj → ✓ → ✓✓ → ✓✓ Visto (estilo WhatsApp / tinDog).
 class TindogSendingStatus extends StatelessWidget {
   const TindogSendingStatus({
     super.key,
@@ -26,14 +26,29 @@ class TindogSendingStatus extends StatelessWidget {
         final isRead = data.readsOf(message: message).isNotEmpty;
         final isDelivered = data.deliveriesOf(message: message).isNotEmpty;
 
-        // Sobre burbuja salvia: verde oscuro (el blanco no contrasta).
+        // Sobre burbuja salvia: contraste alto; “Visto” en accent.
         final muted = onOwnBubble
-            ? AppColors.primaryDark.withValues(alpha: 0.75)
+            ? AppColors.primaryDark.withValues(alpha: 0.72)
             : AppColors.textSecondary;
-        final seen = onOwnBubble ? AppColors.primaryDark : AppColors.accent;
+        final seen = AppColors.accent;
 
         if (isRead) {
-          return Icon(Icons.done_all_rounded, size: size, color: seen);
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.done_all_rounded, size: size, color: seen),
+              const SizedBox(width: 3),
+              Text(
+                'Visto',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: seen,
+                  height: 1,
+                ),
+              ),
+            ],
+          );
         }
         if (isDelivered) {
           return Icon(Icons.done_all_rounded, size: size, color: muted);

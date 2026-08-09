@@ -135,16 +135,32 @@ export class ChatService {
         const attachments = last.attachments ?? [];
         let type: 'text' | 'image' | 'video' = 'text';
         let body = text;
-        if (attachments.some((a) => a.type === 'video')) {
+        const types = attachments.map((a) =>
+          String(a.type ?? '').toLowerCase(),
+        );
+        const isVoice = types.some(
+          (t) => t === 'voicerecording' || t === 'audio',
+        );
+        const isVideo = types.includes('video');
+        const isImage = attachments.some(
+          (a) =>
+            a.type === 'image' ||
+            a.type === 'giphy' ||
+            !!(a as { image_url?: string }).image_url ||
+            !!(a as { thumb_url?: string }).thumb_url,
+        );
+        const isFile = types.includes('file');
+
+        if (isVoice) {
+          body = text || '🎤 Mensaje de voz';
+        } else if (isVideo) {
           type = 'video';
           body = text || '🎬 Video';
-        } else if (
-          attachments.some(
-            (a) => a.type === 'image' || a.type === 'giphy' || a.image_url,
-          )
-        ) {
+        } else if (isImage) {
           type = 'image';
           body = text || '📷 Foto';
+        } else if (isFile) {
+          body = text || '📎 Archivo';
         }
         result.set(matchId, {
           id: last.id ?? `${matchId}-last`,

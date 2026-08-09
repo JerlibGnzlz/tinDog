@@ -124,5 +124,18 @@ class ChatMessagePreview {
     );
   }
 
-  String get previewText => fromMe ? '← $body' : body;
+  String get previewText {
+    var text = body.trim();
+    if (text.isEmpty) {
+      switch (type) {
+        case ChatMessageType.image:
+          text = '📷 Foto';
+        case ChatMessageType.video:
+          text = '🎬 Video';
+        case ChatMessageType.text:
+          text = 'Nuevo mensaje';
+      }
+    }
+    return fromMe ? '← $text' : text;
+  }
 }
