@@ -13,7 +13,6 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { AuthUser } from '../common/types/auth-user.type';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { DiscoverQueryDto } from './dto/discover-query.dto';
-import { SendMessageDto } from './dto/send-message.dto';
 import { TargetPetDto } from './dto/target-pet.dto';
 import { MatchingService } from './matching.service';
 
@@ -73,22 +72,5 @@ export class MatchingController {
     @Param('matchId', ParseUUIDPipe) matchId: string,
   ) {
     return this.matchingService.unmatch(user.id, matchId);
-  }
-
-  @Get('matches/:matchId/messages')
-  listMessages(
-    @CurrentUser() user: AuthUser,
-    @Param('matchId', ParseUUIDPipe) matchId: string,
-  ) {
-    return this.matchingService.listMessages(user.id, matchId);
-  }
-
-  @Post('matches/:matchId/messages')
-  sendMessage(
-    @CurrentUser() user: AuthUser,
-    @Param('matchId', ParseUUIDPipe) matchId: string,
-    @Body() dto: SendMessageDto,
-  ) {
-    return this.matchingService.sendMessage(user.id, matchId, dto);
   }
 }

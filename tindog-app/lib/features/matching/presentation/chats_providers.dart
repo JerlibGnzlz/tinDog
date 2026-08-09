@@ -165,9 +165,4 @@ Future<void> _clearOrphanUnread(
   }
 }
 
-final chatMessagesProvider = FutureProvider.autoDispose
-    .family<List<ChatMessage>, String>((ref, matchId) {
-  return ref.watch(matchingRepositoryProvider).listMessages(matchId);
-});
-
 String chatErrorMessage(Object error) => streamChatErrorMessage(error);

@@ -81,47 +81,6 @@ class MatchingRepository {
     await _dio.delete<Map<String, dynamic>>('/matches/$matchId');
   }
 
-  Future<List<ChatMessage>> listMessages(String matchId) async {
-    final response = await _dio.get<List<dynamic>>(
-      '/matches/$matchId/messages',
-    );
-    return (response.data ?? const [])
-        .whereType<Map<String, dynamic>>()
-        .map(ChatMessage.fromJson)
-        .toList(growable: false);
-  }
-
-  Future<ChatMessage> sendMessage(
-    String matchId, {
-    required ChatMessageType type,
-    String body = '',
-    String? mediaUrl,
-    String? mediaPublicId,
-    String? thumbnailUrl,
-    int? durationSec,
-  }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/matches/$matchId/messages',
-      data: {
-        'type': chatMessageTypeToJson(type),
-        if (body.trim().isNotEmpty) 'body': body.trim(),
-        'mediaUrl': ?mediaUrl,
-        'mediaPublicId': ?mediaPublicId,
-        'thumbnailUrl': ?thumbnailUrl,
-        'durationSec': ?durationSec,
-      },
-    );
-    return ChatMessage.fromJson(response.data ?? const {});
-  }
-
-  Future<ChatMessage> sendTextMessage(String matchId, String body) {
-    return sendMessage(
-      matchId,
-      type: ChatMessageType.text,
-      body: body,
-    );
-  }
-
   List<LikeListItem> _mapLikeList(List<dynamic>? raw) {
     return (raw ?? const [])
         .whereType<Map<String, dynamic>>()

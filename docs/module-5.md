@@ -25,14 +25,13 @@ Flutter dart_defines: solo `STREAM_API_KEY` (opcional; la key también viene en 
 
 ## Notas
 - Usuario Stream = `user.id` de tinDog; `name`/`image` = mascota
-- Listado Chats sigue en Nest (`GET /matches`); preview de último mensaje prioriza Stream
-- Chat HTTP local (`chat_messages`) queda como legado; hilos nuevos usan Stream
-- Si Stream falla: banner “Reconectar” en Chats; al abrir hilo → panel con reintento / volver (match borrado o bloqueo sin reintento)
-- Lista Chats: preview en vivo (foto/video/voz); chat vacío con icebreakers “Rompe el hielo”; ticks **Visto** en mensajes propios
+- Listado Chats en Nest (`GET /matches`); preview de último mensaje **solo Stream**
+- Chat HTTP / tabla `chat_messages` **eliminados** — única fuente: Stream
+- Si Stream falla: banner “Reconectar” en Chats; al abrir hilo → panel con reintento / volver
+- Lista Chats: preview en vivo (foto/video/voz); icebreakers “Rompe el hielo”; ticks **Visto**
 
 ## NO entra aún
-- Push notifications Stream/Firebase — ver [module-6.md](./module-6.md)
-- Migración masiva de `chat_messages` históricos a Stream
+- Push iOS (APNs) — ver [module-6.md](./module-6.md)
 
 ## Seguridad
 Bloquear / reportar: [module-safety.md](./module-safety.md)

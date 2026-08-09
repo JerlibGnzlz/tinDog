@@ -6,12 +6,11 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
-import { PetMediaType, Prisma, ChatMessageType } from '@prisma/client';
+import { PetMediaType, Prisma } from '@prisma/client';
 import { ChatService } from '../chat/chat.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PushService } from '../devices/push.service';
 import { SafetyService } from '../safety/safety.service';
-import { SendMessageDto } from './dto/send-message.dto';
 
 export type DiscoverMode = 'for_you' | 'near' | 'breed' | 'play';
 
@@ -61,19 +60,6 @@ export type MatchThreadDto = {
     fromMe: boolean;
   } | null;
   hasMessages: boolean;
-};
-
-export type ChatMessageDto = {
-  id: string;
-  type: 'text' | 'image' | 'video';
-  body: string;
-  mediaUrl: string | null;
-  mediaPublicId: string | null;
-  thumbnailUrl: string | null;
-  durationSec: number | null;
-  createdAt: string;
-  fromMe: boolean;
-  fromPetId: string;
 };
 
 @Injectable()
@@ -460,10 +446,6 @@ export class MatchingService {
       include: {
         petA: { include: this.petCardInclude },
         petB: { include: this.petCardInclude },
-        messages: {
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -476,25 +458,16 @@ export class MatchingService {
       const candidate = this.toCandidate(other);
       if (!candidate) continue;
 
-      const last = match.messages[0] ?? null;
       threads.push({
         id: match.id,
         matchedAt: match.createdAt.toISOString(),
         otherPet: candidate,
-        hasMessages: last != null,
-        lastMessage: last
-          ? {
-              id: last.id,
-              body: this.previewBody(last.type, last.body),
-              type: last.type,
-              createdAt: last.createdAt.toISOString(),
-              fromMe: last.fromPetId === myPet.id,
-            }
-          : null,
+        hasMessages: false,
+        lastMessage: null,
       });
     }
 
-    // Preferir preview/realtime de Stream cuando haya mensajes allí.
+    // Preview / “tiene mensajes” solo desde Stream (fuente de verdad del chat).
     const streamLast = await this.chatService.lastMessagesByMatchIds(
       userId,
       threads.map((t) => t.id),
@@ -515,94 +488,6 @@ export class MatchingService {
     });
 
     return threads;
-  }
-
-  async listMessages(
-    userId: string,
-    matchId: string,
-  ): Promise<ChatMessageDto[]> {
-    const myPet = await this.requireMyPet(userId);
-    await this.requireMatchMember(matchId, myPet.id);
-
-    const messages = await this.prisma.chatMessage.findMany({
-      where: { matchId },
-      orderBy: { createdAt: 'asc' },
-      take: 200,
-    });
-
-    return messages.map((m) => this.toMessageDto(m, myPet.id));
-  }
-
-  async sendMessage(userId: string, matchId: string, dto: SendMessageDto) {
-    const myPet = await this.requireMyPet(userId);
-    await this.requireMatchMember(matchId, myPet.id);
-
-    const type = dto.type ?? ChatMessageType.text;
-    const body = (dto.body ?? '').trim();
-
-    if (type === ChatMessageType.text) {
-      if (!body) {
-        throw new BadRequestException('El mensaje no puede estar vacío.');
-      }
-    } else if (!dto.mediaUrl) {
-      throw new BadRequestException('mediaUrl es obligatorio para imagen/video.');
-    }
-
-    const message = await this.prisma.chatMessage.create({
-      data: {
-        matchId,
-        fromPetId: myPet.id,
-        type,
-        body,
-        mediaUrl: type === ChatMessageType.text ? null : dto.mediaUrl,
-        mediaPublicId:
-          type === ChatMessageType.text ? null : (dto.mediaPublicId ?? null),
-        thumbnailUrl:
-          type === ChatMessageType.text ? null : (dto.thumbnailUrl ?? null),
-        durationSec:
-          type === ChatMessageType.video ? (dto.durationSec ?? null) : null,
-      },
-    });
-
-    return this.toMessageDto(message, myPet.id);
-  }
-
-  private toMessageDto(
-    m: {
-      id: string;
-      type: ChatMessageType;
-      body: string;
-      mediaUrl: string | null;
-      mediaPublicId: string | null;
-      thumbnailUrl: string | null;
-      durationSec: number | null;
-      createdAt: Date;
-      fromPetId: string;
-    },
-    myPetId: string,
-  ): ChatMessageDto {
-    return {
-      id: m.id,
-      type: m.type,
-      body: m.body,
-      mediaUrl: m.mediaUrl,
-      mediaPublicId: m.mediaPublicId,
-      thumbnailUrl: m.thumbnailUrl,
-      durationSec: m.durationSec,
-      createdAt: m.createdAt.toISOString(),
-      fromMe: m.fromPetId === myPetId,
-      fromPetId: m.fromPetId,
-    };
-  }
-
-  private previewBody(type: ChatMessageType, body: string): string {
-    if (type === ChatMessageType.image) {
-      return body.trim() ? `📷 ${body}` : '📷 Foto';
-    }
-    if (type === ChatMessageType.video) {
-      return body.trim() ? `🎬 ${body}` : '🎬 Video';
-    }
-    return body;
   }
 
   private async requireMatchMember(matchId: string, myPetId: string) {
