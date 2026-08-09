@@ -10,11 +10,13 @@ class ChatPresenceAvatar extends StatelessWidget {
     required this.photoUrl,
     this.streamUserId,
     this.radius = 28,
+    this.onTap,
   });
 
   final String? photoUrl;
   final String? streamUserId;
   final double radius;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -31,35 +33,47 @@ class ChatPresenceAvatar extends StatelessWidget {
     final client = StreamChat.maybeOf(context)?.client;
     final state = client?.state;
     final userId = streamUserId;
-    if (state == null || userId == null || userId.isEmpty) {
-      return avatar;
-    }
 
-    return BetterStreamBuilder<Map<String, User>>(
-      stream: state.usersStream,
-      initialData: state.users,
-      builder: (context, users) {
-        final online = users[userId]?.online ?? false;
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            avatar,
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: Container(
-                width: radius * 0.45,
-                height: radius * 0.45,
-                decoration: BoxDecoration(
-                  color: online ? AppColors.primary : AppColors.textSecondary,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.surface, width: 2),
+    Widget content;
+    if (state == null || userId == null || userId.isEmpty) {
+      content = avatar;
+    } else {
+      content = BetterStreamBuilder<Map<String, User>>(
+        stream: state.usersStream,
+        initialData: state.users,
+        builder: (context, users) {
+          final online = users[userId]?.online ?? false;
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              avatar,
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: radius * 0.45,
+                  height: radius * 0.45,
+                  decoration: BoxDecoration(
+                    color: online ? AppColors.primary : AppColors.textSecondary,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.surface, width: 2),
+                  ),
                 ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      );
+    }
+
+    if (onTap == null) return content;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: content,
+      ),
     );
   }
 }

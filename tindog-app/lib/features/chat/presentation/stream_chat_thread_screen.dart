@@ -19,6 +19,7 @@ import '../data/chat_repository.dart';
 import 'stream_chat_errors.dart';
 import 'stream_chat_providers.dart';
 import 'widgets/chat_presence_avatar.dart';
+import 'widgets/match_profile_sheet.dart';
 import 'widgets/stream_chat_error_panel.dart';
 import 'widgets/stream_chat_icebreakers.dart';
 import 'widgets/tindog_channel_status.dart';
@@ -260,6 +261,17 @@ class _StreamChatThreadScreenState
     return withVisibleImageAttachments(withSender);
   }
 
+  Future<void> _openMatchProfile() async {
+    final pet = _otherPet;
+    if (pet == null) return;
+    await showMatchProfileSheet(
+      context: context,
+      pet: pet,
+      onSafety: () => unawaited(_openSafety()),
+      onDeleteChat: () => unawaited(_deleteConversation()),
+    );
+  }
+
   Future<void> _openSafety() async {
     final otherUserId =
         widget.thread?.otherPet.ownerUserId ?? _ensureOther?.id;
@@ -407,17 +419,25 @@ class _StreamChatThreadScreenState
             ),
             automaticallyImplyLeading: false,
             // Título = con quién hablás. Avatar en trailing evita overflow del AppBar.
-            title: Text(
-              _petName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
+            title: GestureDetector(
+              onTap: _openMatchProfile,
+              behavior: HitTestBehavior.opaque,
+              child: Text(
+                _petName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                ),
               ),
             ),
-            subtitle: TindogChannelStatus(channel: channel),
+            subtitle: GestureDetector(
+              onTap: _openMatchProfile,
+              behavior: HitTestBehavior.opaque,
+              child: TindogChannelStatus(channel: channel),
+            ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -439,9 +459,18 @@ class _StreamChatThreadScreenState
                   onSelected: (value) {
                     if (value == 'delete') {
                       unawaited(_deleteConversation());
+                    } else if (value == 'profile') {
+                      unawaited(_openMatchProfile());
                     }
                   },
                   itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'profile',
+                      child: Text(
+                        'Ver perfil',
+                        style: TextStyle(color: AppColors.textPrimary),
+                      ),
+                    ),
                     PopupMenuItem(
                       value: 'delete',
                       child: Text(
@@ -459,6 +488,7 @@ class _StreamChatThreadScreenState
                         widget.thread?.otherPet.ownerUserId ??
                         _ensureOther?.id,
                     radius: 16,
+                    onTap: _openMatchProfile,
                   ),
                 ),
               ],

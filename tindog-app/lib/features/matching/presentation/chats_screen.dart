@@ -8,6 +8,7 @@ import '../../../shared/widgets/tindog_loader.dart';
 import '../../chat/presentation/stream_chat_errors.dart';
 import '../../chat/presentation/stream_chat_providers.dart';
 import '../../chat/presentation/widgets/chat_presence_avatar.dart';
+import '../../chat/presentation/widgets/match_profile_sheet.dart';
 import '../../chat/presentation/widgets/tindog_chat_list_subtitle.dart';
 import '../../chat/presentation/widgets/tindog_chat_unread_badge.dart';
 import '../../safety/presentation/safety_sheets.dart';
@@ -247,6 +248,15 @@ class ChatsScreen extends ConsumerWidget {
                               '/chats/${thread.id}',
                               extra: thread,
                             ),
+                            onAvatarTap: () => showMatchProfileSheet(
+                              context: context,
+                              pet: thread.otherPet,
+                              onDeleteChat: () => confirmAndDeleteConversation(
+                                context: context,
+                                ref: ref,
+                                thread: thread,
+                              ),
+                            ),
                             onDelete: () => confirmAndDeleteConversation(
                               context: context,
                               ref: ref,
@@ -422,11 +432,13 @@ class _MessageRow extends StatelessWidget {
     required this.thread,
     required this.onTap,
     required this.onDelete,
+    this.onAvatarTap,
   });
 
   final MatchThread thread;
   final VoidCallback onTap;
   final Future<bool> Function() onDelete;
+  final VoidCallback? onAvatarTap;
 
   @override
   Widget build(BuildContext context) {
@@ -462,6 +474,7 @@ class _MessageRow extends StatelessWidget {
                       photoUrl: photo,
                       streamUserId: ownerId,
                       radius: 28,
+                      onTap: onAvatarTap,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
