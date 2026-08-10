@@ -40,9 +40,14 @@ class DevicesRepository {
       await _dio.put<Map<String, dynamic>>(
         '/devices/active-chat',
         data: {'matchId': matchId},
+        // Al minimizar la OS puede matar el request; corto timeout.
+        options: Options(
+          sendTimeout: const Duration(seconds: 2),
+          receiveTimeout: const Duration(seconds: 2),
+        ),
       );
     } catch (_) {
-      // Best-effort: si falla, como máximo llega un push de más.
+      // Best-effort: Nest expira active-chat ~75s si el clear no llega.
     }
   }
 

@@ -5,11 +5,13 @@ import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
 
 /// Busca mensajes de texto dentro del canal actual.
-Future<void> showChannelSearchSheet({
+///
+/// Devuelve el `message.id` elegido, o `null` si se cierra sin seleccionar.
+Future<String?> showChannelSearchSheet({
   required BuildContext context,
   required Channel channel,
 }) {
-  return showModalBottomSheet<void>(
+  return showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
     backgroundColor: AppColors.card,
@@ -160,9 +162,7 @@ class _ChannelSearchSheetState extends State<_ChannelSearchSheet> {
                             ),
                           ),
                           onMessageTap: (result) {
-                            Navigator.pop(context);
-                            // El mensaje queda en el historial; el usuario puede
-                            // scrollear. Jump-to-message requiere list controller.
+                            Navigator.pop(context, result.message.id);
                           },
                         ),
             ),

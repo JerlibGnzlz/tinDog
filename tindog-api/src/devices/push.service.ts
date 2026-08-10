@@ -21,7 +21,8 @@ export class PushService implements OnModuleInit {
     string,
     { matchId: string; at: number }
   >();
-  private static readonly ACTIVE_CHAT_TTL_MS = 3 * 60 * 1000;
+  /** Corto: si al minimizar falla el clear HTTP, el push no queda bloqueado minutos. */
+  private static readonly ACTIVE_CHAT_TTL_MS = 75 * 1000;
 
   constructor(
     private readonly config: ConfigService,
@@ -32,9 +33,13 @@ export class PushService implements OnModuleInit {
   setActiveChat(userId: string, matchId?: string | null): { ok: true } {
     const clean = matchId?.trim();
     if (!clean) {
-      this.activeChatByUser.delete(userId);
+      const had = this.activeChatByUser.delete(userId);
+      if (had) {
+        this.logger.log(`active-chat clear user=${userId}`);
+      }
     } else {
       this.activeChatByUser.set(userId, { matchId: clean, at: Date.now() });
+      this.logger.debug(`active-chat set user=${userId} match=${clean}`);
     }
     return { ok: true };
   }
@@ -44,6 +49,9 @@ export class PushService implements OnModuleInit {
     if (!row || row.matchId !== matchId) return false;
     if (Date.now() - row.at > PushService.ACTIVE_CHAT_TTL_MS) {
       this.activeChatByUser.delete(userId);
+      this.logger.log(
+        `active-chat expiró user=${userId} match=${matchId}`,
+      );
       return false;
     }
     return true;

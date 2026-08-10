@@ -61,6 +61,9 @@ class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
   final _composerController = StreamMessageComposerController();
   StreamSubscription<Event>? _readSub;
   Timer? _activeChatHeartbeat;
+  /// Mensaje al que saltar tras Buscar (Stream lo usa + highlight en la lista).
+  String? _jumpToMessageId;
+  int _messageListEpoch = 0;
 
   String get _petName =>
       widget.thread?.otherPet.name ?? _ensureOther?.name ?? 'Chat';
@@ -128,6 +131,7 @@ class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
       case AppLifecycleState.detached:
         _stopActiveChatPresence();
       case AppLifecycleState.inactive:
+        // No clear acá: al abrir el teclado/shade también pasa por inactive.
         break;
     }
   }
@@ -138,7 +142,8 @@ class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
     final devices = ref.read(devicesRepositoryProvider);
     ref.read(pushNotificationsProvider).setActiveMatchId(matchId);
     unawaited(devices.setActiveChat(matchId));
-    _activeChatHeartbeat = Timer.periodic(const Duration(seconds: 90), (_) {
+    // < TTL Nest (75s): si el clear al salir falla, el skip no dura minutos.
+    _activeChatHeartbeat = Timer.periodic(const Duration(seconds: 45), (_) {
       unawaited(devices.setActiveChat(matchId));
     });
   }
@@ -146,6 +151,7 @@ class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
   void _stopActiveChatPresence() {
     _activeChatHeartbeat?.cancel();
     _activeChatHeartbeat = null;
+    // Local primero (banner foreground); Nest enseguida (FCM background).
     ref.read(pushNotificationsProvider).setActiveMatchId(null);
     unawaited(ref.read(devicesRepositoryProvider).setActiveChat(null));
   }
@@ -156,6 +162,45 @@ class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
     } catch (_) {
       // Best-effort.
     }
+  }
+
+  /// Presencia + leído + listeners sin bloquear “Abriendo chat…”.
+  Future<void> _warmupChannelPresence(
+    StreamChatClient client,
+    Channel channel,
+    Map<String, StreamChatUserDto> membersById,
+  ) async {
+    final memberIds = membersById.keys.toList(growable: false);
+    if (memberIds.isNotEmpty) {
+      try {
+        await client.queryUsers(
+          filter: Filter.in_('id', memberIds),
+          presence: true,
+        );
+      } catch (_) {}
+    }
+
+    await _markChannelRead(channel);
+
+    await _readSub?.cancel();
+    _readSub = channel.on().listen((event) {
+      final type = event.type;
+      if (type == EventType.messageNew ||
+          type == EventType.notificationMessageNew) {
+        unawaited(_markChannelRead(channel));
+      }
+      if (type == EventType.userPresenceChanged ||
+          type == EventType.userUpdated) {
+        if (memberIds.isNotEmpty) {
+          unawaited(
+            client.queryUsers(
+              filter: Filter.in_('id', memberIds),
+              presence: true,
+            ),
+          );
+        }
+      }
+    });
   }
 
   Future<StreamChatClient> _requireStreamClient() async {
@@ -191,64 +236,12 @@ class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
         ensured.channelType,
         id: ensured.channelId,
       );
+      // Solo watch bloquea la UI; presencia / leído van en background.
       await channel.watch(presence: true);
-      // Refresca presencia de los miembros al entrar (sin esperar al teclado).
-      try {
-        final memberIds = channel.state?.members
-                .map((m) => m.userId)
-                .whereType<String>()
-                .where((id) => id.isNotEmpty)
-                .toList(growable: false) ??
-            const <String>[];
-        if (memberIds.isNotEmpty) {
-          await client.queryUsers(
-            filter: Filter.in_('id', memberIds),
-            presence: true,
-          );
-        }
-      } catch (_) {}
-
-      await _markChannelRead(channel);
-      // Segundo intento cuando el state ya tiene mensajes cargados.
-      await Future<void>.delayed(const Duration(milliseconds: 400));
-      await _markChannelRead(channel);
-
-      await _readSub?.cancel();
-      _readSub = channel.on().listen((event) {
-        final type = event.type;
-        if (type == EventType.messageNew ||
-            type == EventType.notificationMessageNew) {
-          unawaited(_markChannelRead(channel));
-        }
-        // Mantener En línea / Desconectado al día mientras el chat está abierto.
-        if (type == EventType.userPresenceChanged ||
-            type == EventType.userUpdated) {
-          final ids = ensured.members.map((m) => m.id).toList(growable: false);
-          if (ids.isNotEmpty) {
-            unawaited(
-              client.queryUsers(
-                filter: Filter.in_('id', ids),
-                presence: true,
-              ),
-            );
-          }
-        }
-      });
 
       final membersById = {
         for (final m in ensured.members) m.id: m,
       };
-
-      if (membersById.isNotEmpty) {
-        try {
-          await client.queryUsers(
-            filter: Filter.in_('id', membersById.keys.toList()),
-            presence: true,
-          );
-        } catch (_) {
-          // Best-effort
-        }
-      }
 
       if (!mounted) return;
       _startActiveChatPresence();
@@ -267,6 +260,8 @@ class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
         _membersById = membersById;
         _loading = false;
       });
+
+      unawaited(_warmupChannelPresence(client, channel, membersById));
     } catch (e) {
       if (!mounted) return;
       if (isSessionError(e)) {
@@ -325,7 +320,15 @@ class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
   Future<void> _openSearch() async {
     final channel = _channel;
     if (channel == null) return;
-    await showChannelSearchSheet(context: context, channel: channel);
+    final messageId = await showChannelSearchSheet(
+      context: context,
+      channel: channel,
+    );
+    if (!mounted || messageId == null || messageId.isEmpty) return;
+    setState(() {
+      _jumpToMessageId = messageId;
+      _messageListEpoch++;
+    });
   }
 
   Future<void> _openMatchProfile() async {
@@ -452,6 +455,9 @@ class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
 
     return StreamChannel(
       channel: channel,
+      // Canal ya viene de watch en _openChannel; evitar flash al saltar.
+      showLoading: false,
+      initialMessageId: _jumpToMessageId,
       child: StreamComponentFactory(
         builders: StreamComponentBuilders(
           extensions: streamChatComponentBuilders(
@@ -588,6 +594,8 @@ class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
             children: [
               Expanded(
                 child: StreamMessageListView(
+                  // Remonta para que Stream ejecute scroll+highlight al mensaje.
+                  key: ValueKey('mlv-$_messageListEpoch'),
                   messageFilter: (message) {
                     // Oculta soft-deletes ("Message deleted") y shadowed.
                     if (message.isDeleted || message.deletedAt != null) {
@@ -598,9 +606,10 @@ class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
                     if (message.shadowed && !isMine) return false;
                     return true;
                   },
-                  config: const StreamMessageListViewConfiguration(
+                  config: StreamMessageListViewConfiguration(
                     swipeToReply: true,
                     showFloatingDateDivider: true,
+                    highlightInitialMessage: _jumpToMessageId != null,
                   ),
                   onReplyTap: (message) {
                     _composerController.quotedMessage = message;
