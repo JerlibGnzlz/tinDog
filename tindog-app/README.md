@@ -49,6 +49,38 @@ flutter run -d emulator-5554 --dart-define-from-file=dart_defines/android_dev.js
 
 > El id del emulador puede variar. Lista dispositivos: `flutter devices`
 
+## Integration tests
+
+### Smoke (sin API): welcome → login
+
+```bash
+flutter test integration_test/welcome_to_login_test.dart -d emulator-5554
+```
+
+### Login real (API + seed)
+
+API corriendo y seed aplicado (`ana@tindog.test` / `password123`):
+
+```bash
+# terminal 1
+cd ../tindog-api && npm run start:dev
+
+# terminal 2
+./scripts/run_login_integration.sh emulator-5554
+```
+
+O manual:
+
+```bash
+flutter test integration_test/login_with_api_test.dart -d emulator-5554 \
+  --dart-define-from-file=dart_defines/android_dev.json
+```
+
+### CI
+
+En GitHub Actions (`.github/workflows/ci.yml`): `npm run build` (API) + `flutter analyze` / `flutter test` (app).  
+Los integration E2E no corren en CI (necesitan emulador + API viva).
+
 ## URLs por plataforma
 
 | Plataforma | API local |

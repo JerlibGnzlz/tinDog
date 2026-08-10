@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [development, main]
+  pull_request:
+    branches: [development, main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: API build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tindog-api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: tindog-api/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run build
+
+  app:
+    name: Flutter test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tindog-app
+    steps:
+      - uses: actions/checkout@v4
+      # El proyecto usa SDK reciente (master); alinear con el entorno local.
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: master
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test
+
+  # Integration E2E (login con API / emulador) queda local:
+  #   cd tindog-app && ./scripts/run_login_integration.sh

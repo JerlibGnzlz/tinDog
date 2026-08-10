@@ -46,6 +46,13 @@ cd tindog-app
 
 O desde Cursor: **Run and Debug → tinDog App (Android Emulator)**.
 
+## Tests
+
+- **App (diario):** `cd tindog-app && flutter test`
+- **Smoke UI:** `flutter test integration_test/welcome_to_login_test.dart -d <device>`
+- **Login real:** `cd tindog-app && ./scripts/run_login_integration.sh` (API + seed)
+- **CI:** `.github/workflows/ci.yml` — build API + `flutter test` en push/PR a `development` / `main`
+
 ## Reglas Cursor
 
 Las reglas en `.cursor/rules/` guían al agente sobre arquitectura, alcance del MVP y convenciones por stack.

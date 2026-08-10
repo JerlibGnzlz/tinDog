@@ -343,7 +343,7 @@ class _SwipePreviewCardState extends State<SwipePreviewCard>
   void _openPhoto(SwipePreviewMediaItem item) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => PetPhotoViewerScreen(
+        builder: (_) => PetPhotoViewerScreen.single(
           url: item.url,
           title: widget.petName,
         ),

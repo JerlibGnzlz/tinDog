@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +12,7 @@ import '../../../../shared/models/swipe_preview_media.dart';
 import '../../../../shared/widgets/pet_video_player_screen.dart';
 import '../../../../shared/widgets/tindog_filled_button.dart';
 import '../../../../shared/widgets/tindog_gradient_progress_bar.dart';
+import '../../../../shared/widgets/video_trim_editor_screen.dart';
 import '../../../media/data/media_repository.dart';
 import '../../../pets/data/pet_media_model.dart';
 import '../../../pets/data/pet_media_repository.dart';
@@ -88,11 +91,70 @@ class _ProfileVideosScreenState extends ConsumerState<ProfileVideosScreen> {
       return;
     }
 
-    final picked = await _picker.pickVideo(
-      source: ImageSource.gallery,
-      maxDuration: const Duration(seconds: maxVideoDurationSec),
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: AppColors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.video_library_outlined),
+                title: const Text('Elegir de la galería'),
+                subtitle: Text(
+                  'Si es largo, recortás hasta $maxVideoDurationSec s',
+                ),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.videocam_outlined),
+                title: const Text('Grabar clip'),
+                subtitle: Text('Máximo $maxVideoDurationSec segundos'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
     );
-    if (picked == null) return;
+    if (source == null || !mounted) return;
+
+    final picked = await _picker.pickVideo(
+      source: source,
+      // Cámara: hard stop. Galería: puede ser más largo → editor de recorte.
+      maxDuration: source == ImageSource.camera
+          ? const Duration(seconds: maxVideoDurationSec)
+          : null,
+    );
+    if (picked == null || !mounted) return;
+
+    final path = picked.path;
+    if (path.isEmpty) {
+      showTindogErrorSnackBar(context, 'No se pudo leer el video');
+      return;
+    }
+
+    final trimmed = await openVideoTrimEditor(
+      context: context,
+      videoFile: File(path),
+    );
+    if (trimmed == null || !mounted) return;
+
+    final sizeMb = await trimmed.length() / (1024 * 1024);
+    if (!mounted) return;
+    if (sizeMb > 50) {
+      showTindogErrorSnackBar(
+        context,
+        'El clip pesa demasiado (máx. 50 MB). Probá un tramo más corto.',
+      );
+      return;
+    }
 
     setState(() {
       _uploadingVideo = true;
@@ -102,7 +164,7 @@ class _ProfileVideosScreenState extends ConsumerState<ProfileVideosScreen> {
 
     try {
       final upload = await ref.read(mediaRepositoryProvider).uploadVideo(
-            picked,
+            XFile(trimmed.path),
             onProgress: (sent, total) {
               if (!mounted || total <= 0) return;
               setState(() => _uploadProgress = sent / total);
@@ -232,7 +294,7 @@ class _ProfileVideosScreenState extends ConsumerState<ProfileVideosScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Subí hasta $maxPetVideos clips de hasta $maxVideoDurationSec segundos.',
+            'Subí hasta $maxPetVideos clips. Si el video es largo, lo recortás a máximo $maxVideoDurationSec s antes de subir (máx. 50 MB).',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).hintColor,
                 ),

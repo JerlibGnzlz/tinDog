@@ -29,7 +29,7 @@ class DiscoverCard extends StatefulWidget {
     required this.onDecision,
     this.controller,
     this.bottomBar,
-    this.onOpenDetails,
+    this.onOpenGallery,
     this.storyTopInset = 12,
   });
 
@@ -37,7 +37,8 @@ class DiscoverCard extends StatefulWidget {
   final ValueChanged<DiscoverSwipeDecision> onDecision;
   final DiscoverCardController? controller;
   final Widget? bottomBar;
-  final VoidCallback? onOpenDetails;
+  /// Índice de la foto actual → galería fullscreen.
+  final ValueChanged<int>? onOpenGallery;
   final double storyTopInset;
 
   @override
@@ -309,7 +310,16 @@ class _DiscoverCardState extends State<DiscoverCard>
                                   bio: (bio != null && bio.isNotEmpty)
                                       ? bio
                                       : null,
-                                  onInfoTap: widget.onOpenDetails,
+                                  onInfoTap: widget.onOpenGallery == null
+                                      ? null
+                                      : () => widget.onOpenGallery!(
+                                            _photoIndex.clamp(
+                                              0,
+                                              _photos.isEmpty
+                                                  ? 0
+                                                  : _photos.length - 1,
+                                            ),
+                                          ),
                                 ),
                                 if (candidate.locationLabel != null) ...[
                                   const SizedBox(height: 8),

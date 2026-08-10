@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/feedback/app_feedback.dart';
 import '../../../core/network/session_handler.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/pet_photo_viewer_screen.dart';
 import '../../../shared/widgets/tindog_loader.dart';
 import '../../profile/presentation/profile_providers.dart';
 import 'discover_filters.dart';
@@ -118,10 +119,17 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     controller: _cardController,
                     storyTopInset: topInset + 52,
                     onDecision: _onDecision,
-                    onOpenDetails: () {
-                      showTindogInfoSnackBar(
-                        context,
-                        'Detalle de ${current.name} — próximamente',
+                    onOpenGallery: (photoIndex) {
+                      final urls = current.photoUrls;
+                      if (urls.isEmpty) return;
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => PetPhotoViewerScreen(
+                            urls: urls,
+                            initialIndex: photoIndex.clamp(0, urls.length - 1),
+                            title: current.name,
+                          ),
+                        ),
                       );
                     },
                     bottomBar: DiscoverActions(

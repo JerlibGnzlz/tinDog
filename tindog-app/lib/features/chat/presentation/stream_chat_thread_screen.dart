@@ -317,6 +317,16 @@ class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
     }
   }
 
+  void _leaveChat() {
+    // Preferí go_router: maybePop a veces no hace nada si el focus/IME
+    // o el árbol de Stream absorbe el gesto.
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/chats');
+    }
+  }
+
   Future<void> _openSearch() async {
     final channel = _channel;
     if (channel == null) return;
@@ -487,108 +497,113 @@ class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
         ),
         child: Scaffold(
           backgroundColor: AppColors.surface,
-          appBar: StreamChannelHeader(
+          appBar: AppBar(
+            backgroundColor: AppColors.surface,
+            foregroundColor: AppColors.textPrimary,
+            elevation: 0,
+            scrolledUnderElevation: 0,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_rounded),
-              color: AppColors.textPrimary,
-              onPressed: () => Navigator.of(context).maybePop(),
+              tooltip: 'Volver',
+              onPressed: _leaveChat,
             ),
-            automaticallyImplyLeading: false,
-            // Título = con quién hablás. Avatar en trailing evita overflow del AppBar.
-            title: GestureDetector(
+            titleSpacing: 0,
+            title: InkWell(
               onTap: _openMatchProfile,
-              behavior: HitTestBehavior.opaque,
-              child: Text(
-                _petName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _petName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+                    TindogChannelStatus(channel: channel),
+                  ],
                 ),
               ),
             ),
-            subtitle: GestureDetector(
-              onTap: _openMatchProfile,
-              behavior: HitTestBehavior.opaque,
-              child: TindogChannelStatus(channel: channel),
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  tooltip: 'Seguridad',
-                  onPressed: () => _openSafety(),
-                  icon: const Icon(
-                    Icons.shield_outlined,
-                    color: AppColors.textSecondary,
-                  ),
+            actions: [
+              IconButton(
+                tooltip: 'Seguridad',
+                onPressed: () => unawaited(_openSafety()),
+                icon: const Icon(
+                  Icons.shield_outlined,
+                  color: AppColors.textSecondary,
                 ),
-                PopupMenuButton<String>(
-                  tooltip: 'Más',
-                  icon: const Icon(
-                    Icons.more_vert_rounded,
-                    color: AppColors.textSecondary,
-                  ),
-                  color: AppColors.card,
-                  onSelected: (value) {
-                    if (value == 'delete') {
-                      unawaited(_deleteConversation());
-                    } else if (value == 'profile') {
-                      unawaited(_openMatchProfile());
-                    } else if (value == 'search') {
-                      unawaited(_openSearch());
-                    } else if (value == 'mute') {
-                      unawaited(_toggleMuteChat());
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'profile',
-                      child: Text(
-                        'Ver perfil',
-                        style: TextStyle(color: AppColors.textPrimary),
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'search',
-                      child: Text(
-                        'Buscar en el chat',
-                        style: TextStyle(color: AppColors.textPrimary),
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'mute',
-                      child: Text(
-                        channel.isMuted
-                            ? 'Activar notificaciones'
-                            : 'Silenciar notificaciones',
-                        style: const TextStyle(color: AppColors.textPrimary),
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Text(
-                        'Eliminar conversación',
-                        style: TextStyle(color: Colors.red.shade700),
-                      ),
-                    ),
-                  ],
+              ),
+              PopupMenuButton<String>(
+                tooltip: 'Más',
+                icon: const Icon(
+                  Icons.more_vert_rounded,
+                  color: AppColors.textSecondary,
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChatPresenceAvatar(
-                    photoUrl: otherPhoto,
-                    streamUserId:
-                        widget.thread?.otherPet.ownerUserId ??
-                        _ensureOther?.id,
-                    radius: 16,
-                    onTap: _openMatchProfile,
+                color: AppColors.card,
+                onSelected: (value) {
+                  if (value == 'delete') {
+                    unawaited(_deleteConversation());
+                  } else if (value == 'profile') {
+                    unawaited(_openMatchProfile());
+                  } else if (value == 'search') {
+                    unawaited(_openSearch());
+                  } else if (value == 'mute') {
+                    unawaited(_toggleMuteChat());
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'profile',
+                    child: Text(
+                      'Ver perfil',
+                      style: TextStyle(color: AppColors.textPrimary),
+                    ),
                   ),
+                  const PopupMenuItem(
+                    value: 'search',
+                    child: Text(
+                      'Buscar en el chat',
+                      style: TextStyle(color: AppColors.textPrimary),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'mute',
+                    child: Text(
+                      channel.isMuted
+                          ? 'Activar notificaciones'
+                          : 'Silenciar notificaciones',
+                      style: const TextStyle(color: AppColors.textPrimary),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Text(
+                      'Eliminar conversación',
+                      style: TextStyle(color: Colors.red.shade700),
+                    ),
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChatPresenceAvatar(
+                  photoUrl: otherPhoto,
+                  streamUserId:
+                      widget.thread?.otherPet.ownerUserId ??
+                      _ensureOther?.id,
+                  radius: 16,
+                  onTap: _openMatchProfile,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
           body: Column(
             children: [
