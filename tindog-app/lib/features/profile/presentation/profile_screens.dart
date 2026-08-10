@@ -145,7 +145,7 @@ class _HomeProfileBody extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    if (pet?.name?.trim().isNotEmpty == true) ...[
+                    if (_isCoreComplete) ...[
                       const SizedBox(width: 8),
                       Container(
                         width: 22,
@@ -176,7 +176,7 @@ class _HomeProfileBody extends ConsumerWidget {
                     style: TextStyle(color: Colors.red.shade700, fontSize: 13),
                   ),
                 ],
-                const SizedBox(height: 28),
+                const SizedBox(height: 22),
                 HomeProfileActionRow(
                   onSettings: () => showHomeSettingsSheet(
                     context: context,
@@ -185,45 +185,73 @@ class _HomeProfileBody extends ConsumerWidget {
                   onAddMedia: () => context.push('/profile/photos'),
                   onSafety: () => showSafetyInfoSheet(context),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 16),
               ],
             ),
           ),
         ),
-        HomeProfilePromoCarousel(
-          slides: [
-            HomePromoSlide(
-              title: 'Añadir vídeo',
-              subtitle: 'Subí un video corto y mostrá cómo es tu mascota.',
-              cta: 'Subir vídeo',
-              icon: Icons.videocam_rounded,
-              onCta: () => context.push('/profile/videos'),
-            ),
-            HomePromoSlide(
-              title: 'Más fotos',
-              subtitle: 'Los perfiles con varias fotos reciben más likes.',
-              cta: 'Añadir fotos',
-              icon: Icons.photo_library_rounded,
-              onCta: () => context.push('/profile/photos'),
-            ),
-            HomePromoSlide(
-              title: 'Completá tu perfil',
-              subtitle: 'Datos, ubicación y bio ayudan a mejores matches.',
-              cta: 'Editar perfil',
-              icon: Icons.pets_rounded,
-              onCta: onEdit,
-            ),
-            HomePromoSlide(
-              title: 'Empezá a deslizar',
-              subtitle: 'Cuando tu perfil esté listo, buscá nuevos amigos.',
-              cta: 'Ir a Desliza',
-              icon: Icons.local_fire_department_rounded,
-              onCta: () => context.go('/discover'),
-            ),
-          ],
-        ),
+        HomeProfilePromoCarousel(slides: _promoSlides(context)),
       ],
     );
+  }
+
+  bool get _isCoreComplete {
+    if (profile == null || pet == null) return false;
+    return isPersonalComplete(profile!) &&
+        isPetComplete(pet!) &&
+        isPhotosComplete(pet!, galleryPhotos: photos) &&
+        isLocationComplete(profile!);
+  }
+
+  List<HomePromoSlide> _promoSlides(BuildContext context) {
+    final slides = <HomePromoSlide>[];
+    final coreDone = _isCoreComplete;
+
+    if (!coreDone) {
+      slides.add(
+        HomePromoSlide(
+          title: 'Completá tu perfil',
+          subtitle: 'Datos, ubicación y bio ayudan a mejores matches.',
+          cta: 'Editar perfil',
+          icon: Icons.pets_rounded,
+          onCta: onEdit,
+        ),
+      );
+    }
+    if (videos.isEmpty) {
+      slides.add(
+        HomePromoSlide(
+          title: 'Añadir vídeo',
+          subtitle: 'Subí un video corto y mostrá cómo es tu mascota.',
+          cta: 'Subir vídeo',
+          icon: Icons.videocam_rounded,
+          onCta: () => context.push('/profile/videos'),
+        ),
+      );
+    }
+    if (photos.length < 2) {
+      slides.add(
+        HomePromoSlide(
+          title: 'Más fotos',
+          subtitle: 'Los perfiles con varias fotos reciben más likes.',
+          cta: 'Añadir fotos',
+          icon: Icons.photo_library_rounded,
+          onCta: () => context.push('/profile/photos'),
+        ),
+      );
+    }
+    slides.add(
+      HomePromoSlide(
+        title: coreDone ? 'Seguí deslizando' : 'Empezá a deslizar',
+        subtitle: coreDone
+            ? 'Hay perfiles nuevos esperándote en Desliza.'
+            : 'Cuando tu perfil esté listo, buscá nuevos amigos.',
+        cta: 'Ir a Desliza',
+        icon: Icons.local_fire_department_rounded,
+        onCta: () => context.go('/discover'),
+      ),
+    );
+    return slides;
   }
 }
 

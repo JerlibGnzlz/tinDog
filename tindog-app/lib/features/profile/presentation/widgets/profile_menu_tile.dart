@@ -11,6 +11,7 @@ class ProfileMenuTile extends StatelessWidget {
     required this.onTap,
     this.isComplete = false,
     this.comingSoon = false,
+    this.optional = false,
     this.animationIndex = 0,
   });
 
@@ -20,7 +21,26 @@ class ProfileMenuTile extends StatelessWidget {
   final VoidCallback onTap;
   final bool isComplete;
   final bool comingSoon;
+  /// No cuenta para el % de perfil; muestra chip “Opcional” si no está hecho.
+  final bool optional;
   final int animationIndex;
+
+  Widget _chip(BuildContext context, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.border.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w700,
+            ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,31 +57,23 @@ class ProfileMenuTile extends StatelessWidget {
         ),
         subtitle: Text(subtitle),
         trailing: comingSoon
-            ? Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Próximamente',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                ),
-              )
-            : AnimatedSwitcher(
-                duration: const Duration(milliseconds: 280),
-                transitionBuilder: (child, animation) => ScaleTransition(
-                  scale: animation,
-                  child: child,
-                ),
-                child: Icon(
-                  isComplete ? Icons.check_circle : Icons.radio_button_unchecked,
-                  key: ValueKey(isComplete),
-                  color: isComplete ? AppColors.accent : AppColors.border,
-                ),
-              ),
+            ? _chip(context, 'Próximamente')
+            : optional && !isComplete
+                ? _chip(context, 'Opcional')
+                : AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 280),
+                    transitionBuilder: (child, animation) => ScaleTransition(
+                      scale: animation,
+                      child: child,
+                    ),
+                    child: Icon(
+                      isComplete
+                          ? Icons.check_circle
+                          : Icons.radio_button_unchecked,
+                      key: ValueKey(isComplete),
+                      color: isComplete ? AppColors.accent : AppColors.border,
+                    ),
+                  ),
         onTap: onTap,
       ),
     )

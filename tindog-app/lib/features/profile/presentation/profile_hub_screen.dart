@@ -86,7 +86,9 @@ class _ProfileHubScreenState extends ConsumerState<ProfileHubScreen> {
             );
           },
           data: (pet) {
-            final completedCount = _completedCount(profile, pet);
+            final photos =
+                ref.watch(myPetPhotosProvider).valueOrNull ?? const [];
+            final completedCount = _completedCount(profile, pet, photos);
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) _handleCompletionChange(completedCount);
             });
@@ -105,11 +107,15 @@ class _ProfileHubScreenState extends ConsumerState<ProfileHubScreen> {
     );
   }
 
-  int _completedCount(ProfileModel profile, PetModel pet) {
+  int _completedCount(
+    ProfileModel profile,
+    PetModel pet,
+    List<PetMediaModel> photos,
+  ) {
     return [
       isPersonalComplete(profile),
       isPetComplete(pet),
-      isPhotosComplete(pet),
+      isPhotosComplete(pet, galleryPhotos: photos),
       isLocationComplete(profile),
     ].where((v) => v).length;
   }
@@ -211,7 +217,8 @@ class _HubBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final personalDone = isPersonalComplete(profile);
     final petDone = isPetComplete(pet);
-    final photosDone = isPhotosComplete(pet);
+    final photos = ref.watch(myPetPhotosProvider).valueOrNull ?? const [];
+    final photosDone = isPhotosComplete(pet, galleryPhotos: photos);
     final locationDone = isLocationComplete(profile);
     final videosAsync = ref.watch(myPetVideosProvider);
     final videos = videosAsync.valueOrNull ?? const [];
@@ -229,7 +236,7 @@ class _HubBody extends ConsumerWidget {
         ).animate().fadeIn(duration: 300.ms),
         const SizedBox(height: 4),
         Text(
-          '$completedCount de 4 secciones listas',
+          '$completedCount de 4 obligatorias · videos opcionales',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -263,30 +270,33 @@ class _HubBody extends ConsumerWidget {
           icon: Icons.photo_library_outlined,
           title: 'Fotos',
           subtitle: photosDone
-              ? 'Galería lista · hasta 6 fotos'
+              ? photos.isEmpty
+                  ? 'Foto de perfil lista'
+                  : '${photos.length} en galería · hasta 6'
               : 'Subí hasta 6 fotos',
           isComplete: photosDone,
           onTap: () => context.push('/profile/photos'),
         ),
         ProfileMenuTile(
           animationIndex: 3,
+          icon: Icons.location_on_outlined,
+          title: 'Ubicación',
+          subtitle: locationDone ? (profile.location ?? '') : 'Ciudad o barrio',
+          isComplete: locationDone,
+          onTap: () => context.push('/profile/location'),
+        ),
+        ProfileMenuTile(
+          animationIndex: 4,
           icon: Icons.videocam_outlined,
           title: 'Videos',
           subtitle: videosDone
               ? videos.length == 1
                   ? '1 clip listo'
                   : '${videos.length} clips listos'
-              : 'Hasta $maxPetVideos clips cortos (opcional)',
+              : 'Hasta $maxPetVideos clips cortos',
           isComplete: videosDone,
+          optional: true,
           onTap: () => context.push('/profile/videos'),
-        ),
-        ProfileMenuTile(
-          animationIndex: 4,
-          icon: Icons.location_on_outlined,
-          title: 'Ubicación',
-          subtitle: locationDone ? (profile.location ?? '') : 'Ciudad o barrio',
-          isComplete: locationDone,
-          onTap: () => context.push('/profile/location'),
         ),
       ],
     );

@@ -10,6 +10,12 @@
 | API | `POST /likes`, `POST /passes` |
 | DB | Tablas `likes`, `passes`, `matches` |
 
+## Explorar
+- Tab **Explorar** con dos bloques:
+  1. **Buscar perros** — atajos a Desliza (`near`, `breed`, `play`, `for_you`)
+  2. **Servicios cerca** — Veterinarias / Paseos / Refugios / PET shops (UI “próximamente”; sin Places aún)
+- Atajo de perros → aplica `discoverFiltersProvider` y navega a `/discover`
+
 ## Matches & Chats (lista)
 - `GET /matches` — threads con otherPet + lastMessage (preview desde **Stream**)
 - `DELETE /matches/:id` — unmatch (borra match + canal Stream; no bloquea)

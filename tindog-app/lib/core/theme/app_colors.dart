@@ -9,6 +9,9 @@ abstract final class AppColors {
   /// Crema del fondo del logo.
   static const surface = Color(0xFFF9F1E1);
 
+  /// Crema un tono más cálido (paneles / footers).
+  static const surfaceMuted = Color(0xFFF0E8D6);
+
   static const card = Color(0xFFFFFCF7);
 
   /// Carbón de los contornos del logo.

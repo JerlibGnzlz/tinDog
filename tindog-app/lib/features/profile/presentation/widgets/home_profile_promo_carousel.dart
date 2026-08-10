@@ -39,6 +39,18 @@ class _HomeProfilePromoCarouselState extends State<HomeProfilePromoCarousel> {
   }
 
   @override
+  void didUpdateWidget(covariant HomeProfilePromoCarousel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.slides.isEmpty) return;
+    if (_index >= widget.slides.length) {
+      _index = widget.slides.length - 1;
+      if (_controller.hasClients) {
+        _controller.jumpToPage(_index);
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     super.dispose();
@@ -50,31 +62,30 @@ class _HomeProfilePromoCarouselState extends State<HomeProfilePromoCarousel> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: const BoxDecoration(
-        color: Color(0xFFF0E8D6),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        color: AppColors.surfaceMuted,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: AppColors.card,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: AppColors.border),
           boxShadow: [
             BoxShadow(
-              color: AppColors.textPrimary.withValues(alpha: 0.06),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: AppColors.textPrimary.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
           child: Column(
             children: [
               SizedBox(
-                // Título + subtítulo a 2 líneas (evita overflow en pantallas densas).
-                height: 136,
+                height: 118,
                 child: PageView.builder(
                   controller: _controller,
                   itemCount: widget.slides.length,
@@ -86,9 +97,9 @@ class _HomeProfilePromoCarouselState extends State<HomeProfilePromoCarousel> {
                         Icon(
                           slide.icon,
                           color: AppColors.primaryDark,
-                          size: 28,
+                          size: 26,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Text(
                           slide.title,
                           textAlign: TextAlign.center,
@@ -96,12 +107,12 @@ class _HomeProfilePromoCarouselState extends State<HomeProfilePromoCarousel> {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: AppColors.textPrimary,
-                            fontSize: 20,
+                            fontSize: 18,
                             fontWeight: FontWeight.w800,
                             height: 1.2,
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
                         Text(
                           slide.subtitle,
                           textAlign: TextAlign.center,
@@ -109,8 +120,8 @@ class _HomeProfilePromoCarouselState extends State<HomeProfilePromoCarousel> {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: AppColors.textSecondary,
-                            fontSize: 14,
-                            height: 1.3,
+                            fontSize: 13,
+                            height: 1.25,
                           ),
                         ),
                       ],
@@ -118,7 +129,7 @@ class _HomeProfilePromoCarouselState extends State<HomeProfilePromoCarousel> {
                   },
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(widget.slides.length, (i) {
@@ -137,14 +148,14 @@ class _HomeProfilePromoCarouselState extends State<HomeProfilePromoCarousel> {
                   );
                 }),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(999),
                     ),

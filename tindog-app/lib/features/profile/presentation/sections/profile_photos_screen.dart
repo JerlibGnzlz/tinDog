@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -348,10 +349,20 @@ class _GalleryPhotoTile extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Image.network(
-              photo.url,
+            CachedNetworkImage(
+              imageUrl: photo.url,
               fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => const ColoredBox(
+              placeholder: (_, _) => const ColoredBox(
+                color: AppColors.border,
+                child: Center(
+                  child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              ),
+              errorWidget: (_, _, _) => const ColoredBox(
                 color: AppColors.border,
                 child: Icon(Icons.broken_image_outlined),
               ),

@@ -26,7 +26,7 @@ class HomeProfileActionRow extends StatelessWidget {
         ),
         _Action(
           icon: Icons.photo_camera_rounded,
-          label: 'AÑADIR ARCHIVOS',
+          label: 'MEDIA',
           size: 78,
           filled: true,
           badge: Icons.add_rounded,
@@ -130,13 +130,19 @@ class _Action extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.4,
+        SizedBox(
+          width: size + 12,
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.4,
+            ),
           ),
         ),
       ],

@@ -90,7 +90,10 @@ String petHubSubtitle(PetModel pet) {
   return parts.join(' · ');
 }
 
-bool isPhotosComplete(PetModel pet) => (pet.photoUrl ?? '').trim().isNotEmpty;
+bool isPhotosComplete(PetModel pet, {List<PetMediaModel>? galleryPhotos}) {
+  if (galleryPhotos != null && galleryPhotos.isNotEmpty) return true;
+  return (pet.photoUrl ?? '').trim().isNotEmpty;
+}
 
 bool isVideosComplete(List<PetMediaModel> videos) => videos.isNotEmpty;
 
