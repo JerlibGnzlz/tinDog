@@ -326,6 +326,7 @@ class _NewMatchCard extends StatelessWidget {
                           CachedNetworkImage(
                             imageUrl: photo,
                             fit: BoxFit.cover,
+                            alignment: Alignment.topCenter,
                             errorWidget: (_, _, _) =>
                                 const ColoredBox(color: AppColors.border),
                           )

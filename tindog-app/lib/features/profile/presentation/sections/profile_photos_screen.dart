@@ -7,6 +7,7 @@ import '../../../../core/media/image_compressor.dart';
 import '../../../../core/network/session_handler.dart';
 import '../../../../core/session/user_data_cache.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/photo_crop_editor_screen.dart';
 import '../../../../shared/widgets/tindog_filled_button.dart';
 import '../../../../shared/widgets/tindog_gradient_progress_bar.dart';
 import '../../../media/data/media_repository.dart';
@@ -90,10 +91,20 @@ class _ProfilePhotosScreenState extends ConsumerState<ProfilePhotosScreen> {
 
     final picked = await _picker.pickImage(
       source: ImageSource.gallery,
-      maxWidth: 1600,
-      imageQuality: 90,
+      // Resolución alta para poder ajustar; la compresión va después del crop.
+      maxWidth: 2400,
+      imageQuality: 95,
     );
     if (picked == null) return;
+
+    final rawBytes = await picked.readAsBytes();
+    if (!mounted) return;
+
+    final cropped = await openPhotoCropEditor(
+      context: context,
+      imageBytes: rawBytes,
+    );
+    if (cropped == null || !mounted) return;
 
     setState(() {
       _uploadingPhoto = true;
@@ -102,8 +113,7 @@ class _ProfilePhotosScreenState extends ConsumerState<ProfilePhotosScreen> {
     });
 
     try {
-      final rawBytes = await picked.readAsBytes();
-      final compressed = await ImageCompressor.compressForUpload(rawBytes);
+      final compressed = await ImageCompressor.compressForUpload(cropped);
 
       if (mounted) {
         setState(() {
@@ -243,7 +253,7 @@ class _ProfilePhotosScreenState extends ConsumerState<ProfilePhotosScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Subí hasta $maxPetPhotos fotos. La principal aparece en Home y en el swipe.',
+            'Subí hasta $maxPetPhotos fotos. Antes de subir podés zoom y mover el encuadre. La principal aparece en Home y en el swipe.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).hintColor,
                 ),
@@ -352,6 +362,7 @@ class _GalleryPhotoTile extends StatelessWidget {
             CachedNetworkImage(
               imageUrl: photo.url,
               fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
               placeholder: (_, _) => const ColoredBox(
                 color: AppColors.border,
                 child: Center(

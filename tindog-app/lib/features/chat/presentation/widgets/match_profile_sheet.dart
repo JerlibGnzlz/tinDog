@@ -13,6 +13,8 @@ Future<void> showMatchProfileSheet({
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    enableDrag: true,
+    showDragHandle: false,
     backgroundColor: AppColors.card,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
@@ -81,9 +83,32 @@ class _MatchProfileSheetState extends State<_MatchProfileSheet> {
               borderRadius: BorderRadius.circular(999),
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 4, 0),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Perfil',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded),
+                  color: AppColors.textSecondary,
+                  tooltip: 'Cerrar',
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: ListView(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottom),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + bottom),
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(18),

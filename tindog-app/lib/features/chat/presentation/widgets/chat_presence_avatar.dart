@@ -5,6 +5,9 @@ import '../../../../core/theme/app_colors.dart';
 import 'chat_time_format.dart';
 
 /// Avatar con punto de presencia Stream (verde = en línea).
+///
+/// Encuadre tipo WhatsApp: [Alignment.topCenter] para priorizar caras
+/// en fotos verticales (BoxFit.cover centrado suele cortar la cabeza).
 class ChatPresenceAvatar extends StatelessWidget {
   const ChatPresenceAvatar({
     super.key,
@@ -21,14 +24,44 @@ class ChatPresenceAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final avatar = CircleAvatar(
-      radius: radius,
-      backgroundColor: AppColors.border,
-      backgroundImage:
-          photoUrl != null ? CachedNetworkImageProvider(photoUrl!) : null,
-      child: photoUrl == null
-          ? Icon(Icons.pets, color: AppColors.textSecondary, size: radius)
-          : null,
+    final size = radius * 2;
+    final avatar = ClipOval(
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: photoUrl != null
+            ? CachedNetworkImage(
+                imageUrl: photoUrl!,
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+                width: size,
+                height: size,
+                errorWidget: (_, _, _) => ColoredBox(
+                  color: AppColors.border,
+                  child: Icon(
+                    Icons.pets,
+                    color: AppColors.textSecondary,
+                    size: radius,
+                  ),
+                ),
+                placeholder: (_, _) => ColoredBox(
+                  color: AppColors.border,
+                  child: Icon(
+                    Icons.pets,
+                    color: AppColors.textSecondary,
+                    size: radius,
+                  ),
+                ),
+              )
+            : ColoredBox(
+                color: AppColors.border,
+                child: Icon(
+                  Icons.pets,
+                  color: AppColors.textSecondary,
+                  size: radius,
+                ),
+              ),
+      ),
     );
 
     final client = StreamChat.maybeOf(context)?.client;
