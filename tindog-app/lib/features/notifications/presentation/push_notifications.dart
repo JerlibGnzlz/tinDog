@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
 
+import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -162,11 +164,15 @@ class PushNotificationsService {
         : (message.data['body']?.trim().isNotEmpty == true
             ? message.data['body']!
             : 'Abrí tinDog para verlo');
+    final imageUrl = notification?.android?.imageUrl?.trim().isNotEmpty == true
+        ? notification!.android!.imageUrl!.trim()
+        : message.data['imageUrl']?.trim();
 
     unawaited(_showLocalNotification(
       title: title,
       body: body,
       data: message.data,
+      imageUrl: imageUrl,
     ));
   }
 
@@ -180,6 +186,7 @@ class PushNotificationsService {
     required String title,
     required String body,
     required Map<String, dynamic> data,
+    String? imageUrl,
   }) async {
     final type = data['type']?.toString();
     final channel = type == 'match' ? _matchChannel : _chatChannel;
@@ -187,6 +194,8 @@ class PushNotificationsService {
       'matchId': data['matchId']?.toString() ?? '',
       'type': type ?? '',
     });
+
+    final avatarBytes = await _loadAvatarBytes(imageUrl);
 
     await _local.show(
       id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
@@ -200,6 +209,9 @@ class PushNotificationsService {
           importance: Importance.high,
           priority: Priority.high,
           icon: '@mipmap/ic_launcher',
+          largeIcon: avatarBytes != null
+              ? ByteArrayAndroidBitmap(avatarBytes)
+              : null,
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,
@@ -209,6 +221,44 @@ class PushNotificationsService {
       ),
       payload: payload,
     );
+  }
+
+  /// Descarga y redimensiona el avatar para largeIcon (best-effort).
+  Future<Uint8List?> _loadAvatarBytes(String? url) async {
+    final clean = url?.trim();
+    if (clean == null || clean.isEmpty) return null;
+    try {
+      final res = await Dio().get<List<int>>(
+        clean,
+        options: Options(
+          responseType: ResponseType.bytes,
+          receiveTimeout: const Duration(seconds: 4),
+          sendTimeout: const Duration(seconds: 4),
+        ),
+      );
+      final raw = res.data;
+      if (raw == null || raw.isEmpty) return null;
+      return await _squareThumb(Uint8List.fromList(raw), 192);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Uint8List?> _squareThumb(Uint8List bytes, int size) async {
+    try {
+      final codec = await ui.instantiateImageCodec(
+        bytes,
+        targetWidth: size,
+        targetHeight: size,
+      );
+      final frame = await codec.getNextFrame();
+      final image = frame.image;
+      final bd = await image.toByteData(format: ui.ImageByteFormat.png);
+      image.dispose();
+      return bd?.buffer.asUint8List();
+    } catch (_) {
+      return bytes;
+    }
   }
 
   void _onLocalNotificationTap(NotificationResponse response) {

@@ -9,6 +9,8 @@ export type PushPayload = {
   data?: Record<string, string>;
   /** Canal Android (debe existir en la app). */
   androidChannelId?: string;
+  /** URL pública del avatar (Cloudinary, etc.) para imagen en la notificación. */
+  imageUrl?: string;
 };
 
 @Injectable()
@@ -173,18 +175,28 @@ export class PushService implements OnModuleInit {
     await Promise.all(
       devices.map(async (device) => {
         try {
+          const imageUrl = payload.imageUrl?.trim() || undefined;
+          const messageData: Record<string, string> = {
+            ...(payload.data ?? {}),
+          };
+          if (imageUrl) {
+            messageData.imageUrl = imageUrl;
+          }
+
           await admin.messaging().send({
             token: device.token,
             notification: {
               title: payload.title,
               body: payload.body,
+              ...(imageUrl ? { imageUrl } : {}),
             },
-            data: payload.data,
+            data: messageData,
             android: {
               priority: 'high',
               notification: {
                 channelId: payload.androidChannelId ?? 'tindog_matches',
                 sound: 'default',
+                ...(imageUrl ? { imageUrl } : {}),
               },
             },
           });
@@ -218,6 +230,7 @@ export class PushService implements OnModuleInit {
     recipientUserId: string;
     otherPetName: string;
     matchId: string;
+    imageUrl?: string | null;
   }): Promise<void> {
     await this.sendToUser(params.recipientUserId, {
       title: '¡Es un match! 🐾',
@@ -227,6 +240,7 @@ export class PushService implements OnModuleInit {
         matchId: params.matchId,
       },
       androidChannelId: 'tindog_matches',
+      imageUrl: params.imageUrl ?? undefined,
     });
   }
 
@@ -235,6 +249,7 @@ export class PushService implements OnModuleInit {
     senderName: string;
     body: string;
     matchId: string;
+    imageUrl?: string | null;
   }): Promise<void> {
     await this.sendToUser(params.recipientUserId, {
       title: `Nuevo mensaje de ${params.senderName}`,
@@ -244,6 +259,7 @@ export class PushService implements OnModuleInit {
         matchId: params.matchId,
       },
       androidChannelId: 'tindog_chat',
+      imageUrl: params.imageUrl ?? undefined,
     });
   }
 }

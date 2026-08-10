@@ -126,6 +126,9 @@ Future<void> _watchMatchChannels(
   List<MatchThread> threads,
 ) async {
   for (final thread in threads) {
+    final cid = 'messaging:match-${thread.id}';
+    // Evita re-watch en cada refresh de la lista (quema cuota Stream).
+    if (client.state.channels[cid]?.state != null) continue;
     try {
       final channel = client.channel(
         'messaging',
@@ -143,10 +146,17 @@ Future<void> _clearOrphanUnread(
   StreamChatClient client,
   List<MatchThread> threads,
 ) async {
+  final me = client.state.currentUser?.id;
+  if (me == null || me.isEmpty) return;
+
   final known = threads.map((t) => 'match-${t.id}').toSet();
   try {
+    // Obligatorio: members $in — sin eso Stream responde 403 y gasta cuota.
     final channels = await client.queryChannelsOnline(
-      filter: Filter.equal('type', 'messaging'),
+      filter: Filter.and([
+        Filter.equal('type', 'messaging'),
+        Filter.in_('members', [me]),
+      ]),
       state: true,
       watch: false,
       paginationParams: const PaginationParams(limit: 30),

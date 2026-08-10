@@ -565,22 +565,38 @@ export class MatchingService {
     try {
       const pets = await this.prisma.pet.findMany({
         where: { id: { in: [petAId, petBId] } },
-        select: { id: true, userId: true, name: true },
+        select: {
+          id: true,
+          userId: true,
+          name: true,
+          photoUrl: true,
+          media: {
+            where: { type: 'photo' },
+            orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }],
+            take: 1,
+            select: { url: true },
+          },
+        },
       });
       const petA = pets.find((p) => p.id === petAId);
       const petB = pets.find((p) => p.id === petBId);
       if (!petA || !petB) return;
+
+      const imageOf = (pet: typeof petA) =>
+        pet.media[0]?.url?.trim() || pet.photoUrl?.trim() || undefined;
 
       await Promise.all([
         this.pushService.notifyMatch({
           recipientUserId: petA.userId,
           otherPetName: petB.name?.trim() || 'Alguien',
           matchId,
+          imageUrl: imageOf(petB),
         }),
         this.pushService.notifyMatch({
           recipientUserId: petB.userId,
           otherPetName: petA.name?.trim() || 'Alguien',
           matchId,
+          imageUrl: imageOf(petA),
         }),
       ]);
     } catch {

@@ -60,21 +60,53 @@ export class StreamWebhookService {
     const match = await this.prisma.match.findUnique({
       where: { id: matchId },
       include: {
-        petA: { select: { userId: true, name: true } },
-        petB: { select: { userId: true, name: true } },
+        petA: {
+          select: {
+            userId: true,
+            name: true,
+            photoUrl: true,
+            media: {
+              where: { type: 'photo' },
+              orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }],
+              take: 1,
+              select: { url: true },
+            },
+          },
+        },
+        petB: {
+          select: {
+            userId: true,
+            name: true,
+            photoUrl: true,
+            media: {
+              where: { type: 'photo' },
+              orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }],
+              take: 1,
+              select: { url: true },
+            },
+          },
+        },
       },
     });
     if (!match) return;
 
+    const senderPet =
+      match.petA.userId === senderId
+        ? match.petA
+        : match.petB.userId === senderId
+          ? match.petB
+          : null;
+
     const senderName =
       message.user?.name?.trim() ||
       event.user?.name?.trim() ||
-      (match.petA.userId === senderId
-        ? match.petA.name
-        : match.petB.userId === senderId
-          ? match.petB.name
-          : null) ||
+      senderPet?.name?.trim() ||
       'Alguien';
+
+    const senderImage =
+      senderPet?.media[0]?.url?.trim() ||
+      senderPet?.photoUrl?.trim() ||
+      undefined;
 
     const recipients = [match.petA, match.petB]
       .map((p) => p.userId)
@@ -108,6 +140,7 @@ export class StreamWebhookService {
           senderName,
           body,
           matchId,
+          imageUrl: senderImage,
         }),
       ),
     );
