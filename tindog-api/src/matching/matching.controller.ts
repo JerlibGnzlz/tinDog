@@ -13,6 +13,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { AuthUser } from '../common/types/auth-user.type';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { DiscoverQueryDto } from './dto/discover-query.dto';
+import { RewindDto } from './dto/rewind.dto';
 import { TargetPetDto } from './dto/target-pet.dto';
 import { MatchingService } from './matching.service';
 
@@ -59,6 +60,12 @@ export class MatchingController {
   @Post('passes')
   pass(@CurrentUser() user: AuthUser, @Body() dto: TargetPetDto) {
     return this.matchingService.pass(user.id, dto.toPetId);
+  }
+
+  /** Deshace el último like o pass hacia `toPetId` (Rewind). */
+  @Post('rewind')
+  rewind(@CurrentUser() user: AuthUser, @Body() dto: RewindDto) {
+    return this.matchingService.rewind(user.id, dto.toPetId);
   }
 
   @Get('matches')

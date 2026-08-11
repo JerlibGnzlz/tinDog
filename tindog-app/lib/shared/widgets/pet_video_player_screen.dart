@@ -17,7 +17,8 @@ class PetVideoPlayerScreen extends StatefulWidget {
   State<PetVideoPlayerScreen> createState() => _PetVideoPlayerScreenState();
 }
 
-class _PetVideoPlayerScreenState extends State<PetVideoPlayerScreen> {
+class _PetVideoPlayerScreenState extends State<PetVideoPlayerScreen>
+    with WidgetsBindingObserver {
   VideoPlayerController? _controller;
   bool _ready = false;
   String? _error;
@@ -26,13 +27,24 @@ class _PetVideoPlayerScreenState extends State<PetVideoPlayerScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _initPlayer());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.detached) {
+      _controller?.pause();
+    }
   }
 
   Future<void> _initPlayer() async {
     final controller = VideoPlayerController.networkUrl(
       Uri.parse(widget.url),
-      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: false),
     );
 
     try {
@@ -88,8 +100,15 @@ class _PetVideoPlayerScreenState extends State<PetVideoPlayerScreen> {
 
   @override
   void dispose() {
-    _controller?.removeListener(_onPlaybackChanged);
-    _controller?.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    final controller = _controller;
+    _controller = null;
+    controller?.removeListener(_onPlaybackChanged);
+    // pause sync antes de dispose (evita audio huérfano en Android).
+    try {
+      controller?.pause();
+    } catch (_) {}
+    controller?.dispose();
     super.dispose();
   }
 
@@ -98,78 +117,87 @@ class _PetVideoPlayerScreenState extends State<PetVideoPlayerScreen> {
     final controller = _controller;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
+    return PopScope(
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) {
+          try {
+            _controller?.pause();
+          } catch (_) {}
+        }
+      },
+      child: Scaffold(
         backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        title: Text(widget.title ?? 'Video'),
-      ),
-      body: _error != null
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  _error!,
-                  style: const TextStyle(color: Colors.white70),
-                  textAlign: TextAlign.center,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
+          title: Text(widget.title ?? 'Video'),
+        ),
+        body: _error != null
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    _error!,
+                    style: const TextStyle(color: Colors.white70),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-              ),
-            )
-          : !_ready || controller == null
-              ? const Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                )
-              : Column(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: _togglePlay,
-                        behavior: HitTestBehavior.opaque,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Center(
-                              child: AspectRatio(
-                                aspectRatio: controller.value.aspectRatio,
-                                child: VideoPlayer(controller),
-                              ),
-                            ),
-                            if (!controller.value.isPlaying)
-                              IgnorePointer(
-                                child: Container(
-                                  padding: const EdgeInsets.all(18),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.4),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.play_arrow_rounded,
-                                    color: Colors.white,
-                                    size: 52,
-                                  ),
+              )
+            : !_ready || controller == null
+                ? const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  )
+                : Column(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: _togglePlay,
+                          behavior: HitTestBehavior.opaque,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Center(
+                                child: AspectRatio(
+                                  aspectRatio: controller.value.aspectRatio,
+                                  child: VideoPlayer(controller),
                                 ),
                               ),
-                          ],
+                              if (!controller.value.isPlaying)
+                                IgnorePointer(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(18),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(alpha: 0.4),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.play_arrow_rounded,
+                                      color: Colors.white,
+                                      size: 52,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    _VideoSeekBar(
-                      controller: controller,
-                      seekDragValue: _seekDragValue,
-                      onDragStart: (value) =>
-                          setState(() => _seekDragValue = value),
-                      onDragUpdate: (value) =>
-                          setState(() => _seekDragValue = value),
-                      onDragEnd: (value) async {
-                        await _seekTo(value);
-                        if (mounted) setState(() => _seekDragValue = null);
-                      },
-                      onTogglePlay: _togglePlay,
-                    ),
-                    SizedBox(height: bottomInset + 8),
-                  ],
-                ),
+                      _VideoSeekBar(
+                        controller: controller,
+                        seekDragValue: _seekDragValue,
+                        onDragStart: (value) =>
+                            setState(() => _seekDragValue = value),
+                        onDragUpdate: (value) =>
+                            setState(() => _seekDragValue = value),
+                        onDragEnd: (value) async {
+                          await _seekTo(value);
+                          if (mounted) setState(() => _seekDragValue = null);
+                        },
+                        onTogglePlay: _togglePlay,
+                      ),
+                      SizedBox(height: bottomInset + 8),
+                    ],
+                  ),
+      ),
     );
   }
 }

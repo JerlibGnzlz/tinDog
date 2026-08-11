@@ -12,7 +12,7 @@ class DiscoverDeckState {
     this.isLoading = false,
     this.errorMessage,
     this.lastDecision,
-    this.lastCandidateId,
+    this.lastCandidate,
     this.lastMatched = false,
     this.lastMatchId,
   });
@@ -21,7 +21,7 @@ class DiscoverDeckState {
   final bool isLoading;
   final String? errorMessage;
   final DiscoverSwipeDecision? lastDecision;
-  final String? lastCandidateId;
+  final DiscoverCandidate? lastCandidate;
   final bool lastMatched;
   final String? lastMatchId;
 
@@ -29,6 +29,8 @@ class DiscoverDeckState {
       remaining.isEmpty ? null : remaining.first;
 
   bool get isEmpty => remaining.isEmpty && !isLoading;
+
+  bool get canRewind => lastCandidate != null && !isLoading;
 }
 
 final discoverFiltersProvider =
@@ -79,7 +81,7 @@ class DiscoverDeckNotifier extends StateNotifier<DiscoverDeckState> {
     state = DiscoverDeckState(
       remaining: rest,
       lastDecision: decision,
-      lastCandidateId: current.id,
+      lastCandidate: current,
       lastMatched: false,
     );
 
@@ -90,7 +92,7 @@ class DiscoverDeckNotifier extends StateNotifier<DiscoverDeckState> {
           state = DiscoverDeckState(
             remaining: state.remaining,
             lastDecision: decision,
-            lastCandidateId: current.id,
+            lastCandidate: current,
             lastMatched: true,
             lastMatchId: result.matchId,
           );
@@ -100,6 +102,45 @@ class DiscoverDeckNotifier extends StateNotifier<DiscoverDeckState> {
       }
     } catch (_) {
       await reload();
+      rethrow;
+    }
+  }
+
+  Future<bool> rewind() async {
+    final last = state.lastCandidate;
+    if (last == null || state.isLoading) return false;
+
+    final prevRemaining = state.remaining;
+    final prevDecision = state.lastDecision;
+    final prevMatched = state.lastMatched;
+    final prevMatchId = state.lastMatchId;
+
+    state = DiscoverDeckState(
+      remaining: prevRemaining,
+      isLoading: true,
+      lastCandidate: last,
+      lastDecision: prevDecision,
+      lastMatched: prevMatched,
+      lastMatchId: prevMatchId,
+    );
+
+    try {
+      await _repo.rewind(last.id);
+      final alreadyFront =
+          prevRemaining.isNotEmpty && prevRemaining.first.id == last.id;
+      state = DiscoverDeckState(
+        remaining: alreadyFront ? prevRemaining : [last, ...prevRemaining],
+      );
+      return true;
+    } catch (e) {
+      state = DiscoverDeckState(
+        remaining: prevRemaining,
+        lastCandidate: last,
+        lastDecision: prevDecision,
+        lastMatched: prevMatched,
+        lastMatchId: prevMatchId,
+        errorMessage: readableError(e),
+      );
       rethrow;
     }
   }

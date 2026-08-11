@@ -9,6 +9,7 @@ class DiscoverActions extends StatelessWidget {
     this.onRewind,
     this.onSuperLike,
     this.onBoost,
+    this.canRewind = false,
   });
 
   final VoidCallback onPass;
@@ -16,6 +17,7 @@ class DiscoverActions extends StatelessWidget {
   final VoidCallback? onRewind;
   final VoidCallback? onSuperLike;
   final VoidCallback? onBoost;
+  final bool canRewind;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +28,8 @@ class DiscoverActions extends StatelessWidget {
           icon: Icons.replay_rounded,
           color: const Color(0xFFD4A017),
           size: 46,
-          onTap: onRewind,
+          onTap: canRewind ? onRewind : null,
+          enabled: canRewind,
         ),
         _Btn(
           icon: Icons.close_rounded,
@@ -66,6 +69,7 @@ class _Btn extends StatelessWidget {
     required this.size,
     required this.onTap,
     this.iconSize,
+    this.enabled = true,
   });
 
   final IconData icon;
@@ -73,14 +77,16 @@ class _Btn extends StatelessWidget {
   final double size;
   final double? iconSize;
   final VoidCallback? onTap;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = enabled ? color : color.withValues(alpha: 0.35);
     return Material(
       color: Colors.transparent,
       elevation: 0,
       child: InkWell(
-        onTap: onTap,
+        onTap: enabled ? onTap : null,
         customBorder: const CircleBorder(),
         child: Ink(
           width: size,
@@ -97,7 +103,7 @@ class _Btn extends StatelessWidget {
               ),
             ],
           ),
-          child: Icon(icon, color: color, size: iconSize ?? 22),
+          child: Icon(icon, color: effectiveColor, size: iconSize ?? 22),
         ),
       ),
     );

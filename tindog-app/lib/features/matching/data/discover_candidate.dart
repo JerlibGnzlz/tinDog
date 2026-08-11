@@ -1,11 +1,26 @@
 import '../../../shared/models/swipe_preview_media.dart';
 
+class DiscoverVideoClip {
+  const DiscoverVideoClip({required this.url, this.durationSec});
+
+  final String url;
+  final int? durationSec;
+
+  factory DiscoverVideoClip.fromJson(Map<String, dynamic> json) {
+    return DiscoverVideoClip(
+      url: (json['url'] as String? ?? '').trim(),
+      durationSec: (json['durationSec'] as num?)?.toInt(),
+    );
+  }
+}
+
 /// Candidato del deck de discovery (otra mascota, no la tuya).
 class DiscoverCandidate {
   const DiscoverCandidate({
     required this.id,
     required this.name,
     required this.photoUrls,
+    this.videos = const [],
     this.age,
     this.breed,
     this.bio,
@@ -18,6 +33,7 @@ class DiscoverCandidate {
   final String id;
   final String name;
   final List<String> photoUrls;
+  final List<DiscoverVideoClip> videos;
   final int? age;
   final String? breed;
   final String? bio;
@@ -33,6 +49,12 @@ class DiscoverCandidate {
         .where((u) => u.trim().isNotEmpty)
         .toList(growable: false);
 
+    final videos = (json['videos'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(DiscoverVideoClip.fromJson)
+        .where((v) => v.url.isNotEmpty)
+        .toList(growable: false);
+
     return DiscoverCandidate(
       id: json['id'] as String,
       name: json['name'] as String,
@@ -44,27 +66,65 @@ class DiscoverCandidate {
       isActive: json['isActive'] as bool? ?? true,
       ownerUserId: json['ownerUserId'] as String?,
       photoUrls: urls,
+      videos: videos,
     );
   }
 
-  List<SwipePreviewMediaItem> get mediaItems =>
-      photoUrls.map(SwipePreviewMediaItem.photo).toList(growable: false);
+  /// Fotos primero, luego videos de perfil.
+  List<SwipePreviewMediaItem> get mediaItems => [
+        ...photoUrls.map(SwipePreviewMediaItem.photo),
+        ...videos.map(
+          (v) => SwipePreviewMediaItem.video(
+            url: v.url,
+            durationSec: v.durationSec,
+          ),
+        ),
+      ];
 
+  /// Barrio/ciudad corto (sin provincia) para la card.
+  String? get shortLocation {
+    var loc = location?.trim();
+    if (loc == null || loc.isEmpty) return null;
+    final lower = loc.toLowerCase();
+    if (lower.startsWith('vive en ')) {
+      loc = loc.substring(8).trim();
+    }
+    final first = loc.split(',').first.trim();
+    return first.isEmpty ? loc : first;
+  }
+
+  /// Distancia amable (bandas, sin metros exactos que asusten).
   String? get distanceLabel {
     if (distanceKm == null) return null;
     final km = distanceKm!;
-    if (km < 1) {
-      final meters = (km * 1000).round();
-      return 'A $meters m de distancia';
+    if (km < 0.25) return 'Muy cerca · a menos de 250 m';
+    if (km < 1) return 'A menos de 1 km';
+    if (km < 3) {
+      final tenths = (km * 10).round() / 10;
+      final pretty = tenths == tenths.roundToDouble()
+          ? tenths.toInt().toString()
+          : tenths.toStringAsFixed(1);
+      return 'A unos $pretty km';
     }
-    final rounded = km < 10 ? km.toStringAsFixed(1) : km.round().toString();
-    return 'A $rounded km de distancia';
+    if (km < 15) {
+      return 'A ${km < 10 ? km.toStringAsFixed(1) : km.round().toString()} km';
+    }
+    return 'A ${km.round()} km';
+  }
+
+  /// Tip de playdate cuando la distancia invita a verse.
+  String? get proximityTip {
+    if (distanceKm == null) return null;
+    final km = distanceKm!;
+    if (km < 1) return 'Ideal para un playdate cerca';
+    if (km < 5) return 'Buena distancia para un paseo juntos';
+    return null;
   }
 
   String? get locationLabel {
-    final loc = location?.trim();
-    if (loc == null || loc.isEmpty) return null;
-    return loc.startsWith('Vive') ? loc : 'Vive en $loc';
+    final short = shortLocation;
+    if (short == null) return null;
+    return 'Vive en $short';
   }
 }
 
@@ -101,6 +161,7 @@ class LikeListItem extends DiscoverCandidate {
     required super.photoUrls,
     required this.likedAt,
     required this.matched,
+    super.videos,
     super.age,
     super.breed,
     super.bio,
@@ -119,6 +180,7 @@ class LikeListItem extends DiscoverCandidate {
       id: base.id,
       name: base.name,
       photoUrls: base.photoUrls,
+      videos: base.videos,
       age: base.age,
       breed: base.breed,
       bio: base.bio,

@@ -107,14 +107,14 @@ class _ProfileVideosScreenState extends ConsumerState<ProfileVideosScreen> {
                 leading: const Icon(Icons.video_library_outlined),
                 title: const Text('Elegir de la galería'),
                 subtitle: Text(
-                  'Si es largo, recortás hasta $maxVideoDurationSec s',
+                  'Después elegís qué parte subir (máx. $maxVideoDurationSec s)',
                 ),
                 onTap: () => Navigator.pop(context, ImageSource.gallery),
               ),
               ListTile(
                 leading: const Icon(Icons.videocam_outlined),
                 title: const Text('Grabar clip'),
-                subtitle: Text('Máximo $maxVideoDurationSec segundos'),
+                subtitle: Text('Se graba hasta $maxVideoDurationSec segundos'),
                 onTap: () => Navigator.pop(context, ImageSource.camera),
               ),
               const SizedBox(height: 8),

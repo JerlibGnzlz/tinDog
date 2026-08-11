@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_navigation.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../notifications/presentation/notification_preferences.dart';
 
 Future<void> showHomeSettingsSheet({
   required BuildContext context,
@@ -45,6 +46,38 @@ Future<void> showHomeSettingsSheet({
                     ),
                   ),
                 ),
+              ),
+              Consumer(
+                builder: (context, ref, _) {
+                  final soundOn = ref.watch(chatMessageSoundProvider);
+                  return SwitchListTile(
+                    secondary: Icon(
+                      soundOn
+                          ? Icons.notifications_active_rounded
+                          : Icons.notifications_off_outlined,
+                      color: AppColors.primaryDark,
+                    ),
+                    title: const Text(
+                      'Sonido de mensajes',
+                      style: TextStyle(color: AppColors.textPrimary),
+                    ),
+                    subtitle: const Text(
+                      'Suena si no estás dentro de ese chat. '
+                      'Los chats silenciados nunca avisan.',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                    value: soundOn,
+                    activeThumbColor: AppColors.primary,
+                    onChanged: (v) {
+                      ref
+                          .read(chatMessageSoundProvider.notifier)
+                          .setEnabled(v);
+                    },
+                  );
+                },
               ),
               ListTile(
                 leading: const Icon(

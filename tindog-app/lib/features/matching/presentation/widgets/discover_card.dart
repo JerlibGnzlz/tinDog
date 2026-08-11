@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../shared/models/swipe_preview_media.dart';
 import '../../../../shared/widgets/pet_card_overlay.dart';
 import '../../data/discover_candidate.dart';
 import '../discover_providers.dart';
@@ -58,7 +59,7 @@ class _DiscoverCardState extends State<DiscoverCard>
   Animation<double>? _flyAnimation;
   bool _committing = false;
 
-  List<String> get _photos => widget.candidate.photoUrls;
+  List<SwipePreviewMediaItem> get _media => widget.candidate.mediaItems;
 
   @override
   void initState() {
@@ -123,14 +124,31 @@ class _DiscoverCardState extends State<DiscoverCard>
   }
 
   void _onTapUp(TapUpDetails details, double width) {
-    if (_totalDrag > _tapThreshold || _photos.length <= 1) return;
+    if (_totalDrag > _tapThreshold) return;
     final x = details.localPosition.dx;
-    if (x < width * 0.35 && _photoIndex > 0) {
-      setState(() => _photoIndex -= 1);
-      HapticFeedback.selectionClick();
-    } else if (x > width * 0.65 && _photoIndex < _photos.length - 1) {
-      setState(() => _photoIndex += 1);
-      HapticFeedback.selectionClick();
+    final mediaIndex =
+        _photoIndex.clamp(0, _media.isEmpty ? 0 : _media.length - 1);
+    final current = _media.isEmpty ? null : _media[mediaIndex];
+
+    if (_media.length > 1) {
+      if (x < width * 0.35 && _photoIndex > 0) {
+        setState(() => _photoIndex -= 1);
+        HapticFeedback.selectionClick();
+        return;
+      }
+      if (x > width * 0.65 && _photoIndex < _media.length - 1) {
+        setState(() => _photoIndex += 1);
+        HapticFeedback.selectionClick();
+        return;
+      }
+    }
+
+    if (current != null &&
+        current.isVideo &&
+        widget.onOpenGallery != null &&
+        x >= width * 0.3 &&
+        x <= width * 0.7) {
+      widget.onOpenGallery!(mediaIndex);
     }
   }
 
@@ -143,6 +161,8 @@ class _DiscoverCardState extends State<DiscoverCard>
     final breed = candidate.breed?.trim();
     final bio = candidate.bio?.trim();
     final subtitle = (breed != null && breed.isNotEmpty) ? breed : null;
+    final mediaIndex = _photoIndex.clamp(0, _media.isEmpty ? 0 : _media.length - 1);
+    final currentMedia = _media.isEmpty ? null : _media[mediaIndex];
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -169,18 +189,93 @@ class _DiscoverCardState extends State<DiscoverCard>
                 children: [
                   ColoredBox(
                     color: Colors.black,
-                    child: CachedNetworkImage(
-                      imageUrl: _photos[_photoIndex.clamp(0, _photos.length - 1)],
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                      placeholder: (_, _) =>
-                          const ColoredBox(color: Color(0xFF1A1A1A)),
-                      errorWidget: (_, _, _) => const ColoredBox(
-                        color: Color(0xFF1A1A1A),
-                        child: Icon(Icons.pets, color: Colors.white38, size: 64),
-                      ),
-                    ),
+                    child: currentMedia == null
+                        ? const ColoredBox(
+                            color: Color(0xFF1A1A1A),
+                            child: Icon(
+                              Icons.pets,
+                              color: Colors.white38,
+                              size: 64,
+                            ),
+                          )
+                        : Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              CachedNetworkImage(
+                                imageUrl: currentMedia.thumbnailUrl,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                                alignment: Alignment.topCenter,
+                                placeholder: (_, _) =>
+                                    const ColoredBox(color: Color(0xFF1A1A1A)),
+                                errorWidget: (_, _, _) => const ColoredBox(
+                                  color: Color(0xFF1A1A1A),
+                                  child: Icon(
+                                    Icons.pets,
+                                    color: Colors.white38,
+                                    size: 64,
+                                  ),
+                                ),
+                              ),
+                              if (currentMedia.isVideo)
+                                Center(
+                                  child: IgnorePointer(
+                                    child: Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.4,
+                                        ),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.play_arrow_rounded,
+                                        color: Colors.white,
+                                        size: 48,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              if (currentMedia.isVideo &&
+                                  currentMedia.durationSec != null)
+                                Positioned(
+                                  right: 14,
+                                  bottom: 120,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(alpha: 0.55),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.videocam_rounded,
+                                          size: 14,
+                                          color: Colors.white,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          formatMediaDuration(
+                                            currentMedia.durationSec!,
+                                          ),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                   ),
                   const DecoratedBox(
                     decoration: BoxDecoration(
@@ -197,19 +292,19 @@ class _DiscoverCardState extends State<DiscoverCard>
                       ),
                     ),
                   ),
-                  if (_photos.length > 1)
+                  if (_media.length > 1)
                     Positioned(
                       top: widget.storyTopInset,
                       left: 12,
                       right: 12,
                       child: Row(
-                        children: List.generate(_photos.length, (i) {
-                          final active = i == _photoIndex;
+                        children: List.generate(_media.length, (i) {
+                          final active = i == mediaIndex;
                           return Expanded(
                             child: Container(
                               height: active ? 3.5 : 2.5,
                               margin: EdgeInsets.only(
-                                right: i == _photos.length - 1 ? 0 : 4,
+                                right: i == _media.length - 1 ? 0 : 4,
                               ),
                               decoration: BoxDecoration(
                                 color: active
@@ -312,14 +407,7 @@ class _DiscoverCardState extends State<DiscoverCard>
                                       : null,
                                   onInfoTap: widget.onOpenGallery == null
                                       ? null
-                                      : () => widget.onOpenGallery!(
-                                            _photoIndex.clamp(
-                                              0,
-                                              _photos.isEmpty
-                                                  ? 0
-                                                  : _photos.length - 1,
-                                            ),
-                                          ),
+                                      : () => widget.onOpenGallery!(mediaIndex),
                                 ),
                                 if (candidate.locationLabel != null) ...[
                                   const SizedBox(height: 8),
@@ -331,8 +419,15 @@ class _DiscoverCardState extends State<DiscoverCard>
                                 if (candidate.distanceLabel != null) ...[
                                   const SizedBox(height: 4),
                                   _InfoLine(
-                                    icon: Icons.location_on_outlined,
+                                    icon: Icons.near_me_outlined,
                                     text: candidate.distanceLabel!,
+                                  ),
+                                ],
+                                if (candidate.proximityTip != null) ...[
+                                  const SizedBox(height: 4),
+                                  _InfoLine(
+                                    icon: Icons.pets_rounded,
+                                    text: candidate.proximityTip!,
                                   ),
                                 ],
                                 if (widget.bottomBar != null) ...[

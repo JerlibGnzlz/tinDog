@@ -54,6 +54,13 @@ class MatchingRepository {
     );
   }
 
+  Future<void> rewind(String toPetId) async {
+    await _dio.post<Map<String, dynamic>>(
+      '/rewind',
+      data: {'toPetId': toPetId},
+    );
+  }
+
   Future<List<LikeListItem>> listSentLikes() async {
     final response = await _dio.get<List<dynamic>>('/likes/sent');
     return _mapLikeList(response.data);

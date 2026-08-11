@@ -34,6 +34,8 @@ export type DiscoverCandidateDto = {
   distanceKm: number | null;
   isActive: boolean;
   photoUrls: string[];
+  /** Clips de perfil (visibles en Desliza / ficha del match). */
+  videos: { url: string; durationSec: number | null }[];
   /** Dueño (user.id) — para presencia Stream */
   ownerUserId: string;
 };
@@ -165,9 +167,12 @@ export class MatchingService {
       where,
       include: {
         media: {
-          where: { type: PetMediaType.photo },
-          orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }],
-          select: { url: true },
+          orderBy: [
+            { type: 'asc' },
+            { isPrimary: 'desc' },
+            { sortOrder: 'asc' },
+          ],
+          select: { url: true, type: true, durationSec: true },
         },
         user: {
           select: {
@@ -326,6 +331,85 @@ export class MatchingService {
     });
 
     return { passed: true, pass };
+  }
+
+  /**
+   * Rewind: deshace tu like o pass hacia `toPetId`.
+   * Si había match por tu like, borra el match + canal pero deja el like del otro.
+   */
+  async rewind(userId: string, toPetId: string) {
+    const myPet = await this.requireMyPet(userId);
+    if (myPet.id === toPetId) {
+      throw new BadRequestException('No hay nada que deshacer.');
+    }
+
+    await this.requireTargetPet(toPetId);
+
+    const [like, pass] = await Promise.all([
+      this.prisma.like.findUnique({
+        where: {
+          fromPetId_toPetId: { fromPetId: myPet.id, toPetId },
+        },
+      }),
+      this.prisma.pass.findUnique({
+        where: {
+          fromPetId_toPetId: { fromPetId: myPet.id, toPetId },
+        },
+      }),
+    ]);
+
+    if (!like && !pass) {
+      throw new BadRequestException(
+        'No hay like ni pass reciente para deshacer.',
+      );
+    }
+
+    // Preferir deshacer like si existen ambos (no debería pasar en flujo normal).
+    if (like) {
+      const match = await this.findMatchBetween(myPet.id, toPetId);
+      if (match) {
+        await this.prisma.$transaction([
+          this.prisma.like.delete({
+            where: {
+              fromPetId_toPetId: { fromPetId: myPet.id, toPetId },
+            },
+          }),
+          this.prisma.match.delete({ where: { id: match.id } }),
+        ]);
+        await this.chatService.deleteChannelForMatch(match.id);
+        await this.pushService.clearMutesForMatch(match.id);
+        return {
+          rewound: true,
+          kind: 'like' as const,
+          undidMatch: true,
+          toPetId,
+        };
+      }
+
+      await this.prisma.like.delete({
+        where: {
+          fromPetId_toPetId: { fromPetId: myPet.id, toPetId },
+        },
+      });
+      return {
+        rewound: true,
+        kind: 'like' as const,
+        undidMatch: false,
+        toPetId,
+      };
+    }
+
+    await this.prisma.pass.delete({
+      where: {
+        fromPetId_toPetId: { fromPetId: myPet.id, toPetId },
+      },
+    });
+    return {
+      rewound: true,
+      kind: 'pass' as const,
+      undidMatch: false,
+      toPetId,
+    };
   }
 
   async listSentLikes(userId: string): Promise<LikeListItemDto[]> {
@@ -504,9 +588,12 @@ export class MatchingService {
 
   private readonly petCardInclude = {
     media: {
-      where: { type: PetMediaType.photo },
-      orderBy: [{ isPrimary: 'desc' as const }, { sortOrder: 'asc' as const }],
-      select: { url: true },
+      orderBy: [
+        { type: 'asc' as const },
+        { isPrimary: 'desc' as const },
+        { sortOrder: 'asc' as const },
+      ],
+      select: { url: true, type: true, durationSec: true },
     },
     user: {
       select: {
@@ -611,7 +698,7 @@ export class MatchingService {
   private toCandidate(
     pet: Prisma.PetGetPayload<{
       include: {
-        media: { select: { url: true } };
+        media: { select: { url: true; type: true; durationSec: true } };
         user: {
           select: {
             profile: {
@@ -633,13 +720,24 @@ export class MatchingService {
     const name = pet.name?.trim();
     if (!name) return null;
 
-    const fromMedia = pet.media.map((m) => m.url);
+    const photoFromMedia = pet.media
+      .filter((m) => m.type === PetMediaType.photo)
+      .map((m) => m.url.trim())
+      .filter((u) => u.length > 0);
     const photoUrls = [
-      ...fromMedia,
-      ...(pet.photoUrl && !fromMedia.includes(pet.photoUrl)
-        ? [pet.photoUrl]
+      ...photoFromMedia,
+      ...(pet.photoUrl && !photoFromMedia.includes(pet.photoUrl.trim())
+        ? [pet.photoUrl.trim()]
         : []),
     ];
+    const videos = pet.media
+      .filter((m) => m.type === PetMediaType.video)
+      .map((m) => ({
+        url: m.url.trim(),
+        durationSec: m.durationSec,
+      }))
+      .filter((v) => v.url.length > 0);
+
     if (requirePhoto && photoUrls.length === 0) return null;
 
     return {
@@ -653,6 +751,7 @@ export class MatchingService {
         distanceKm != null ? Math.round(distanceKm * 10) / 10 : null,
       isActive: true,
       photoUrls,
+      videos,
       ownerUserId: pet.userId,
     };
   }

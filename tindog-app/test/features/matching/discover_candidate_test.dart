@@ -24,17 +24,34 @@ void main() {
       expect(c.bio, 'Muy sociable');
       expect(c.ownerUserId, 'user-1');
       expect(c.photoUrls, ['https://example.com/a.jpg']);
+      expect(c.videos, isEmpty);
       expect(c.mediaItems, hasLength(1));
     });
 
-    test('locationLabel agrega prefijo Vive en', () {
+    test('fromJson incluye videos de perfil', () {
+      final c = DiscoverCandidate.fromJson({
+        'id': 'pet-2',
+        'name': 'Rocky',
+        'photoUrls': ['https://example.com/a.jpg'],
+        'videos': [
+          {'url': 'https://example.com/v.mp4', 'durationSec': 12},
+        ],
+      });
+      expect(c.videos, hasLength(1));
+      expect(c.videos.first.durationSec, 12);
+      expect(c.mediaItems, hasLength(2));
+      expect(c.mediaItems.last.isVideo, isTrue);
+    });
+
+    test('locationLabel usa barrio corto', () {
       const c = DiscoverCandidate(
         id: '1',
         name: 'Luna',
         photoUrls: [],
-        location: 'Madrid, España',
+        location: 'Palermo, Buenos Aires',
       );
-      expect(c.locationLabel, 'Vive en Madrid, España');
+      expect(c.shortLocation, 'Palermo');
+      expect(c.locationLabel, 'Vive en Palermo');
     });
 
     test('locationLabel no duplica Vive', () {
@@ -47,31 +64,73 @@ void main() {
       expect(c.locationLabel, 'Vive en Córdoba');
     });
 
-    test('distanceLabel en metros si < 1 km', () {
-      const c = DiscoverCandidate(
-        id: '1',
-        name: 'Luna',
-        photoUrls: [],
-        distanceKm: 0.35,
+    test('distanceLabel usa bandas amables', () {
+      expect(
+        const DiscoverCandidate(
+          id: '1',
+          name: 'Luna',
+          photoUrls: [],
+          distanceKm: 0.12,
+        ).distanceLabel,
+        'Muy cerca · a menos de 250 m',
       );
-      expect(c.distanceLabel, 'A 350 m de distancia');
+      expect(
+        const DiscoverCandidate(
+          id: '1',
+          name: 'Luna',
+          photoUrls: [],
+          distanceKm: 0.35,
+        ).distanceLabel,
+        'A menos de 1 km',
+      );
+      expect(
+        const DiscoverCandidate(
+          id: '1',
+          name: 'Luna',
+          photoUrls: [],
+          distanceKm: 2.4,
+        ).distanceLabel,
+        'A unos 2.4 km',
+      );
+      expect(
+        const DiscoverCandidate(
+          id: '2',
+          name: 'Rocky',
+          photoUrls: [],
+          distanceKm: 42,
+        ).distanceLabel,
+        'A 42 km',
+      );
     });
 
-    test('distanceLabel redondea km', () {
-      const near = DiscoverCandidate(
-        id: '1',
-        name: 'Luna',
-        photoUrls: [],
-        distanceKm: 2.4,
+    test('proximityTip solo si está cerca', () {
+      expect(
+        const DiscoverCandidate(
+          id: '1',
+          name: 'Luna',
+          photoUrls: [],
+          distanceKm: 0.5,
+        ).proximityTip,
+        'Ideal para un playdate cerca',
       );
-      const far = DiscoverCandidate(
-        id: '2',
-        name: 'Rocky',
-        photoUrls: [],
-        distanceKm: 10352,
+      expect(
+        const DiscoverCandidate(
+          id: '1',
+          name: 'Luna',
+          photoUrls: [],
+          distanceKm: 3.2,
+        ).proximityTip,
+        'Buena distancia para un paseo juntos',
       );
-      expect(near.distanceLabel, 'A 2.4 km de distancia');
-      expect(far.distanceLabel, 'A 10352 km de distancia');
+      expect(
+        const DiscoverCandidate(
+          id: '1',
+          name: 'Luna',
+          photoUrls: [],
+          distanceKm: 12,
+        ).proximityTip,
+        isNull,
+      );
     });
   });
 

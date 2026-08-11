@@ -5,7 +5,9 @@ import '../../../core/feedback/app_feedback.dart';
 import '../../../core/network/session_handler.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/pet_photo_viewer_screen.dart';
+import '../../../shared/widgets/pet_video_player_screen.dart';
 import '../../../shared/widgets/tindog_loader.dart';
+import '../../../shared/models/swipe_preview_media.dart';
 import '../../profile/presentation/profile_providers.dart';
 import 'discover_filters.dart';
 import 'discover_providers.dart';
@@ -41,6 +43,24 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           context.push('/chats/${deck.lastMatchId}');
         }
       }
+    } catch (e) {
+      if (!mounted) return;
+      if (isSessionError(e)) {
+        handleSessionExpired(ref, context, e);
+        return;
+      }
+      showTindogErrorSnackBar(context, readableError(e));
+    }
+  }
+
+  Future<void> _onRewind() async {
+    final deck = ref.read(discoverDeckProvider);
+    if (!deck.canRewind) {
+      showTindogInfoSnackBar(context, 'No hay nada para deshacer');
+      return;
+    }
+    try {
+      await ref.read(discoverDeckProvider.notifier).rewind();
     } catch (e) {
       if (!mounted) return;
       if (isSessionError(e)) {
@@ -119,14 +139,32 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     controller: _cardController,
                     storyTopInset: topInset + 52,
                     onDecision: _onDecision,
-                    onOpenGallery: (photoIndex) {
-                      final urls = current.photoUrls;
-                      if (urls.isEmpty) return;
+                    onOpenGallery: (mediaIndex) {
+                      final items = current.mediaItems;
+                      if (items.isEmpty) return;
+                      final i = mediaIndex.clamp(0, items.length - 1);
+                      final item = items[i];
+                      if (item.isVideo) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => PetVideoPlayerScreen(
+                              url: item.url,
+                              title: item.durationSec != null
+                                  ? formatMediaDuration(item.durationSec!)
+                                  : current.name,
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+                      final photoUrls = current.photoUrls;
+                      if (photoUrls.isEmpty) return;
+                      final photoIndex = photoUrls.indexOf(item.url);
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
                           builder: (_) => PetPhotoViewerScreen(
-                            urls: urls,
-                            initialIndex: photoIndex.clamp(0, urls.length - 1),
+                            urls: photoUrls,
+                            initialIndex: photoIndex >= 0 ? photoIndex : 0,
                             title: current.name,
                           ),
                         ),
@@ -135,10 +173,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     bottomBar: DiscoverActions(
                       onPass: _cardController.pass,
                       onLike: _cardController.like,
-                      onRewind: () => showTindogInfoSnackBar(
-                        context,
-                        'Rewind — próximamente',
-                      ),
+                      canRewind: deck.canRewind,
+                      onRewind: _onRewind,
                       onSuperLike: () => showTindogInfoSnackBar(
                         context,
                         'Super like — próximamente',
@@ -180,6 +216,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       }
                       ref.read(discoverDeckProvider.notifier).reload();
                     },
+                    onRewind: deck.canRewind ? _onRewind : null,
                   ),
                 Positioned(
                   top: 0,
@@ -226,12 +263,14 @@ class _EmptyDiscover extends StatelessWidget {
     required this.subtitle,
     required this.primaryLabel,
     required this.onPrimary,
+    this.onRewind,
   });
 
   final String title;
   final String subtitle;
   final String primaryLabel;
   final VoidCallback onPrimary;
+  final VoidCallback? onRewind;
 
   @override
   Widget build(BuildContext context) {
@@ -275,6 +314,17 @@ class _EmptyDiscover extends StatelessWidget {
               onPressed: onPrimary,
               child: Text(primaryLabel),
             ),
+            if (onRewind != null) ...[
+              const SizedBox(height: 12),
+              TextButton.icon(
+                onPressed: onRewind,
+                icon: const Icon(Icons.replay_rounded),
+                label: const Text('Deshacer último swipe'),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFFD4A017),
+                ),
+              ),
+            ],
           ],
         ),
       ),

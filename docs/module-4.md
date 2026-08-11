@@ -27,9 +27,17 @@
 1. Dos usuarios se dan like mutuo → match
 2. Tab **Chats** → aparece en **Matches nuevos**
 3. Tocá el match → chat Stream
+4. **Rewind** (↺) en Desliza → deshace el último like o pass (si hubo match, lo anula y deja el like del otro)
+
+### Seed (50 usuarios AR)
+```bash
+cd tindog-api && npm run db:seed:dev
+```
+Todos los emails `*@tindog.test` usan la misma clave: **`password123`**.  
+Ejemplo: `ana@tindog.test` / `password123`
 
 ## Chat realtime
 Ver [module-5.md](./module-5.md) — Stream Chat (única fuente de mensajes).
 
 ## NO entra todavía
-- Rewind / super like / Top Picks real
+- Super like / Top Picks / Boost real (pagos)

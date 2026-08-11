@@ -11,6 +11,12 @@ export type PushPayload = {
   androidChannelId?: string;
   /** URL pública del avatar (Cloudinary, etc.) para imagen en la notificación. */
   imageUrl?: string;
+  /**
+   * Data-only en Android (sin `notification`): evita doble banner.
+   * La app muestra la noti local en foreground/background.
+   * iOS sigue usando APS alert.
+   */
+  dataOnlyAndroid?: boolean;
 };
 
 @Injectable()
@@ -178,25 +184,52 @@ export class PushService implements OnModuleInit {
           const imageUrl = payload.imageUrl?.trim() || undefined;
           const messageData: Record<string, string> = {
             ...(payload.data ?? {}),
+            title: payload.title,
+            body: payload.body,
           };
           if (imageUrl) {
             messageData.imageUrl = imageUrl;
           }
 
+          const dataOnlyAndroid = payload.dataOnlyAndroid === true;
+
           await admin.messaging().send({
             token: device.token,
-            notification: {
-              title: payload.title,
-              body: payload.body,
-              ...(imageUrl ? { imageUrl } : {}),
-            },
+            // En Android data-only no mandamos `notification` (evita 2 banners).
+            ...(dataOnlyAndroid
+              ? {}
+              : {
+                  notification: {
+                    title: payload.title,
+                    body: payload.body,
+                    ...(imageUrl ? { imageUrl } : {}),
+                  },
+                }),
             data: messageData,
             android: {
               priority: 'high',
-              notification: {
-                channelId: payload.androidChannelId ?? 'tindog_matches',
-                sound: 'default',
-                ...(imageUrl ? { imageUrl } : {}),
+              ...(dataOnlyAndroid
+                ? {}
+                : {
+                    notification: {
+                      channelId:
+                        payload.androidChannelId ?? 'tindog_matches',
+                      sound: 'default',
+                      defaultSound: true,
+                      ...(imageUrl ? { imageUrl } : {}),
+                    },
+                  }),
+            },
+            apns: {
+              payload: {
+                aps: {
+                  alert: {
+                    title: payload.title,
+                    body: payload.body,
+                  },
+                  sound: 'default',
+                  badge: 1,
+                },
               },
             },
           });
@@ -260,6 +293,7 @@ export class PushService implements OnModuleInit {
       },
       androidChannelId: 'tindog_chat',
       imageUrl: params.imageUrl ?? undefined,
+      dataOnlyAndroid: true,
     });
   }
 }

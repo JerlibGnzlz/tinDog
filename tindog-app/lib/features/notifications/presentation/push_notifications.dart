@@ -1,23 +1,108 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:ui' as ui;
 
-import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/devices_repository.dart';
+import 'notification_preferences.dart';
 
-/// Maneja FCM en background (debe ser top-level).
+const _chatChannel = AndroidNotificationChannel(
+  'tindog_chat',
+  'Chats tinDog',
+  description: 'Mensajes de chat',
+  importance: Importance.high,
+  playSound: true,
+  enableVibration: true,
+);
+
+const _matchChannel = AndroidNotificationChannel(
+  'tindog_matches',
+  'Matches tinDog',
+  description: 'Nuevos matches',
+  importance: Importance.high,
+  playSound: true,
+  enableVibration: true,
+);
+
+/// Muestra notificación local desde un [RemoteMessage] (foreground o background).
+Future<void> displayRemotePush({
+  required RemoteMessage message,
+  bool playSound = true,
+}) async {
+  final data = message.data;
+  final type = data['type']?.toString();
+  final matchId = data['matchId']?.toString() ?? '';
+  final title = (message.notification?.title ?? data['title'] ?? '')
+      .toString()
+      .trim();
+  final body = (message.notification?.body ?? data['body'] ?? '')
+      .toString()
+      .trim();
+  if (title.isEmpty && body.isEmpty) return;
+
+  final channel = type == 'match' ? _matchChannel : _chatChannel;
+  final plugin = FlutterLocalNotificationsPlugin();
+  const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+  await plugin.initialize(
+    settings: const InitializationSettings(
+      android: androidInit,
+      iOS: DarwinInitializationSettings(),
+    ),
+  );
+  final android = plugin.resolvePlatformSpecificImplementation<
+      AndroidFlutterLocalNotificationsPlugin>();
+  await android?.createNotificationChannel(_chatChannel);
+  await android?.createNotificationChannel(_matchChannel);
+
+  final payload = jsonEncode({'matchId': matchId, 'type': type ?? ''});
+  // Id estable por match + segundo: evita colisión y permite que cada mensaje suene.
+  final idBase = matchId.hashCode & 0x3fffffff;
+  final id = idBase ^ (DateTime.now().millisecondsSinceEpoch ~/ 1000);
+
+  await plugin.show(
+    id: id,
+    title: title.isEmpty ? 'tinDog' : title,
+    body: body.isEmpty ? 'Abrí tinDog para verlo' : body,
+    notificationDetails: NotificationDetails(
+      android: AndroidNotificationDetails(
+        channel.id,
+        channel.name,
+        channelDescription: channel.description,
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: playSound,
+        enableVibration: true,
+        onlyAlertOnce: false,
+        icon: '@mipmap/ic_launcher',
+      ),
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: playSound,
+      ),
+    ),
+    payload: payload,
+  );
+}
+
+/// FCM en background/isolate (debe ser top-level).
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Solo asegurar Firebase; la UI se abre al tap vía getInitialMessage.
   try {
     await Firebase.initializeApp();
   } catch (_) {}
+  // Data-only en Android: hay que pintar la noti acá.
+  try {
+    await displayRemotePush(message: message, playSound: true);
+  } catch (e) {
+    if (kDebugMode) {
+      debugPrint('background push display: $e');
+    }
+  }
 }
 
 final pushNotificationsProvider = Provider<PushNotificationsService>((ref) {
@@ -36,20 +121,6 @@ class PushNotificationsService {
   String? _activeMatchId;
 
   final _local = FlutterLocalNotificationsPlugin();
-
-  static const _chatChannel = AndroidNotificationChannel(
-    'tindog_chat',
-    'Chats tinDog',
-    description: 'Mensajes de chat',
-    importance: Importance.high,
-  );
-
-  static const _matchChannel = AndroidNotificationChannel(
-    'tindog_matches',
-    'Matches tinDog',
-    description: 'Nuevos matches',
-    importance: Importance.high,
-  );
 
   void setActiveMatchId(String? matchId) {
     _activeMatchId = matchId?.trim().isEmpty == true ? null : matchId?.trim();
@@ -71,10 +142,11 @@ class PushNotificationsService {
     await _initLocalNotifications();
 
     final messaging = FirebaseMessaging.instance;
+    // iOS: presentación en foreground la hacemos nosotros con local notifs.
     await messaging.setForegroundNotificationPresentationOptions(
-      alert: true,
+      alert: false,
       badge: true,
-      sound: true,
+      sound: false,
     );
 
     await messaging.requestPermission(alert: true, badge: true, sound: true);
@@ -151,114 +223,12 @@ class PushNotificationsService {
     if (matchId != null &&
         matchId.isNotEmpty &&
         matchId == _activeMatchId) {
-      // Ya está en ese chat: no spamear banner.
+      // Ya está en ese chat: sin banner ni sonido.
       return;
     }
 
-    final notification = message.notification;
-    final title = notification?.title?.trim().isNotEmpty == true
-        ? notification!.title!
-        : _fallbackTitle(message.data);
-    final body = notification?.body?.trim().isNotEmpty == true
-        ? notification!.body!
-        : (message.data['body']?.trim().isNotEmpty == true
-            ? message.data['body']!
-            : 'Abrí tinDog para verlo');
-    final imageUrl = notification?.android?.imageUrl?.trim().isNotEmpty == true
-        ? notification!.android!.imageUrl!.trim()
-        : message.data['imageUrl']?.trim();
-
-    unawaited(_showLocalNotification(
-      title: title,
-      body: body,
-      data: message.data,
-      imageUrl: imageUrl,
-    ));
-  }
-
-  String _fallbackTitle(Map<String, dynamic> data) {
-    final type = data['type']?.toString();
-    if (type == 'match') return '¡Es un match! 🐾';
-    return 'Nuevo mensaje';
-  }
-
-  Future<void> _showLocalNotification({
-    required String title,
-    required String body,
-    required Map<String, dynamic> data,
-    String? imageUrl,
-  }) async {
-    final type = data['type']?.toString();
-    final channel = type == 'match' ? _matchChannel : _chatChannel;
-    final payload = jsonEncode({
-      'matchId': data['matchId']?.toString() ?? '',
-      'type': type ?? '',
-    });
-
-    final avatarBytes = await _loadAvatarBytes(imageUrl);
-
-    await _local.show(
-      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      title: title,
-      body: body,
-      notificationDetails: NotificationDetails(
-        android: AndroidNotificationDetails(
-          channel.id,
-          channel.name,
-          channelDescription: channel.description,
-          importance: Importance.high,
-          priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
-          largeIcon: avatarBytes != null
-              ? ByteArrayAndroidBitmap(avatarBytes)
-              : null,
-        ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
-      ),
-      payload: payload,
-    );
-  }
-
-  /// Descarga y redimensiona el avatar para largeIcon (best-effort).
-  Future<Uint8List?> _loadAvatarBytes(String? url) async {
-    final clean = url?.trim();
-    if (clean == null || clean.isEmpty) return null;
-    try {
-      final res = await Dio().get<List<int>>(
-        clean,
-        options: Options(
-          responseType: ResponseType.bytes,
-          receiveTimeout: const Duration(seconds: 4),
-          sendTimeout: const Duration(seconds: 4),
-        ),
-      );
-      final raw = res.data;
-      if (raw == null || raw.isEmpty) return null;
-      return await _squareThumb(Uint8List.fromList(raw), 192);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<Uint8List?> _squareThumb(Uint8List bytes, int size) async {
-    try {
-      final codec = await ui.instantiateImageCodec(
-        bytes,
-        targetWidth: size,
-        targetHeight: size,
-      );
-      final frame = await codec.getNextFrame();
-      final image = frame.image;
-      final bd = await image.toByteData(format: ui.ImageByteFormat.png);
-      image.dispose();
-      return bd?.buffer.asUint8List();
-    } catch (_) {
-      return bytes;
-    }
+    final playSound = _ref.read(chatMessageSoundProvider);
+    unawaited(displayRemotePush(message: message, playSound: playSound));
   }
 
   void _onLocalNotificationTap(NotificationResponse response) {
@@ -275,7 +245,6 @@ class PushNotificationsService {
   }
 
   void _handleMessage(RemoteMessage message) {
-    // match | message — ambos llevan matchId para deep link al chat
     final matchId = message.data['matchId']?.trim();
     if (matchId == null || matchId.isEmpty) return;
     onOpenMatch?.call(matchId);
