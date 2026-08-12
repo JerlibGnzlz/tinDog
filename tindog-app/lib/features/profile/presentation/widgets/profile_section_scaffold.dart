@@ -18,6 +18,7 @@ class ProfileSectionScaffold extends StatelessWidget {
     this.saveEnabled = true,
     this.onSave,
     this.saveLabel = 'Guardar',
+    this.showBack = true,
   });
 
   final String title;
@@ -30,6 +31,7 @@ class ProfileSectionScaffold extends StatelessWidget {
   final bool saveEnabled;
   final VoidCallback? onSave;
   final String saveLabel;
+  final bool showBack;
 
   @override
   Widget build(BuildContext context) {
@@ -37,8 +39,11 @@ class ProfileSectionScaffold extends StatelessWidget {
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: Text(title),
-        leading: TindogBackButton(onPressed: () => context.pop()),
-        leadingWidth: 48,
+        leading: showBack
+            ? TindogBackButton(onPressed: () => context.pop())
+            : null,
+        automaticallyImplyLeading: showBack,
+        leadingWidth: showBack ? 48 : null,
       ),
       body: loading
           ? const Center(child: TindogLoader(message: 'Cargando…'))

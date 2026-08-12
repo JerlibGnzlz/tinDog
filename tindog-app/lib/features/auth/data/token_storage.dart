@@ -6,6 +6,7 @@ class TokenStorage {
 
   final FlutterSecureStorage _storage;
   String? _memoryToken;
+  bool? _memoryNeedsPetOnboarding;
 
   Future<void> saveToken(String token) async {
     _memoryToken = token;
@@ -23,8 +24,31 @@ class TokenStorage {
     return stored;
   }
 
+  Future<void> saveNeedsPetOnboarding(bool value) async {
+    _memoryNeedsPetOnboarding = value;
+    await _storage.write(
+      key: AppConstants.needsPetOnboardingKey,
+      value: value ? '1' : '0',
+    );
+  }
+
+  Future<bool?> readNeedsPetOnboarding() async {
+    if (_memoryNeedsPetOnboarding != null) return _memoryNeedsPetOnboarding;
+    final stored = await _storage.read(key: AppConstants.needsPetOnboardingKey);
+    if (stored == null) return null;
+    _memoryNeedsPetOnboarding = stored == '1';
+    return _memoryNeedsPetOnboarding;
+  }
+
+  Future<void> clearNeedsPetOnboarding() async {
+    _memoryNeedsPetOnboarding = null;
+    await _storage.delete(key: AppConstants.needsPetOnboardingKey);
+  }
+
   Future<void> deleteToken() async {
     _memoryToken = null;
+    _memoryNeedsPetOnboarding = null;
     await _storage.delete(key: AppConstants.tokenKey);
+    await _storage.delete(key: AppConstants.needsPetOnboardingKey);
   }
 }

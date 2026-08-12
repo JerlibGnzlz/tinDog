@@ -5,6 +5,7 @@ class TindogTextField extends StatelessWidget {
     super.key,
     required this.controller,
     required this.label,
+    this.hintText,
     this.keyboardType,
     this.validator,
     this.maxLines = 1,
@@ -21,6 +22,7 @@ class TindogTextField extends StatelessWidget {
 
   final TextEditingController controller;
   final String label;
+  final String? hintText;
   final TextInputType? keyboardType;
   final String? Function(String?)? validator;
   final int maxLines;
@@ -53,6 +55,7 @@ class TindogTextField extends StatelessWidget {
       scrollPadding: const EdgeInsets.all(96),
       decoration: InputDecoration(
         labelText: label,
+        hintText: hintText,
         errorText: externalError,
         errorMaxLines: 2,
       ),

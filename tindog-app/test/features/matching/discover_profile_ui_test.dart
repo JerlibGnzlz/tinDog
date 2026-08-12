@@ -34,6 +34,8 @@ void main() {
       breed: 'Golden Retriever',
       bio: 'Muy sociable',
       location: 'Madrid, España',
+      ownerName: 'Ana Pérez',
+      ownerAvatarUrl: null,
       photoUrls: [],
     );
 
@@ -70,7 +72,9 @@ void main() {
     );
     expect(find.text('Luna, 3'), findsOneWidget);
     expect(find.text('Golden Retriever'), findsOneWidget);
-    expect(find.text('Sobre nosotros'), findsOneWidget);
+    expect(find.text('Dueño/a'), findsOneWidget);
+    expect(find.text('Ana Pérez'), findsOneWidget);
+    expect(find.text('Muy sociable'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Cerrar'));
     await tester.pump();

@@ -25,8 +25,9 @@ class ExploreScreen extends ConsumerWidget {
 
     final next = switch (mode) {
       DiscoverMode.near => current.copyWith(mode: DiscoverMode.near),
-      DiscoverMode.play => current.copyWith(mode: DiscoverMode.play),
       DiscoverMode.forYou => current.copyWith(mode: DiscoverMode.forYou),
+      DiscoverMode.withVideos =>
+        current.copyWith(mode: DiscoverMode.withVideos),
       DiscoverMode.breed => current.copyWith(
           mode: DiscoverMode.breed,
           breed: (petBreed != null && petBreed.isNotEmpty) ? petBreed : null,

@@ -10,5 +10,14 @@ class AppConstants {
     defaultValue: '',
   );
 
+  /// OAuth Client ID tipo **Web** (serverClientId) para Google Sign-In.
+  /// Debe coincidir con uno de los IDs en `GOOGLE_CLIENT_IDS` del API.
+  static const googleServerClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
+    defaultValue:
+        '865832497533-bkirp180j0gq7ap6frfj7hrqplfccuu3.apps.googleusercontent.com',
+  );
+
   static const tokenKey = 'access_token';
+  static const needsPetOnboardingKey = 'needs_pet_onboarding';
 }

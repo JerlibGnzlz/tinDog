@@ -256,6 +256,10 @@ class _LikesGrid extends ConsumerWidget {
                     onLikeBack!(item);
                     return;
                   }
+                  if (item.matched && item.matchId != null) {
+                    context.push('/chats/${item.matchId}');
+                    return;
+                  }
                   showTindogInfoSnackBar(
                     context,
                     item.matched

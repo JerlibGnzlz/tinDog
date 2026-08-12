@@ -8,7 +8,7 @@ void main() {
       expect(exploreDogShortcuts.every((c) => c.opensDiscover), isTrue);
       expect(
         exploreDogShortcuts.map((c) => c.id).toList(),
-        ['near', 'breed', 'play', 'for_you'],
+        ['near', 'breed', 'for_you', 'with_videos'],
       );
     });
   });

@@ -28,6 +28,7 @@ class ChatsScreen extends ConsumerWidget {
     ref.watch(chatsRealtimeInvalidatorProvider);
     final streamAsync = ref.watch(streamChatClientProvider);
     final matchesAsync = ref.watch(matchesProvider);
+    final removedIds = ref.watch(removedMatchIdsProvider);
     final receivedCount =
         ref.watch(likesSummaryProvider).valueOrNull?.receivedCount ?? 0;
     final receivedLikes =
@@ -113,10 +114,13 @@ class ChatsScreen extends ConsumerWidget {
                 ),
               ),
               data: (threads) {
+                final visible = threads
+                    .where((t) => !removedIds.contains(t.id))
+                    .toList();
                 final newMatches =
-                    threads.where((t) => !t.hasMessages).toList();
+                    visible.where((t) => !t.hasMessages).toList();
                 final conversations =
-                    threads.where((t) => t.hasMessages).toList();
+                    visible.where((t) => t.hasMessages).toList();
                 final streamIssue = streamAsync.hasError;
 
                 return RefreshIndicator(
@@ -262,7 +266,10 @@ class ChatsScreen extends ConsumerWidget {
                               context: context,
                               ref: ref,
                               thread: thread,
+                              optimisticRemove: false,
                             ),
+                            onRemoved: () =>
+                                markMatchRemovedLocally(ref, thread.id),
                           ),
                         ),
                     ],
@@ -434,12 +441,14 @@ class _MessageRow extends StatelessWidget {
     required this.thread,
     required this.onTap,
     required this.onDelete,
+    required this.onRemoved,
     this.onAvatarTap,
   });
 
   final MatchThread thread;
   final VoidCallback onTap;
   final Future<bool> Function() onDelete;
+  final VoidCallback onRemoved;
   final VoidCallback? onAvatarTap;
 
   @override
@@ -455,6 +464,7 @@ class _MessageRow extends StatelessWidget {
       key: ValueKey('chat-${thread.id}'),
       direction: DismissDirection.endToStart,
       confirmDismiss: (_) => onDelete(),
+      onDismissed: (_) => onRemoved(),
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 24),

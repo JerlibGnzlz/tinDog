@@ -8,6 +8,8 @@ class ProfileModel {
     this.location,
     this.latitude,
     this.longitude,
+    this.email,
+    this.googleLinked = false,
   });
 
   final String id;
@@ -18,6 +20,8 @@ class ProfileModel {
   final String? location;
   final double? latitude;
   final double? longitude;
+  final String? email;
+  final bool googleLinked;
 
   bool get hasGps =>
       latitude != null &&
@@ -35,6 +39,8 @@ class ProfileModel {
       location: json['location'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
+      email: json['email'] as String?,
+      googleLinked: json['googleLinked'] as bool? ?? false,
     );
   }
 

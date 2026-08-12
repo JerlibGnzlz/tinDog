@@ -29,57 +29,65 @@ class HomeProfileAvatar extends StatelessWidget {
           Positioned(
             left: 4,
             top: 4,
-            child: Container(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.border,
-                border: Border.all(color: AppColors.card, width: 4),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.textPrimary.withValues(alpha: 0.1),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: ClipOval(
-                child: hasPhoto
-                    ? CachedNetworkImage(
-                        imageUrl: url,
-                        fit: BoxFit.cover,
-                        placeholder: (_, _) => const ColoredBox(
-                          color: AppColors.border,
-                          child: Center(
-                            child: Icon(
-                              Icons.pets_rounded,
-                              color: AppColors.textSecondary,
-                              size: 40,
-                            ),
-                          ),
-                        ),
-                        errorWidget: (_, _, _) => const ColoredBox(
-                          color: AppColors.border,
-                          child: Center(
-                            child: Icon(
-                              Icons.pets_rounded,
-                              color: AppColors.textSecondary,
-                              size: 40,
-                            ),
-                          ),
-                        ),
-                      )
-                    : const ColoredBox(
-                        color: AppColors.border,
-                        child: Center(
-                          child: Icon(
-                            Icons.pets_rounded,
-                            color: AppColors.textSecondary,
-                            size: 40,
-                          ),
-                        ),
+            child: Material(
+              color: Colors.transparent,
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: onEdit,
+                child: Ink(
+                  width: size,
+                  height: size,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.border,
+                    border: Border.all(color: AppColors.card, width: 4),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.textPrimary.withValues(alpha: 0.1),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
                       ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: hasPhoto
+                        ? CachedNetworkImage(
+                            imageUrl: url,
+                            fit: BoxFit.cover,
+                            placeholder: (_, _) => const ColoredBox(
+                              color: AppColors.border,
+                              child: Center(
+                                child: Icon(
+                                  Icons.pets_rounded,
+                                  color: AppColors.textSecondary,
+                                  size: 40,
+                                ),
+                              ),
+                            ),
+                            errorWidget: (_, _, _) => const ColoredBox(
+                              color: AppColors.border,
+                              child: Center(
+                                child: Icon(
+                                  Icons.pets_rounded,
+                                  color: AppColors.textSecondary,
+                                  size: 40,
+                                ),
+                              ),
+                            ),
+                          )
+                        : const ColoredBox(
+                            color: AppColors.border,
+                            child: Center(
+                              child: Icon(
+                                Icons.pets_rounded,
+                                color: AppColors.textSecondary,
+                                size: 40,
+                              ),
+                            ),
+                          ),
+                  ),
+                ),
               ),
             ),
           ),

@@ -187,9 +187,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   )
                 else
                   _EmptyDiscover(
-                    title: filters.mode == DiscoverMode.play
-                        ? 'Modo juego vacío'
-                        : 'No hay más perfiles',
+                    title: 'No hay más perfiles',
                     subtitle: filters.emptyMessage(
                       hasGps: hasGps,
                       hasOwnBreed: hasOwnBreed,

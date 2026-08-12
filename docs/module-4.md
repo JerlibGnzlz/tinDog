@@ -12,7 +12,8 @@
 
 ## Explorar
 - Tab **Explorar** con dos bloques:
-  1. **Buscar perros** — atajos a Desliza (`near`, `breed`, `play`, `for_you`)
+  1. **Buscar perros** — atajos a Desliza (`near`, `breed`, `for_you`, `with_videos`)
+     - **Con videos** — solo perfiles con al menos un clip (diferenciador tinDog)
   2. **Servicios cerca** — Veterinarias / Paseos / Refugios / PET shops (UI “próximamente”; sin Places aún)
 - Atajo de perros → aplica `discoverFiltersProvider` y navega a `/discover`
 

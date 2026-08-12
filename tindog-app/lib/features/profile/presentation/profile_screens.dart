@@ -44,6 +44,11 @@ class HomeScreen extends ConsumerWidget {
           onEdit: () => context.go('/profile'),
         ),
         data: (pet) {
+          if ((pet.name ?? '').trim().isEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (context.mounted) context.go('/profile/pet');
+            });
+          }
           final photos = photosAsync.valueOrNull ?? const <PetMediaModel>[];
           final videos = videosAsync.valueOrNull ?? const <PetMediaModel>[];
           final profile = profileAsync.valueOrNull;
@@ -84,16 +89,10 @@ class _HomeProfileBody extends ConsumerWidget {
     return pet?.photoUrl;
   }
 
-  String get _title {
-    final name = pet?.name?.trim();
-    if (name == null || name.isEmpty) {
-      final owner = profile?.name?.trim();
-      if (owner != null && owner.isNotEmpty) return owner;
-      return 'Tu mascota';
-    }
-    if (pet?.age != null) return '$name, ${pet!.age}';
-    return name;
-  }
+  String get _title => homeProfileTitle(
+        petName: pet?.name,
+        petAge: pet?.age,
+      );
 
   String get _nudgeText {
     if (profile != null && pet != null) {
@@ -112,7 +111,7 @@ class _HomeProfileBody extends ConsumerWidget {
     if (photos.length < 2) {
       return 'Sumá más fotos para que tu perfil destaque en Desliza.';
     }
-    return 'Así te ven otros tutores. Mantené tu perfil al día.';
+    return 'Así te ven en Desliza. Mantené el perfil al día.';
   }
 
   @override
@@ -211,7 +210,7 @@ class _HomeProfileBody extends ConsumerWidget {
       slides.add(
         HomePromoSlide(
           title: 'Completá tu perfil',
-          subtitle: 'Datos, ubicación y bio ayudan a mejores matches.',
+          subtitle: 'Tu nombre y bio se muestran a otros dueños.',
           cta: 'Editar perfil',
           icon: Icons.pets_rounded,
           onCta: onEdit,

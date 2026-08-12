@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Overlay tipo Tinder: nombre + edad, subtítulo y bio sobre la foto.
+/// Overlay tipo Tinder: mascota arriba; dueño + bio debajo.
 class PetCardOverlay extends StatelessWidget {
   const PetCardOverlay({
     super.key,
@@ -8,6 +8,7 @@ class PetCardOverlay extends StatelessWidget {
     this.age,
     this.subtitle,
     this.bio,
+    this.ownerName,
     this.onInfoTap,
     this.nameFontSize = 28,
   });
@@ -16,6 +17,7 @@ class PetCardOverlay extends StatelessWidget {
   final int? age;
   final String? subtitle;
   final String? bio;
+  final String? ownerName;
   final VoidCallback? onInfoTap;
   final double nameFontSize;
 
@@ -28,6 +30,7 @@ class PetCardOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final cleanSubtitle = subtitle?.trim();
     final cleanBio = bio?.trim();
+    final cleanOwner = ownerName?.trim();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,8 +93,19 @@ class PetCardOverlay extends StatelessWidget {
             ),
           ),
         ],
-        if (cleanBio != null && cleanBio.isNotEmpty) ...[
+        if (cleanOwner != null && cleanOwner.isNotEmpty) ...[
           const SizedBox(height: 8),
+          Text(
+            'Con $cleanOwner',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.92),
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+        if (cleanBio != null && cleanBio.isNotEmpty) ...[
+          const SizedBox(height: 6),
           Text(
             cleanBio,
             maxLines: 3,

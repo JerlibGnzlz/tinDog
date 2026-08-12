@@ -303,7 +303,7 @@ function buildSeedUsers(count: number): SeedUser[] {
       email: `${slug}${SEED_DOMAIN}`,
       profile: {
         name: i === 0 ? 'Ana García' : `${first} ${last}`,
-        bio: `${petName} (${breed}, ${age} años). Buscamos playdates cerca de ${loc.label}.`,
+        bio: `Me gusta pasear por ${loc.label} y armar playdates tranquilos.`,
         location: loc.label,
         latitude: loc.lat,
         longitude: loc.lng,

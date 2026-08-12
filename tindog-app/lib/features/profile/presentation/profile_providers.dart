@@ -76,6 +76,14 @@ bool isPersonalComplete(ProfileModel profile) =>
 
 bool isPetComplete(PetModel pet) => (pet.name ?? '').trim().isNotEmpty;
 
+/// Título del hub Perfil: siempre la mascota, nunca el nombre del tutor/Google.
+String homeProfileTitle({String? petName, int? petAge}) {
+  final name = petName?.trim();
+  if (name == null || name.isEmpty) return 'Tu mascota';
+  if (petAge != null) return '$name, $petAge';
+  return name;
+}
+
 String petHubSubtitle(PetModel pet) {
   if (!isPetComplete(pet)) {
     return 'Nombre, raza, edad y más';
@@ -134,9 +142,9 @@ String? profileCoreNextStepLabel({
   required ProfileModel profile,
   required PetModel pet,
 }) {
-  if (!isPersonalComplete(profile)) return 'datos personales';
   if (!isPetComplete(pet)) return 'datos de tu mascota';
   if (!isPhotosComplete(pet)) return 'fotos';
+  if (!isPersonalComplete(profile)) return 'tu nombre';
   if (!isLocationComplete(profile)) return 'ubicación';
   return null;
 }

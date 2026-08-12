@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/confirm_app_exit_scope.dart';
+import '../../auth/data/auth_repository.dart';
 import '../../chat/presentation/stream_presence_keeper.dart';
+import '../../profile/presentation/profile_providers.dart';
 import 'chats_providers.dart';
 import 'likes_providers.dart';
 import 'widgets/discover_bottom_nav.dart';
@@ -29,6 +32,7 @@ class _MatchingShellState extends ConsumerState<MatchingShell> {
   ];
 
   Timer? _likesPoll;
+  bool _sentToPetOnboarding = false;
 
   void _refreshLikes() {
     ref.invalidate(likesSummaryProvider);
@@ -65,27 +69,43 @@ class _MatchingShellState extends ConsumerState<MatchingShell> {
     final index =
         widget.navigationShell.currentIndex.clamp(0, _tabs.length - 1);
 
-    return ColoredBox(
-      color: AppColors.surface,
-      child: Column(
-        children: [
-          Expanded(child: widget.navigationShell),
-          DiscoverBottomNav(
-            active: _tabs[index],
-            likesBadge: receivedCount > 0 ? receivedCount : null,
-            chatsBadge: unreadChats > 0 ? unreadChats : null,
-            onSelected: (tab) {
-              _refreshLikes();
-              final target = _tabs.indexOf(tab);
-              if (target < 0) return;
-              widget.navigationShell.goBranch(
-                target,
-                initialLocation:
-                    target == widget.navigationShell.currentIndex,
-              );
-            },
-          ),
-        ],
+    final pet = ref.watch(myPetProvider).valueOrNull;
+    if (!_sentToPetOnboarding &&
+        pet != null &&
+        (pet.name ?? '').trim().isEmpty) {
+      _sentToPetOnboarding = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        await ref.read(authRepositoryProvider).saveNeedsPetOnboarding(true);
+        if (!context.mounted) return;
+        context.go('/profile/pet');
+      });
+    }
+
+    // Confirma salida en la raíz (Android atrás / pop del shell). No cierra sesión.
+    return ConfirmAppExitScope(
+      child: ColoredBox(
+        color: AppColors.surface,
+        child: Column(
+          children: [
+            Expanded(child: widget.navigationShell),
+            DiscoverBottomNav(
+              active: _tabs[index],
+              likesBadge: receivedCount > 0 ? receivedCount : null,
+              chatsBadge: unreadChats > 0 ? unreadChats : null,
+              onSelected: (tab) {
+                _refreshLikes();
+                final target = _tabs.indexOf(tab);
+                if (target < 0) return;
+                widget.navigationShell.goBranch(
+                  target,
+                  initialLocation:
+                      target == widget.navigationShell.currentIndex,
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

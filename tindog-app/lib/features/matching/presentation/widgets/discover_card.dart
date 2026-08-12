@@ -402,6 +402,7 @@ class _DiscoverCardState extends State<DiscoverCard>
                                   name: candidate.name,
                                   age: candidate.age,
                                   subtitle: subtitle,
+                                  ownerName: candidate.ownerName,
                                   bio: (bio != null && bio.isNotEmpty)
                                       ? bio
                                       : null,

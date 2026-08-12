@@ -10,6 +10,7 @@ Autenticación JWT, usuarios y perfiles básicos. Sin Docker, sin CI.
 |--------|------|------|-------------|
 | POST | `/auth/register` | No | Registro email/password |
 | POST | `/auth/login` | No | Login, devuelve JWT |
+| POST | `/auth/google` | No | Login/registro con idToken de Google |
 | POST | `/auth/forgot-password` | No | Solicitar código de reset (email) |
 | POST | `/auth/reset-password` | No | Restablecer contraseña con código |
 | GET | `/users/me` | Sí | Usuario + perfil |
@@ -22,7 +23,7 @@ Autenticación JWT, usuarios y perfiles básicos. Sin Docker, sin CI.
 POST /auth/register
 { "email": "user@example.com", "password": "password123" }
 
-→ { "accessToken": "eyJ..." }
+→ { "accessToken": "eyJ...", "needsPetOnboarding": true }
 ```
 
 ### Ejemplo forgot-password
@@ -54,10 +55,12 @@ Authorization: Bearer <token>
 ## Base de datos
 
 ```sql
-users:                 id, email, password_hash, created_at, updated_at
+users:                 id, email, password_hash (nullable), google_sub (nullable unique), created_at, updated_at
 profiles:              id, user_id, name, bio, avatar_url, location, ...
 password_reset_tokens: id, user_id, code_hash, attempts, expires_at, used_at, ...
 ```
+
+Google Sign-In (Android): ver `docs/google-sign-in-android.md`.
 
 Migración: `cd tindog-api && npm run db:migrate:dev`
 
@@ -75,8 +78,9 @@ En **dev** sin `RESEND_API_KEY`, el código se imprime en la consola de la API.
 ## App Flutter
 
 - `/login`, `/register`, `/forgot-password`, `/reset-password` — rutas públicas
-- `/home` — placeholder post-login
-- `/profile` — editar perfil
+- `/home` — hub post-login (si la mascota ya tiene nombre)
+- `/profile/pet` — onboarding obligatorio si falta nombre de mascota (Google o email)
+- `/profile` — editar perfil (vos ≠ mascota)
 - Token en `flutter_secure_storage`
 
 ## Criterios de aceptación

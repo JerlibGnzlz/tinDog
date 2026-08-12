@@ -1,9 +1,12 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/feedback/app_feedback.dart';
 import '../../../../core/feedback/app_haptics.dart';
 import '../../../../core/network/session_handler.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/google_logo.dart';
 import '../../../../shared/widgets/tindog_text_field.dart';
 import '../../data/profile_repository.dart';
 import '../profile_providers.dart';
@@ -20,11 +23,14 @@ class ProfilePersonalScreen extends ConsumerStatefulWidget {
 class _ProfilePersonalScreenState extends ConsumerState<ProfilePersonalScreen> {
   final _nameController = TextEditingController();
   final _bioController = TextEditingController();
+  final _emailController = TextEditingController();
 
   bool _loading = true;
   String? _loadError;
   bool _saving = false;
   bool _saveSuccess = false;
+  String? _avatarUrl;
+  bool _googleLinked = false;
 
   @override
   void initState() {
@@ -36,6 +42,7 @@ class _ProfilePersonalScreenState extends ConsumerState<ProfilePersonalScreen> {
   void dispose() {
     _nameController.dispose();
     _bioController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -48,6 +55,9 @@ class _ProfilePersonalScreenState extends ConsumerState<ProfilePersonalScreen> {
       final profile = await ref.read(profileRepositoryProvider).getMyProfile();
       _nameController.text = profile.name ?? '';
       _bioController.text = profile.bio ?? '';
+      _emailController.text = profile.email ?? '';
+      _avatarUrl = profile.avatarUrl;
+      _googleLinked = profile.googleLinked;
       if (mounted) setState(() => _loading = false);
     } catch (e) {
       if (isUnauthorizedError(e)) {
@@ -113,10 +123,51 @@ class _ProfilePersonalScreenState extends ConsumerState<ProfilePersonalScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Contanos sobre vos',
+            'Así te ven otros dueños. La mascota se edita en Datos caninos.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).hintColor,
                 ),
+          ),
+          const SizedBox(height: 20),
+          Center(
+            child: CircleAvatar(
+              radius: 44,
+              backgroundColor: AppColors.primary.withValues(alpha: 0.18),
+              backgroundImage: _avatarUrl != null && _avatarUrl!.isNotEmpty
+                  ? CachedNetworkImageProvider(_avatarUrl!)
+                  : null,
+              child: _avatarUrl == null || _avatarUrl!.isEmpty
+                  ? const Icon(
+                      Icons.person_rounded,
+                      size: 44,
+                      color: AppColors.primaryDark,
+                    )
+                  : null,
+            ),
+          ),
+          if (_googleLinked) ...[
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const GoogleLogo(size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  'Conectado con Google',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 20),
+          TindogTextField(
+            controller: _emailController,
+            label: 'Email',
+            enabled: false,
+            keyboardType: TextInputType.emailAddress,
           ),
           const SizedBox(height: 16),
           TindogTextField(
@@ -126,7 +177,8 @@ class _ProfilePersonalScreenState extends ConsumerState<ProfilePersonalScreen> {
           const SizedBox(height: 16),
           TindogTextField(
             controller: _bioController,
-            label: 'Bio',
+            label: 'Sobre vos',
+            hintText: 'Ej. Trabajo remoto, salimos a pasear por Palermo…',
             maxLines: 3,
           ),
         ],

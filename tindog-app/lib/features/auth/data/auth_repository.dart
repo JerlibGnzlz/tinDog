@@ -47,12 +47,30 @@ class AuthRepository {
     }
   }
 
+  Future<void> loginWithGoogle({required String idToken}) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/auth/google',
+        data: {'idToken': idToken},
+      );
+      await _saveTokenFromResponse(response.data);
+    } catch (e) {
+      rethrowAuthError(e);
+    }
+  }
+
   Future<void> logout() => _tokenStorage.deleteToken();
 
   Future<bool> hasSession() async {
     final token = await _tokenStorage.readToken();
     return token != null && token.isNotEmpty;
   }
+
+  Future<bool?> readNeedsPetOnboarding() =>
+      _tokenStorage.readNeedsPetOnboarding();
+
+  Future<void> saveNeedsPetOnboarding(bool value) =>
+      _tokenStorage.saveNeedsPetOnboarding(value);
 
   Future<void> requestPasswordReset({required String email}) async {
     try {
@@ -90,5 +108,11 @@ class AuthRepository {
       throw Exception('Token no recibido del servidor');
     }
     await _tokenStorage.saveToken(token);
+    // No reutilizar un flag viejo: si el API no manda el campo, se recuenta con /pets/me.
+    await _tokenStorage.clearNeedsPetOnboarding();
+    final needs = data?['needsPetOnboarding'];
+    if (needs is bool) {
+      await _tokenStorage.saveNeedsPetOnboarding(needs);
+    }
   }
 }

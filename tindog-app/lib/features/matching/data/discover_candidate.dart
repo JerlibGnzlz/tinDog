@@ -28,6 +28,8 @@ class DiscoverCandidate {
     this.distanceKm,
     this.isActive = true,
     this.ownerUserId,
+    this.ownerName,
+    this.ownerAvatarUrl,
   });
 
   final String id;
@@ -36,12 +38,15 @@ class DiscoverCandidate {
   final List<DiscoverVideoClip> videos;
   final int? age;
   final String? breed;
+  /// Bio del dueño (Datos personales), visible a otros.
   final String? bio;
   final String? location;
   final double? distanceKm;
   final bool isActive;
   /// Dueño tinDog / id de usuario Stream (para online).
   final String? ownerUserId;
+  final String? ownerName;
+  final String? ownerAvatarUrl;
 
   factory DiscoverCandidate.fromJson(Map<String, dynamic> json) {
     final urls = (json['photoUrls'] as List<dynamic>? ?? const [])
@@ -65,6 +70,8 @@ class DiscoverCandidate {
       distanceKm: (json['distanceKm'] as num?)?.toDouble(),
       isActive: json['isActive'] as bool? ?? true,
       ownerUserId: json['ownerUserId'] as String?,
+      ownerName: (json['ownerName'] as String?)?.trim(),
+      ownerAvatarUrl: (json['ownerAvatarUrl'] as String?)?.trim(),
       photoUrls: urls,
       videos: videos,
     );
@@ -161,6 +168,7 @@ class LikeListItem extends DiscoverCandidate {
     required super.photoUrls,
     required this.likedAt,
     required this.matched,
+    this.matchId,
     super.videos,
     super.age,
     super.breed,
@@ -169,10 +177,13 @@ class LikeListItem extends DiscoverCandidate {
     super.distanceKm,
     super.isActive,
     super.ownerUserId,
+    super.ownerName,
+    super.ownerAvatarUrl,
   });
 
   final DateTime likedAt;
   final bool matched;
+  final String? matchId;
 
   factory LikeListItem.fromJson(Map<String, dynamic> json) {
     final base = DiscoverCandidate.fromJson(json);
@@ -188,9 +199,12 @@ class LikeListItem extends DiscoverCandidate {
       distanceKm: base.distanceKm,
       isActive: base.isActive,
       ownerUserId: base.ownerUserId,
+      ownerName: base.ownerName,
+      ownerAvatarUrl: base.ownerAvatarUrl,
       likedAt: DateTime.tryParse(json['likedAt'] as String? ?? '') ??
           DateTime.now(),
       matched: json['matched'] as bool? ?? false,
+      matchId: json['matchId'] as String?,
     );
   }
 

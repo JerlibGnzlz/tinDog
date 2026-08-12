@@ -3,7 +3,7 @@ enum DiscoverMode {
   forYou,
   near,
   breed,
-  play,
+  withVideos,
 }
 
 extension DiscoverModeApi on DiscoverMode {
@@ -11,14 +11,14 @@ extension DiscoverModeApi on DiscoverMode {
         DiscoverMode.forYou => 'for_you',
         DiscoverMode.near => 'near',
         DiscoverMode.breed => 'breed',
-        DiscoverMode.play => 'play',
+        DiscoverMode.withVideos => 'with_videos',
       };
 
   String get label => switch (this) {
         DiscoverMode.forYou => 'Para ti',
         DiscoverMode.near => 'Cerca',
         DiscoverMode.breed => 'Razas',
-        DiscoverMode.play => 'Juego',
+        DiscoverMode.withVideos => 'Videos',
       };
 }
 
@@ -74,8 +74,8 @@ class DiscoverFilters {
           return 'Elegí una raza en Filtros o completá la raza de tu mascota.';
         }
         return 'No hay perfiles de esa raza por ahora.';
-      case DiscoverMode.play:
-        return 'No hay más perfiles en modo juego. Probá Para ti.';
+      case DiscoverMode.withVideos:
+        return 'Nadie subió un clip todavía. Volvé más tarde o subí el tuyo en Perfil → Videos.';
       case DiscoverMode.forYou:
         return 'No hay más perfiles por ahora. Volvé más tarde o completá tu perfil para aparecer ante otros.';
     }

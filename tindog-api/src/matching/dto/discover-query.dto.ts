@@ -9,7 +9,12 @@ import {
   Min,
 } from 'class-validator';
 
-export const DISCOVER_MODES = ['for_you', 'near', 'breed', 'play'] as const;
+export const DISCOVER_MODES = [
+  'for_you',
+  'near',
+  'breed',
+  'with_videos',
+] as const;
 export type DiscoverMode = (typeof DISCOVER_MODES)[number];
 
 export class DiscoverQueryDto {
@@ -20,7 +25,7 @@ export class DiscoverQueryDto {
   @Max(50)
   limit?: number;
 
-  /** for_you | near | breed | play */
+  /** for_you | near | breed | with_videos */
   @IsOptional()
   @IsIn(DISCOVER_MODES)
   mode?: DiscoverMode;

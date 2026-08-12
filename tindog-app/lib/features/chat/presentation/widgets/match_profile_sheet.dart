@@ -269,24 +269,21 @@ class _MatchProfileSheetState extends State<_MatchProfileSheet> {
                     text: pet.proximityTip!,
                   ),
                 ],
-                if (bio != null && bio.isNotEmpty) ...[
-                  const SizedBox(height: 16),
+                if (_hasOwnerSection(pet)) ...[
+                  const SizedBox(height: 20),
                   const Text(
-                    'Sobre nosotros',
+                    'Dueño/a',
                     style: TextStyle(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    bio,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      height: 1.4,
-                      fontSize: 14,
-                    ),
+                  const SizedBox(height: 10),
+                  _OwnerCard(
+                    name: pet.ownerName?.trim(),
+                    avatarUrl: pet.ownerAvatarUrl?.trim(),
+                    bio: bio,
                   ),
                 ],
                 const SizedBox(height: 22),
@@ -320,6 +317,87 @@ class _MatchProfileSheetState extends State<_MatchProfileSheet> {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  bool _hasOwnerSection(DiscoverCandidate pet) {
+    final name = pet.ownerName?.trim();
+    final bio = pet.bio?.trim();
+    final avatar = pet.ownerAvatarUrl?.trim();
+    return (name != null && name.isNotEmpty) ||
+        (bio != null && bio.isNotEmpty) ||
+        (avatar != null && avatar.isNotEmpty);
+  }
+}
+
+class _OwnerCard extends StatelessWidget {
+  const _OwnerCard({
+    this.name,
+    this.avatarUrl,
+    this.bio,
+  });
+
+  final String? name;
+  final String? avatarUrl;
+  final String? bio;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasName = name != null && name!.isNotEmpty;
+    final hasAvatar = avatarUrl != null && avatarUrl!.isNotEmpty;
+    final hasBio = bio != null && bio!.isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.18),
+                backgroundImage:
+                    hasAvatar ? CachedNetworkImageProvider(avatarUrl!) : null,
+                child: hasAvatar
+                    ? null
+                    : const Icon(
+                        Icons.person_rounded,
+                        color: AppColors.primaryDark,
+                        size: 28,
+                      ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  hasName ? name! : 'Dueño/a de tinDog',
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 17,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (hasBio) ...[
+            const SizedBox(height: 12),
+            Text(
+              bio!,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                height: 1.4,
+                fontSize: 14,
+              ),
+            ),
+          ],
         ],
       ),
     );

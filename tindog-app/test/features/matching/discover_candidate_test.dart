@@ -14,6 +14,8 @@ void main() {
         'distanceKm': 2.4,
         'isActive': true,
         'ownerUserId': 'user-1',
+        'ownerName': 'Ana Pérez',
+        'ownerAvatarUrl': 'https://example.com/ana.jpg',
         'photoUrls': ['https://example.com/a.jpg', ''],
       });
 
@@ -23,6 +25,8 @@ void main() {
       expect(c.breed, 'Golden Retriever');
       expect(c.bio, 'Muy sociable');
       expect(c.ownerUserId, 'user-1');
+      expect(c.ownerName, 'Ana Pérez');
+      expect(c.ownerAvatarUrl, 'https://example.com/ana.jpg');
       expect(c.photoUrls, ['https://example.com/a.jpg']);
       expect(c.videos, isEmpty);
       expect(c.mediaItems, hasLength(1));
@@ -144,6 +148,22 @@ void main() {
       expect(r.liked, isTrue);
       expect(r.matched, isTrue);
       expect(r.matchId, 'm-1');
+    });
+  });
+
+  group('LikeListItem', () {
+    test('fromJson incluye matchId', () {
+      final item = LikeListItem.fromJson({
+        'id': 'pet-z',
+        'name': 'Zoe',
+        'photoUrls': [],
+        'likedAt': '2026-08-11T00:00:00.000Z',
+        'matched': true,
+        'matchId': 'match-z',
+      });
+      expect(item.name, 'Zoe');
+      expect(item.matched, isTrue);
+      expect(item.matchId, 'match-z');
     });
   });
 }

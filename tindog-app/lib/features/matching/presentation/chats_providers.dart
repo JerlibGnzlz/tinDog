@@ -7,6 +7,10 @@ import '../../chat/presentation/stream_chat_providers.dart';
 import '../data/chat_models.dart';
 import '../data/matching_repository.dart';
 
+/// IDs quitados en UI al instante (swipe/delete) hasta que refresca [matchesProvider].
+/// Evita el error de Dismissible que sigue en el árbol tras confirmar.
+final removedMatchIdsProvider = StateProvider<Set<String>>((ref) => {});
+
 /// Lista de matches + sync Stream (presencia mientras la lista está viva).
 final matchesProvider =
     FutureProvider.autoDispose<List<MatchThread>>((ref) async {

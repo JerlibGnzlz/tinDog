@@ -7,14 +7,27 @@ export class ProfilesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getByUserId(userId: string) {
-    await this.ensureUserExists(userId);
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, googleSub: true },
+    });
+    if (!user) {
+      throw new UnauthorizedException(
+        'Sesión inválida. Vuelve a iniciar sesión.',
+      );
+    }
 
     const existing = await this.prisma.profile.findUnique({
       where: { userId },
     });
-    if (existing) return existing;
+    const profile =
+      existing ?? (await this.prisma.profile.create({ data: { userId } }));
 
-    return this.prisma.profile.create({ data: { userId } });
+    return {
+      ...profile,
+      email: user.email,
+      googleLinked: Boolean(user.googleSub),
+    };
   }
 
   async updateByUserId(userId: string, dto: UpdateProfileDto) {

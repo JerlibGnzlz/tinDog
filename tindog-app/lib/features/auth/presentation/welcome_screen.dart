@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/feedback/app_feedback.dart';
 import '../../../core/theme/app_colors.dart';
@@ -11,18 +13,20 @@ import '../../../shared/widgets/app_tagline.dart';
 import '../../../shared/widgets/google_logo.dart';
 import '../../../shared/widgets/tindog_text_button.dart';
 import '../../../shared/widgets/welcome_auth_button.dart';
+import 'auth_provider.dart';
 
-class WelcomeScreen extends StatefulWidget {
+class WelcomeScreen extends ConsumerStatefulWidget {
   const WelcomeScreen({super.key});
 
   @override
-  State<WelcomeScreen> createState() => _WelcomeScreenState();
+  ConsumerState<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> {
+class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   late final TapGestureRecognizer _privacyRecognizer;
   late final TapGestureRecognizer _cookiesRecognizer;
   late final TapGestureRecognizer _termsRecognizer;
+  bool _googleLoading = false;
 
   @override
   void initState() {
@@ -51,6 +55,28 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   void _showComingSoon() {
     showTindogInfoSnackBar(context, 'Próximamente disponible');
+  }
+
+  Future<void> _continueWithGoogle() async {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      _showComingSoon();
+      return;
+    }
+    if (_googleLoading) return;
+    setState(() => _googleLoading = true);
+    try {
+      final ok =
+          await ref.read(authSessionProvider.notifier).loginWithGoogle();
+      if (!mounted) return;
+      if (!ok) {
+        final failure = ref.read(authFailureProvider);
+        if (failure != null) {
+          showTindogInfoSnackBar(context, failure.message);
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _googleLoading = false);
+    }
   }
 
   void _openForgotPassword() => context.push('/forgot-password');
@@ -159,9 +185,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             .slideY(begin: 0.06, end: 0, duration: 400.ms),
         const SizedBox(height: 12),
         WelcomeAuthButton(
-          label: 'Continuar con Google',
+          label: _googleLoading
+              ? 'Conectando con Google…'
+              : 'Continuar con Google',
           icon: const GoogleLogo(size: 24),
-          onPressed: _showComingSoon,
+          enabled: !_googleLoading,
+          onPressed: _continueWithGoogle,
         )
             .animate()
             .fadeIn(delay: 340.ms, duration: 400.ms)

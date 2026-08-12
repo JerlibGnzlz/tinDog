@@ -10,7 +10,10 @@ datasource db {
 model User {
   id                  String               @id @default(uuid())
   email               String               @unique
-  passwordHash        String               @map("password_hash")
+  /// Null si la cuenta se creó solo con Google.
+  passwordHash        String?              @map("password_hash")
+  /// Subject de Google (`sub` del idToken). Unique si está presente.
+  googleSub           String?              @unique @map("google_sub")
   createdAt           DateTime             @default(now()) @map("created_at")
   updatedAt           DateTime             @updatedAt @map("updated_at")
   profile             Profile?

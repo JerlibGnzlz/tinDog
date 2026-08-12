@@ -12,7 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PushService } from '../devices/push.service';
 import { SafetyService } from '../safety/safety.service';
 
-export type DiscoverMode = 'for_you' | 'near' | 'breed' | 'play';
+export type DiscoverMode = 'for_you' | 'near' | 'breed' | 'with_videos';
 
 export type DiscoverOptions = {
   limit?: number;
@@ -29,6 +29,7 @@ export type DiscoverCandidateDto = {
   name: string;
   age: number | null;
   breed: string | null;
+  /** Bio del dueño (perfil humano), no de la mascota. */
   bio: string | null;
   location: string | null;
   distanceKm: number | null;
@@ -38,11 +39,14 @@ export type DiscoverCandidateDto = {
   videos: { url: string; durationSec: number | null }[];
   /** Dueño (user.id) — para presencia Stream */
   ownerUserId: string;
+  ownerName: string | null;
+  ownerAvatarUrl: string | null;
 };
 
 export type LikeListItemDto = DiscoverCandidateDto & {
   likedAt: string;
   matched: boolean;
+  matchId?: string | null;
 };
 
 export type LikesSummaryDto = {
@@ -161,6 +165,10 @@ export class MatchingService {
             },
           }
         : {}),
+      // Solo perfiles con al menos un clip de video.
+      ...(mode === 'with_videos'
+        ? { media: { some: { type: PetMediaType.video } } }
+        : {}),
     };
 
     let pets = await this.prisma.pet.findMany({
@@ -178,6 +186,8 @@ export class MatchingService {
           select: {
             profile: {
               select: {
+                name: true,
+                avatarUrl: true,
                 location: true,
                 bio: true,
                 latitude: true,
@@ -188,7 +198,7 @@ export class MatchingService {
         },
       },
       orderBy: { updatedAt: 'desc' },
-      take: mode === 'near' || mode === 'play' ? Math.min(take * 3, 80) : take,
+      take: mode === 'near' ? Math.min(take * 3, 80) : take,
     });
 
     type PetRow = (typeof pets)[number];
@@ -216,8 +226,6 @@ export class MatchingService {
           (s) => s.distanceKm != null && s.distanceKm <= maxKm,
         )
         .sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0));
-    } else if (mode === 'play') {
-      scored = this.shuffle(scored);
     }
 
     scored = scored.slice(0, take);
@@ -244,15 +252,6 @@ export class MatchingService {
         Math.cos(toRad(lat2)) *
         Math.sin(dLon / 2) ** 2;
     return r * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  }
-
-  private shuffle<T>(items: T[]): T[] {
-    const copy = [...items];
-    for (let i = copy.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [copy[i], copy[j]] = [copy[j], copy[i]];
-    }
-    return copy;
   }
 
   async like(userId: string, toPetId: string) {
@@ -430,13 +429,16 @@ export class MatchingService {
     const items: LikeListItemDto[] = [];
     for (const like of likes) {
       if (blocked.has(like.toPet.userId)) continue;
-      const candidate = this.toCandidate(like.toPet);
+      const candidate = this.toCandidate(like.toPet, null, {
+        requirePhoto: false,
+      });
       if (!candidate) continue;
       const match = await this.findMatchBetween(myPet.id, like.toPetId);
       items.push({
         ...candidate,
         likedAt: like.createdAt.toISOString(),
         matched: match != null,
+        matchId: match?.id ?? null,
       });
     }
     return items;
@@ -540,7 +542,9 @@ export class MatchingService {
       const other =
         match.petAId === myPet.id ? match.petB : match.petA;
       if (blocked.has(other.userId)) continue;
-      const candidate = this.toCandidate(other);
+      const candidate = this.toCandidate(other, null, {
+        requirePhoto: false,
+      });
       if (!candidate) continue;
 
       threads.push({
@@ -599,6 +603,8 @@ export class MatchingService {
       select: {
         profile: {
           select: {
+            name: true,
+            avatarUrl: true,
             location: true,
             bio: true,
             latitude: true,
@@ -703,6 +709,8 @@ export class MatchingService {
           select: {
             profile: {
               select: {
+                name: true;
+                avatarUrl: true;
                 location: true;
                 bio: true;
                 latitude: true;
@@ -740,6 +748,9 @@ export class MatchingService {
 
     if (requirePhoto && photoUrls.length === 0) return null;
 
+    const ownerName = pet.user.profile?.name?.trim() || null;
+    const ownerAvatarUrl = pet.user.profile?.avatarUrl?.trim() || null;
+
     return {
       id: pet.id,
       name,
@@ -753,6 +764,8 @@ export class MatchingService {
       photoUrls,
       videos,
       ownerUserId: pet.userId,
+      ownerName,
+      ownerAvatarUrl,
     };
   }
 }

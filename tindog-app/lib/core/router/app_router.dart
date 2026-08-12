@@ -177,21 +177,29 @@ String? _resolveRedirect(Ref ref, GoRouterState state) {
   final authState = ref.read(authSessionProvider);
   final isLoading = authState.isLoading;
   final isLoggedIn = authState.value ?? false;
+  final onboardingAsync = ref.read(needsPetOnboardingProvider);
   final location = state.matchedLocation;
 
-  if (isLoading) return null;
+  if (isLoading || onboardingAsync.isLoading) return null;
 
   if (!isLoggedIn) {
     if (_publicRoutes.contains(location)) return null;
     return '/welcome';
   }
 
+  // Solo vamos a Home si está confirmado que la mascota ya tiene nombre.
+  final onboardingDone = onboardingAsync.valueOrNull == false;
+  final needsPetOnboarding = !onboardingDone;
+
+  if (needsPetOnboarding && location != '/profile/pet') {
+    return '/profile/pet';
+  }
+
   switch (location) {
     case '/welcome':
     case '/login':
-      return '/home';
     case '/register':
-      return '/profile';
+      return onboardingDone ? '/home' : '/profile/pet';
     default:
       return null;
   }
@@ -200,6 +208,7 @@ String? _resolveRedirect(Ref ref, GoRouterState state) {
 class GoRouterRefreshNotifier extends ChangeNotifier {
   GoRouterRefreshNotifier(this._ref) {
     _ref.listen(authSessionProvider, (_, _) => notifyListeners());
+    _ref.listen(needsPetOnboardingProvider, (_, _) => notifyListeners());
   }
 
   final Ref _ref;

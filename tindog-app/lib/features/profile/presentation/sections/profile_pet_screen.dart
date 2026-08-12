@@ -5,6 +5,8 @@ import '../../../../core/feedback/app_feedback.dart';
 import '../../../../core/feedback/app_haptics.dart';
 import '../../../../core/network/session_handler.dart';
 import '../../../../shared/widgets/tindog_text_field.dart';
+import '../../../auth/data/auth_repository.dart';
+import '../../../auth/presentation/auth_provider.dart';
 import '../../../pets/data/pet_repository.dart';
 import '../profile_providers.dart';
 import '../widgets/profile_section_scaffold.dart';
@@ -113,6 +115,12 @@ class _ProfilePetScreenState extends ConsumerState<ProfilePetScreen> {
             favoriteToy: _favoriteToyController.text.trim(),
           );
       ref.invalidate(myPetProvider);
+      final wasOnboarding =
+          ref.read(needsPetOnboardingProvider).valueOrNull == true;
+      if (wasOnboarding) {
+        await ref.read(authRepositoryProvider).saveNeedsPetOnboarding(false);
+        ref.invalidate(needsPetOnboardingProvider);
+      }
       if (!mounted) return;
       setState(() {
         _saving = false;
@@ -122,7 +130,13 @@ class _ProfilePetScreenState extends ConsumerState<ProfilePetScreen> {
       await Future.delayed(const Duration(milliseconds: 650));
       if (!mounted) return;
       showTindogSuccessSnackBar(context, 'Datos caninos guardados');
-      context.pop();
+      if (wasOnboarding) {
+        context.go('/profile');
+      } else if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/home');
+      }
     } catch (e) {
       if (isUnauthorizedError(e)) {
         if (mounted) handleSessionExpired(ref, context, e);
@@ -140,19 +154,27 @@ class _ProfilePetScreenState extends ConsumerState<ProfilePetScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ProfileSectionScaffold(
-      title: 'Datos caninos',
-      loading: _loading,
-      loadError: _loadError,
-      onRetry: _loadData,
-      saving: _saving,
-      saveSuccess: _saveSuccess,
-      onSave: _save,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+    final onboarding =
+        ref.watch(needsPetOnboardingProvider).valueOrNull == true;
+    return PopScope(
+      canPop: !onboarding,
+      child: ProfileSectionScaffold(
+        title: onboarding ? 'Tu mascota' : 'Datos caninos',
+        showBack: !onboarding,
+        loading: _loading,
+        loadError: _loadError,
+        onRetry: _loadData,
+        saving: _saving,
+        saveSuccess: _saveSuccess,
+        onSave: _save,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
           Text(
-            'Contanos sobre tu perro o gato',
+            onboarding
+                ? 'En tinDog el perfil principal es tu perro o gato. '
+                    'Empezá por su nombre (el tuyo va en Datos personales).'
+                : 'Contanos sobre tu perro o gato',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).hintColor,
                 ),
@@ -160,7 +182,7 @@ class _ProfilePetScreenState extends ConsumerState<ProfilePetScreen> {
           const SizedBox(height: 16),
           TindogTextField(
             controller: _petNameController,
-            label: 'Nombre',
+            label: 'Nombre de tu mascota',
             textCapitalization: TextCapitalization.words,
           ),
           const SizedBox(height: 16),
@@ -191,6 +213,7 @@ class _ProfilePetScreenState extends ConsumerState<ProfilePetScreen> {
             textCapitalization: TextCapitalization.sentences,
           ),
         ],
+      ),
       ),
     );
   }

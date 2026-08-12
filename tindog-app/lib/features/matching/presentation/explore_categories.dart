@@ -46,15 +46,6 @@ const exploreDogShortcuts = <ExploreCategory>[
     countLabel: 'Raza',
   ),
   ExploreCategory(
-    id: 'play',
-    title: 'Modo juego',
-    subtitle: 'Listos para salir a jugar',
-    icon: Icons.sports_baseball_rounded,
-    accent: Color(0xFFC4A574),
-    mode: DiscoverMode.play,
-    countLabel: 'Juego',
-  ),
-  ExploreCategory(
     id: 'for_you',
     title: 'Para ti',
     subtitle: 'Sugerencias personalizadas',
@@ -62,6 +53,15 @@ const exploreDogShortcuts = <ExploreCategory>[
     accent: AppColors.accent,
     mode: DiscoverMode.forYou,
     countLabel: 'Match',
+  ),
+  ExploreCategory(
+    id: 'with_videos',
+    title: 'Con videos',
+    subtitle: 'Solo quien tiene clip',
+    icon: Icons.videocam_rounded,
+    accent: const Color(0xFF6B8F9A),
+    mode: DiscoverMode.withVideos,
+    countLabel: 'Clip',
   ),
 ];
 
