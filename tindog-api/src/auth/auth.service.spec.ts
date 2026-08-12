@@ -13,6 +13,7 @@ describe('AuthService.loginWithGoogle', () => {
     create: jest.fn(),
     findPetName: jest.fn(),
     syncTutorFromGoogle: jest.fn(),
+    touchLastSeen: jest.fn(),
   };
   const jwtService = {
     sign: jest.fn().mockReturnValue('jwt-token'),
@@ -35,6 +36,7 @@ describe('AuthService.loginWithGoogle', () => {
     jest.clearAllMocks();
     usersService.findPetName.mockResolvedValue(null);
     usersService.syncTutorFromGoogle.mockResolvedValue(undefined);
+    usersService.touchLastSeen.mockResolvedValue(undefined);
     googleTokenService.verifyIdToken.mockResolvedValue({
       googleSub: 'google-sub-1',
       email: 'luna@gmail.com',

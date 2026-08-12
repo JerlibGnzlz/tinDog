@@ -25,7 +25,15 @@ Permitir que un usuario **reporte** o **bloquee** a otro antes de publicar en ti
 ## App
 - Escudo en lista **Chats** → info de seguridad
 - Escudo en **hilo de chat** → Reportar / Bloquear
-- Perfil → Ajustes → **Bloqueados** → listar / desbloquear
+- **Desliza** → ficha del dueño → Reportar / Bloquear
+- Perfil → Ajustes → **Bloqueados** / **Qué ven los demás**
+- Tras eliminar un chat: feedback suave «¿Cómo fue el encuentro?» (no público)
+
+## Confianza (señales)
+- «Verificado con Google» si la cuenta tiene `google_sub`
+- «Activo» solo si hubo actividad en los últimos 7 días
+- Icebreakers orientados a lugares públicos
+- Tip de parque seguro al matchear
 
 ## DB
 Tablas `user_blocks`, `user_reports` (migración `20260807223000_user_blocks_reports`).
@@ -33,3 +41,4 @@ Tablas `user_blocks`, `user_reports` (migración `20260807223000_user_blocks_rep
 ## NO entra aún
 - Panel admin para revisar reportes
 - Moderación automática / ban global
+- Reviews públicas ni Places API (parques sugeridos: teaser UI)

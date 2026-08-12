@@ -68,16 +68,16 @@ class DiscoverFilters {
         if (!hasGps) {
           return 'Activá tu ubicación GPS en el perfil para ver mascotas cerca.';
         }
-        return 'No hay perfiles dentro de $maxKm km por ahora.';
+        return 'Por ahora no hay perfiles dentro de $maxKm km. Probá ampliar el radio o volvé más tarde.';
       case DiscoverMode.breed:
         if ((breed == null || breed!.trim().isEmpty) && !hasOwnBreed) {
           return 'Elegí una raza en Filtros o completá la raza de tu mascota.';
         }
-        return 'No hay perfiles de esa raza por ahora.';
+        return 'Todavía no hay perfiles de esa raza. Probá otra o volvé más tarde.';
       case DiscoverMode.withVideos:
-        return 'Nadie subió un clip todavía. Volvé más tarde o subí el tuyo en Perfil → Videos.';
+        return 'Nadie subió un clip todavía. Sé de los primeros: subí el tuyo en Perfil → Videos.';
       case DiscoverMode.forYou:
-        return 'No hay más perfiles por ahora. Volvé más tarde o completá tu perfil para aparecer ante otros.';
+        return 'No hay más perfiles por ahora. Completá tu perfil o volvé un rato más tarde.';
     }
   }
 

@@ -104,9 +104,12 @@ class _HomeProfileBody extends ConsumerWidget {
         return profileCoreCompletionMessage(profile: profile!, pet: pet!);
       }
     }
+    final avatar = profile?.avatarUrl?.trim();
+    if (avatar == null || avatar.isEmpty) {
+      return 'Sumá tu foto: otros dueños confían más cuando ven tu cara.';
+    }
     if (videos.isEmpty) {
-      return '¡Novedad! Añadí videos a tu perfil y mostrá la personalidad '
-          'de tu mascota.';
+      return '¡Novedad! Añadí un video corto: es lo que más diferencia a tinDog.';
     }
     if (photos.length < 2) {
       return 'Sumá más fotos para que tu perfil destaque en Desliza.';
@@ -146,19 +149,33 @@ class _HomeProfileBody extends ConsumerWidget {
                     ),
                     if (_isCoreComplete) ...[
                       const SizedBox(width: 8),
-                      Container(
-                        width: 22,
-                        height: 22,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.2),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.primary.withValues(alpha: 0.5),
+                      Tooltip(
+                        message: 'Perfil listo para Desliza (no es verificación de identidad)',
+                        child: Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.primary.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.check_rounded,
+                            size: 14,
+                            color: AppColors.primaryDark,
                           ),
                         ),
-                        child: const Icon(
-                          Icons.check_rounded,
-                          size: 14,
+                      ),
+                    ],
+                    if (profile?.googleLinked == true) ...[
+                      const SizedBox(width: 6),
+                      const Tooltip(
+                        message: 'Verificado con Google',
+                        child: Icon(
+                          Icons.verified_rounded,
+                          size: 22,
                           color: AppColors.primaryDark,
                         ),
                       ),
@@ -217,11 +234,23 @@ class _HomeProfileBody extends ConsumerWidget {
         ),
       );
     }
+    final avatar = profile?.avatarUrl?.trim();
+    if (avatar == null || avatar.isEmpty) {
+      slides.add(
+        HomePromoSlide(
+          title: 'Tu foto genera confianza',
+          subtitle: 'Otros dueños quieren saber quién acompaña a la mascota.',
+          cta: 'Datos personales',
+          icon: Icons.person_rounded,
+          onCta: () => context.push('/profile/personal'),
+        ),
+      );
+    }
     if (videos.isEmpty) {
       slides.add(
         HomePromoSlide(
           title: 'Añadir vídeo',
-          subtitle: 'Subí un video corto y mostrá cómo es tu mascota.',
+          subtitle: 'Un clip corto muestra personalidad y diferencia tinDog.',
           cta: 'Subir vídeo',
           icon: Icons.videocam_rounded,
           onCta: () => context.push('/profile/videos'),

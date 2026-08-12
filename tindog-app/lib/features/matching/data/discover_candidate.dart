@@ -30,6 +30,7 @@ class DiscoverCandidate {
     this.ownerUserId,
     this.ownerName,
     this.ownerAvatarUrl,
+    this.ownerGoogleLinked = false,
   });
 
   final String id;
@@ -47,6 +48,7 @@ class DiscoverCandidate {
   final String? ownerUserId;
   final String? ownerName;
   final String? ownerAvatarUrl;
+  final bool ownerGoogleLinked;
 
   factory DiscoverCandidate.fromJson(Map<String, dynamic> json) {
     final urls = (json['photoUrls'] as List<dynamic>? ?? const [])
@@ -68,10 +70,11 @@ class DiscoverCandidate {
       bio: json['bio'] as String?,
       location: json['location'] as String?,
       distanceKm: (json['distanceKm'] as num?)?.toDouble(),
-      isActive: json['isActive'] as bool? ?? true,
+      isActive: json['isActive'] as bool? ?? false,
       ownerUserId: json['ownerUserId'] as String?,
       ownerName: (json['ownerName'] as String?)?.trim(),
       ownerAvatarUrl: (json['ownerAvatarUrl'] as String?)?.trim(),
+      ownerGoogleLinked: json['ownerGoogleLinked'] as bool? ?? false,
       photoUrls: urls,
       videos: videos,
     );
@@ -179,6 +182,7 @@ class LikeListItem extends DiscoverCandidate {
     super.ownerUserId,
     super.ownerName,
     super.ownerAvatarUrl,
+    super.ownerGoogleLinked,
   });
 
   final DateTime likedAt;
@@ -201,6 +205,7 @@ class LikeListItem extends DiscoverCandidate {
       ownerUserId: base.ownerUserId,
       ownerName: base.ownerName,
       ownerAvatarUrl: base.ownerAvatarUrl,
+      ownerGoogleLinked: base.ownerGoogleLinked,
       likedAt: DateTime.tryParse(json['likedAt'] as String? ?? '') ??
           DateTime.now(),
       matched: json['matched'] as bool? ?? false,

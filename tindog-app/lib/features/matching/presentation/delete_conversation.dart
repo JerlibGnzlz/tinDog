@@ -9,6 +9,7 @@ import '../data/chat_models.dart';
 import '../data/matching_repository.dart';
 import 'chats_providers.dart';
 import 'likes_providers.dart';
+import '../../safety/presentation/meetup_feedback_sheet.dart';
 
 /// Confirma y elimina match (unmatch). No bloquea.
 ///
@@ -26,7 +27,7 @@ Future<bool> confirmAndDeleteConversation({
     builder: (context) {
       return AlertDialog(
         backgroundColor: AppColors.card,
-        title: const Text('¿Eliminar conversación?'),
+        title: const Text('¿Eliminar match?'),
         content: Text(
           'Se elimina el match con $name y el chat. '
           'No es un bloqueo: pueden volver a verse en Desliza.',
@@ -43,7 +44,7 @@ Future<bool> confirmAndDeleteConversation({
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Eliminar'),
+            child: const Text('Eliminar match'),
           ),
         ],
       );
@@ -62,7 +63,16 @@ Future<bool> confirmAndDeleteConversation({
     ref.invalidate(likesSummaryProvider);
     unawaited(_pruneRemovedMatchIds(ref));
     if (context.mounted) {
-      showTindogInfoSnackBar(context, 'Conversación con $name eliminada');
+      showTindogInfoSnackBar(context, 'Match con $name eliminado');
+      // Feedback suave post-encuentro (opcional).
+      Future<void>.delayed(const Duration(milliseconds: 450), () {
+        if (context.mounted) {
+          showMeetupFeedbackSheet(
+            context: context,
+            otherPetName: name,
+          );
+        }
+      });
     }
     return true;
   } catch (e) {

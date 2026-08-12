@@ -372,9 +372,48 @@ class _ProfileVideosScreenState extends ConsumerState<ProfileVideosScreen> {
           ],
           if (_videos.isEmpty && !_uploadingVideo) ...[
             const SizedBox(height: 24),
-            TindogFilledButton(
-              onPressed: _pickVideo,
-              child: const Text('Agregar primer video'),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.videocam_rounded,
+                    size: 40,
+                    color: AppColors.primaryDark.withValues(alpha: 0.85),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Todavía no hay clips',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 17,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Un video corto muestra la personalidad de tu mascota '
+                    'y destaca en Desliza → Videos.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      height: 1.35,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TindogFilledButton(
+                    onPressed: _pickVideo,
+                    child: const Text('Agregar primer video'),
+                  ),
+                ],
+              ),
             ),
           ],
         ],

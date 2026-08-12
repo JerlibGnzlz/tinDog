@@ -139,6 +139,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           return StreamChatThreadScreen(matchId: matchId, thread: thread);
         },
       ),
+      // Fuera del shell: push desde Home vuelve limpio con pop().
+      GoRoute(
+        path: '/visibility',
+        builder: (_, _) => const ProfileVisibilityScreen(),
+      ),
       GoRoute(
         path: '/profile',
         builder: (_, _) => const ProfileHubScreen(),

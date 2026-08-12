@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/tindog_empty_state.dart';
 
 class LikesEmptyState extends StatelessWidget {
   const LikesEmptyState({
@@ -22,68 +22,15 @@ class LikesEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(32, 24, 32, 96),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 88,
-              height: 88,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.primary.withValues(alpha: 0.16),
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.35),
-                ),
-              ),
-              child: Icon(icon, size: 40, color: AppColors.primaryDark),
-            ),
-            const SizedBox(height: 18),
-            Text(
-              title,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-                height: 1.4,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            if (showDiscoverButton) ...[
-              const SizedBox(height: 20),
-              FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 22,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                onPressed: onPrimary ?? () => context.go('/discover'),
-                child: Text(
-                  primaryLabel,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
+    return TindogEmptyState(
+      title: title,
+      subtitle: subtitle,
+      icon: icon,
+      primaryLabel: showDiscoverButton ? primaryLabel : null,
+      onPrimary: showDiscoverButton
+          ? (onPrimary ?? () => context.go('/discover'))
+          : null,
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 96),
     );
   }
 }

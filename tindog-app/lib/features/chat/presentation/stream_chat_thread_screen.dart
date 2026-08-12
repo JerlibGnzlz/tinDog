@@ -68,6 +68,30 @@ class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
   String get _petName =>
       widget.thread?.otherPet.name ?? _ensureOther?.name ?? 'Chat';
 
+  /// Dueño humano (para el subtítulo del header).
+  String? get _ownerName {
+    final fromThread = widget.thread?.otherPet.ownerName?.trim();
+    if (fromThread != null && fromThread.isNotEmpty) return fromThread;
+
+    final ownerId = widget.thread?.otherPet.ownerUserId ?? _ensureOther?.id;
+    if (ownerId != null) {
+      final fromMember = _membersById[ownerId]?.name.trim();
+      if (fromMember != null &&
+          fromMember.isNotEmpty &&
+          fromMember != _petName) {
+        return fromMember;
+      }
+    }
+
+    final fromEnsure = _ensureOther?.name.trim();
+    if (fromEnsure != null &&
+        fromEnsure.isNotEmpty &&
+        fromEnsure != _petName) {
+      return fromEnsure;
+    }
+    return null;
+  }
+
   String? get _otherPhoto {
     // Preferí datos frescos de ensure/members (el thread puede traer fotos cacheadas).
     final ownerId = widget.thread?.otherPet.ownerUserId ?? _ensureOther?.id;
@@ -527,7 +551,10 @@ class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
                         fontSize: 16,
                       ),
                     ),
-                    TindogChannelStatus(channel: channel),
+                    TindogChannelStatus(
+                      channel: channel,
+                      ownerName: _ownerName,
+                    ),
                   ],
                 ),
               ),
@@ -586,7 +613,7 @@ class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
                   PopupMenuItem(
                     value: 'delete',
                     child: Text(
-                      'Eliminar conversación',
+                      'Eliminar match',
                       style: TextStyle(color: Colors.red.shade700),
                     ),
                   ),

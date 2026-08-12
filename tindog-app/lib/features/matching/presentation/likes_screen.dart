@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/feedback/app_feedback.dart';
 import '../../../core/network/session_handler.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/tindog_loader.dart';
 import '../data/discover_candidate.dart';
 import '../data/matching_repository.dart';
@@ -14,6 +15,7 @@ import 'widgets/likes_boost_cta.dart';
 import 'widgets/likes_empty_state.dart';
 import 'widgets/likes_tabs_bar.dart';
 import 'widgets/match_celebration_dialog.dart';
+import '../../../core/feedback/app_haptics.dart';
 
 class LikesScreen extends ConsumerStatefulWidget {
   const LikesScreen({super.key});
@@ -37,34 +39,34 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(height: topInset + 8),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 4, 20, 0),
+          SizedBox(height: topInset + AppSpacing.sm),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenH,
+              AppSpacing.xs,
+              AppSpacing.screenH,
+              0,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Likes',
-                  style: TextStyle(
+                  style: AppTypography.screenTitle.copyWith(
                     color: AppColors.textPrimary,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    height: 1.1,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Quienes te gustaron y a quiénes les diste like.',
-                  style: TextStyle(
+                  style: AppTypography.caption.copyWith(
                     color: AppColors.textSecondary,
-                    fontSize: 13,
-                    height: 1.3,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.md),
           LikesTabsBar(
             tab: _tab,
             receivedCount: receivedCount,
@@ -94,9 +96,9 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
       case LikesTabKind.received:
         return _LikesGrid(
           provider: receivedLikesProvider,
-          emptyTitle: 'Todavía no tenés likes',
+          emptyTitle: 'Todavía no llegaron likes',
           emptySubtitle:
-              'Cuando alguien te dé like, aparece acá para que puedas responder.',
+              'Cuando a alguien le guste tu mascota, aparece acá para que puedas responder.',
           enableLikeBack: true,
           likingPetId: _likingPetId,
           onLikeBack: _likeBack,
@@ -104,8 +106,9 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
       case LikesTabKind.sent:
         return _LikesGrid(
           provider: sentLikesProvider,
-          emptyTitle: 'Sin likes enviados',
-          emptySubtitle: 'Deslizá a la derecha en Desliza para empezar.',
+          emptyTitle: 'Todavía no enviaste likes',
+          emptySubtitle:
+              'En Desliza, deslizá a la derecha cuando veas un perrito que te encante.',
         );
       case LikesTabKind.topPicks:
         return LikesEmptyState(
@@ -133,9 +136,11 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
       ref.invalidate(matchesProvider);
 
       if (result.matched) {
+        AppHaptics.match();
         final goChat = await showMatchCelebrationDialog(
           context,
           petName: item.name,
+          shortLocation: item.shortLocation,
         );
         if (!mounted) return;
         if (goChat && result.matchId != null) {

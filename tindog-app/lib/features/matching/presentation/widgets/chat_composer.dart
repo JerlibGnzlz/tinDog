@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/constants/dog_chat_icebreakers.dart';
 
-/// Frases rápidas pensadas para dueños que coordinan encuentros de perros.
-const kDogChatIcebreakers = <String>[
-  '¡Hola! ¿Salimos a pasear?',
-  '¿Conocés algún parque bueno por acá?',
-  '¿Tu perro se lleva bien con otros?',
-  '¿Quedamos este finde?',
-];
+export '../../../../shared/constants/dog_chat_icebreakers.dart'
+    show kDogChatIcebreakers;
 
 class ChatComposer extends StatelessWidget {
   const ChatComposer({

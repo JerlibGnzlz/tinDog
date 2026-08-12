@@ -284,6 +284,7 @@ class _MatchProfileSheetState extends State<_MatchProfileSheet> {
                     name: pet.ownerName?.trim(),
                     avatarUrl: pet.ownerAvatarUrl?.trim(),
                     bio: bio,
+                    googleLinked: pet.ownerGoogleLinked,
                   ),
                 ],
                 const SizedBox(height: 22),
@@ -309,7 +310,7 @@ class _MatchProfileSheetState extends State<_MatchProfileSheet> {
                       widget.onDeleteChat!();
                     },
                     child: Text(
-                      'Eliminar conversación',
+                      'Eliminar match',
                       style: TextStyle(color: Colors.red.shade700),
                     ),
                   ),
@@ -337,11 +338,13 @@ class _OwnerCard extends StatelessWidget {
     this.name,
     this.avatarUrl,
     this.bio,
+    this.googleLinked = false,
   });
 
   final String? name;
   final String? avatarUrl;
   final String? bio;
+  final bool googleLinked;
 
   @override
   Widget build(BuildContext context) {
@@ -376,13 +379,39 @@ class _OwnerCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  hasName ? name! : 'Dueño/a de tinDog',
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 17,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      hasName ? name! : 'Dueño/a de tinDog',
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 17,
+                      ),
+                    ),
+                    if (googleLinked) ...[
+                      const SizedBox(height: 4),
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.verified_rounded,
+                            size: 16,
+                            color: AppColors.primaryDark,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Verificado con Google',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ],

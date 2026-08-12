@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/feedback/app_feedback.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../profile/presentation/profile_providers.dart';
 import 'discover_filters.dart';
 import 'discover_providers.dart';
@@ -49,7 +50,12 @@ class ExploreScreen extends ConsumerWidget {
         slivers: [
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(20, topInset + 12, 20, 0),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.screenH,
+                topInset + AppSpacing.md,
+                AppSpacing.screenH,
+                0,
+              ),
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -59,15 +65,17 @@ class ExploreScreen extends ConsumerWidget {
                       color: AppColors.textPrimary,
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
+                      height: 1.15,
+                      letterSpacing: -0.3,
                     ),
                   ),
-                  SizedBox(height: 6),
+                  SizedBox(height: AppSpacing.sm),
                   Text(
                     'Buscá perros para match o, más adelante, servicios cerca',
                     style: TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 14,
-                      height: 1.3,
+                      height: 1.35,
                     ),
                   ),
                 ],
@@ -76,7 +84,12 @@ class ExploreScreen extends ConsumerWidget {
           ),
           const SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(20, 20, 20, 10),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.screenH,
+                AppSpacing.xl,
+                AppSpacing.screenH,
+                AppSpacing.sm,
+              ),
               child: Text(
                 'Buscar perros',
                 style: TextStyle(
@@ -88,12 +101,17 @@ class ExploreScreen extends ConsumerWidget {
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              0,
+              AppSpacing.lg,
+              AppSpacing.sm,
+            ),
             sliver: SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
+                mainAxisSpacing: AppSpacing.md,
+                crossAxisSpacing: AppSpacing.md,
                 childAspectRatio: 0.84,
               ),
               delegate: SliverChildBuilderDelegate(
@@ -110,7 +128,12 @@ class ExploreScreen extends ConsumerWidget {
           ),
           const SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(20, 16, 20, 4),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.screenH,
+                AppSpacing.lg,
+                AppSpacing.screenH,
+                AppSpacing.xs,
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -137,7 +160,12 @@ class ExploreScreen extends ConsumerWidget {
           ),
           const SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(20, 0, 20, 10),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.screenH,
+                0,
+                AppSpacing.screenH,
+                AppSpacing.sm,
+              ),
               child: Text(
                 'Veterinarias, paseos, refugios y pet shops',
                 style: TextStyle(

@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/feedback/app_feedback.dart';
+import '../../../core/feedback/app_haptics.dart';
 import '../../../core/network/session_handler.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/pet_photo_viewer_screen.dart';
 import '../../../shared/widgets/pet_video_player_screen.dart';
+import '../../../shared/widgets/tindog_empty_state.dart';
 import '../../../shared/widgets/tindog_loader.dart';
 import '../../../shared/models/swipe_preview_media.dart';
+import '../../chat/presentation/widgets/match_profile_sheet.dart';
 import '../../profile/presentation/profile_providers.dart';
+import '../../safety/presentation/safety_sheets.dart';
 import 'discover_filters.dart';
 import 'discover_providers.dart';
 import 'widgets/discover_actions.dart';
@@ -34,9 +39,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (!mounted) return;
       final deck = ref.read(discoverDeckProvider);
       if (decision == DiscoverSwipeDecision.like && deck.lastMatched) {
+        AppHaptics.match();
         final goChat = await showMatchCelebrationDialog(
           context,
           petName: name,
+          shortLocation: current?.shortLocation,
         );
         if (!mounted) return;
         if (goChat && deck.lastMatchId != null) {
@@ -61,6 +68,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }
     try {
       await ref.read(discoverDeckProvider.notifier).rewind();
+      AppHaptics.rewind();
     } catch (e) {
       if (!mounted) return;
       if (isSessionError(e)) {
@@ -170,6 +178,23 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         ),
                       );
                     },
+                    onOwnerTap: () => showMatchProfileSheet(
+                      context: context,
+                      pet: current,
+                      onSafety: current.ownerUserId == null
+                          ? null
+                          : () {
+                              showSafetyActionsSheet(
+                                context: context,
+                                ref: ref,
+                                otherUserId: current.ownerUserId!,
+                                otherName:
+                                    current.ownerName?.trim().isNotEmpty == true
+                                        ? current.ownerName!.trim()
+                                        : current.name,
+                              );
+                            },
+                    ),
                     bottomBar: DiscoverActions(
                       onPass: _cardController.pass,
                       onLike: _cardController.like,
@@ -187,7 +212,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   )
                 else
                   _EmptyDiscover(
-                    title: 'No hay más perfiles',
+                    title: 'Por ahora no hay más perfiles',
                     subtitle: filters.emptyMessage(
                       hasGps: hasGps,
                       hasOwnBreed: hasOwnBreed,
@@ -273,47 +298,21 @@ class _EmptyDiscover extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSpacing.xxxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.pets_rounded,
-              size: 64,
-              color: AppColors.primary.withValues(alpha: 0.7),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 13,
-                height: 1.35,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: onPrimary,
-              child: Text(primaryLabel),
+            TindogEmptyState(
+              title: title,
+              subtitle: subtitle,
+              icon: Icons.pets_rounded,
+              primaryLabel: primaryLabel,
+              onPrimary: onPrimary,
+              padding: EdgeInsets.zero,
             ),
             if (onRewind != null) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               TextButton.icon(
                 onPressed: onRewind,
                 icon: const Icon(Icons.replay_rounded),

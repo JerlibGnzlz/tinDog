@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../shared/widgets/tindog_empty_state.dart';
 import '../../../shared/widgets/tindog_loader.dart';
 import '../../chat/presentation/stream_chat_errors.dart';
 import '../../chat/presentation/stream_chat_providers.dart';
@@ -44,9 +46,14 @@ class ChatsScreen extends ConsumerWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(height: topInset + 8),
+          SizedBox(height: topInset + AppSpacing.sm),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 12, 0),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenH,
+              AppSpacing.xs,
+              AppSpacing.md,
+              0,
+            ),
             child: Row(
               children: [
                 const Expanded(
@@ -56,6 +63,8 @@ class ChatsScreen extends ConsumerWidget {
                       color: AppColors.textPrimary,
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
+                      height: 1.15,
+                      letterSpacing: -0.3,
                     ),
                   ),
                 ),
@@ -182,13 +191,18 @@ class ChatsScreen extends ConsumerWidget {
                           ),
                         ),
                       const Padding(
-                        padding: EdgeInsets.fromLTRB(20, 16, 20, 10),
+                        padding: EdgeInsets.fromLTRB(
+                          AppSpacing.screenH,
+                          AppSpacing.lg,
+                          AppSpacing.screenH,
+                          AppSpacing.sm,
+                        ),
                         child: Text(
                           'Matches nuevos',
                           style: TextStyle(
                             color: AppColors.textPrimary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
@@ -223,27 +237,31 @@ class ChatsScreen extends ConsumerWidget {
                         ),
                       ),
                       const Padding(
-                        padding: EdgeInsets.fromLTRB(20, 18, 20, 8),
+                        padding: EdgeInsets.fromLTRB(
+                          AppSpacing.screenH,
+                          AppSpacing.lg,
+                          AppSpacing.screenH,
+                          AppSpacing.sm,
+                        ),
                         child: Text(
                           'Mensajes',
                           style: TextStyle(
                             color: AppColors.textPrimary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
                       if (conversations.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.fromLTRB(20, 24, 20, 40),
-                          child: Text(
-                            'Cuando escribas a un match, el chat aparece acá.',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 13,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
+                        TindogEmptyState(
+                          icon: Icons.chat_bubble_outline_rounded,
+                          title: 'Todavía no hay mensajes',
+                          subtitle:
+                              'Cuando escribas a un match, la conversación aparece acá. '
+                              'Un “hola” desde un parque público es un gran comienzo.',
+                          primaryLabel: 'Ir a Desliza',
+                          onPrimary: () => context.go('/discover'),
+                          padding: const EdgeInsets.fromLTRB(28, 16, 28, 40),
                         )
                       else
                         ...conversations.map(
@@ -386,18 +404,29 @@ class _EmptyNewMatchesHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.only(left: 4, right: 12),
+    return Padding(
+      padding: const EdgeInsets.only(left: AppSpacing.xs, right: AppSpacing.md),
       child: SizedBox(
-        width: 160,
-        child: Center(
-          child: Text(
-            'Los matches nuevos aparecen acá',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 12,
+        width: 168,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.favorite_border_rounded,
+              color: AppColors.primary.withValues(alpha: 0.75),
+              size: 28,
             ),
-          ),
+            const SizedBox(height: AppSpacing.sm),
+            const Text(
+              'Los matches nuevos aparecen acá. ¡A deslizar!',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                height: 1.35,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );

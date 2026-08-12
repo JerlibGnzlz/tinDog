@@ -87,4 +87,12 @@ export class UsersService {
     const name = pet?.name?.trim();
     return name ? name : null;
   }
+
+  /** Marca actividad reciente (señal «Activo» en Desliza). */
+  touchLastSeen(userId: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { updatedAt: new Date() },
+    });
+  }
 }

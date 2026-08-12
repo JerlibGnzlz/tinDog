@@ -41,6 +41,8 @@ export type DiscoverCandidateDto = {
   ownerUserId: string;
   ownerName: string | null;
   ownerAvatarUrl: string | null;
+  /** Cuenta vinculada a Google (sello de confianza). */
+  ownerGoogleLinked: boolean;
 };
 
 export type LikeListItemDto = DiscoverCandidateDto & {
@@ -184,6 +186,8 @@ export class MatchingService {
         },
         user: {
           select: {
+            updatedAt: true,
+            googleSub: true,
             profile: {
               select: {
                 name: true,
@@ -192,6 +196,7 @@ export class MatchingService {
                 bio: true,
                 latitude: true,
                 longitude: true,
+                updatedAt: true,
               },
             },
           },
@@ -601,6 +606,8 @@ export class MatchingService {
     },
     user: {
       select: {
+        updatedAt: true,
+        googleSub: true,
         profile: {
           select: {
             name: true,
@@ -609,6 +616,7 @@ export class MatchingService {
             bio: true,
             latitude: true,
             longitude: true,
+            updatedAt: true,
           },
         },
       },
@@ -707,6 +715,8 @@ export class MatchingService {
         media: { select: { url: true; type: true; durationSec: true } };
         user: {
           select: {
+            updatedAt: true;
+            googleSub: true;
             profile: {
               select: {
                 name: true;
@@ -715,6 +725,7 @@ export class MatchingService {
                 bio: true;
                 latitude: true;
                 longitude: true;
+                updatedAt: true;
               };
             };
           };
@@ -750,6 +761,13 @@ export class MatchingService {
 
     const ownerName = pet.user.profile?.name?.trim() || null;
     const ownerAvatarUrl = pet.user.profile?.avatarUrl?.trim() || null;
+    const lastTouchMs = Math.max(
+      pet.updatedAt.getTime(),
+      pet.user.updatedAt.getTime(),
+      pet.user.profile?.updatedAt?.getTime() ?? 0,
+    );
+    const activeWindowMs = 7 * 24 * 60 * 60 * 1000;
+    const isActive = Date.now() - lastTouchMs <= activeWindowMs;
 
     return {
       id: pet.id,
@@ -760,12 +778,13 @@ export class MatchingService {
       location: pet.user.profile?.location ?? null,
       distanceKm:
         distanceKm != null ? Math.round(distanceKm * 10) / 10 : null,
-      isActive: true,
+      isActive,
       photoUrls,
       videos,
       ownerUserId: pet.userId,
       ownerName,
       ownerAvatarUrl,
+      ownerGoogleLinked: Boolean(pet.user.googleSub),
     };
   }
 }

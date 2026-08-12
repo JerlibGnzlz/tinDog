@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import '../../../../core/feedback/app_haptics.dart';
 import '../../../../shared/models/swipe_preview_media.dart';
 import '../../../../shared/widgets/pet_card_overlay.dart';
 import '../../data/discover_candidate.dart';
@@ -31,6 +31,7 @@ class DiscoverCard extends StatefulWidget {
     this.controller,
     this.bottomBar,
     this.onOpenGallery,
+    this.onOwnerTap,
     this.storyTopInset = 12,
   });
 
@@ -40,6 +41,8 @@ class DiscoverCard extends StatefulWidget {
   final Widget? bottomBar;
   /// Índice de la foto actual → galería fullscreen.
   final ValueChanged<int>? onOpenGallery;
+  /// Chip del dueño / Ver más → ficha con sección Dueño/a.
+  final VoidCallback? onOwnerTap;
   final double storyTopInset;
 
   @override
@@ -106,7 +109,11 @@ class _DiscoverCardState extends State<DiscoverCard>
     _flyAnimation = Tween<double>(begin: _dragX, end: target).animate(
       CurvedAnimation(parent: _flyController, curve: Curves.easeInCubic),
     );
-    HapticFeedback.mediumImpact();
+    if (decision == DiscoverSwipeDecision.like) {
+      AppHaptics.like();
+    } else {
+      AppHaptics.pass();
+    }
     await _flyController.forward(from: 0);
     if (!mounted) return;
     widget.onDecision(decision);
@@ -133,12 +140,12 @@ class _DiscoverCardState extends State<DiscoverCard>
     if (_media.length > 1) {
       if (x < width * 0.35 && _photoIndex > 0) {
         setState(() => _photoIndex -= 1);
-        HapticFeedback.selectionClick();
+        AppHaptics.selection();
         return;
       }
       if (x > width * 0.65 && _photoIndex < _media.length - 1) {
         setState(() => _photoIndex += 1);
-        HapticFeedback.selectionClick();
+        AppHaptics.selection();
         return;
       }
     }
@@ -403,12 +410,17 @@ class _DiscoverCardState extends State<DiscoverCard>
                                   age: candidate.age,
                                   subtitle: subtitle,
                                   ownerName: candidate.ownerName,
+                                  ownerAvatarUrl: candidate.ownerAvatarUrl,
+                                  ownerGoogleLinked:
+                                      candidate.ownerGoogleLinked,
                                   bio: (bio != null && bio.isNotEmpty)
                                       ? bio
                                       : null,
                                   onInfoTap: widget.onOpenGallery == null
                                       ? null
                                       : () => widget.onOpenGallery!(mediaIndex),
+                                  onOwnerTap: widget.onOwnerTap,
+                                  onBioMoreTap: widget.onOwnerTap,
                                 ),
                                 if (candidate.locationLabel != null) ...[
                                   const SizedBox(height: 8),

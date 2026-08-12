@@ -16,6 +16,7 @@ void main() {
         'ownerUserId': 'user-1',
         'ownerName': 'Ana Pérez',
         'ownerAvatarUrl': 'https://example.com/ana.jpg',
+        'ownerGoogleLinked': true,
         'photoUrls': ['https://example.com/a.jpg', ''],
       });
 
@@ -27,6 +28,8 @@ void main() {
       expect(c.ownerUserId, 'user-1');
       expect(c.ownerName, 'Ana Pérez');
       expect(c.ownerAvatarUrl, 'https://example.com/ana.jpg');
+      expect(c.ownerGoogleLinked, isTrue);
+      expect(c.isActive, isTrue);
       expect(c.photoUrls, ['https://example.com/a.jpg']);
       expect(c.videos, isEmpty);
       expect(c.mediaItems, hasLength(1));

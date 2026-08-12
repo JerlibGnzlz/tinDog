@@ -100,6 +100,7 @@ export class AuthService {
   }
 
   private async buildAuthResponse(userId: string, email: string) {
+    await this.usersService.touchLastSeen(userId);
     const accessToken = this.jwtService.sign({ sub: userId, email });
     const petName = await this.usersService.findPetName(userId);
     return {

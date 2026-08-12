@@ -125,6 +125,19 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
             .animate()
             .fadeIn(delay: 160.ms, duration: 400.ms)
             .slideY(begin: 0.06, end: 0, duration: 400.ms),
+        const SizedBox(height: 12),
+        Text(
+          'Perfiles reales · playdates en lugares públicos',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.88),
+            fontSize: titleSize != null ? 12.5 : 13.5,
+            fontWeight: FontWeight.w500,
+            height: 1.3,
+          ),
+        )
+            .animate()
+            .fadeIn(delay: 220.ms, duration: 400.ms),
       ],
     );
   }

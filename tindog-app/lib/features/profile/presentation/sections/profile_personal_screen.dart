@@ -123,7 +123,8 @@ class _ProfilePersonalScreenState extends ConsumerState<ProfilePersonalScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Así te ven otros dueños. La mascota se edita en Datos caninos.',
+            'Así te ven otros dueños en Desliza. Contá algo de vos '
+            '(no de la mascota: eso va en Datos caninos).',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).hintColor,
                 ),
@@ -178,8 +179,17 @@ class _ProfilePersonalScreenState extends ConsumerState<ProfilePersonalScreen> {
           TindogTextField(
             controller: _bioController,
             label: 'Sobre vos',
-            hintText: 'Ej. Trabajo remoto, salimos a pasear por Palermo…',
+            hintText:
+                'Ej. Trabajo cerca de Palermo, salimos a la tarde y buscamos playdates tranquilos…',
             maxLines: 3,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Tip: una bio humana genera más confianza que repetir datos del perro.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  height: 1.35,
+                ),
           ),
         ],
       ),

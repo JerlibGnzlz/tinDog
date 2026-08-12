@@ -5,13 +5,14 @@ import '../../../../core/theme/app_colors.dart';
 import 'chat_time_format.dart';
 import 'tindog_typing_label.dart';
 
-/// Subtítulo del header: no repite el nombre del perro.
+/// Subtítulo del header: dueño + presencia (sin repetir el nombre del perro).
 /// - Alguien escribe → «está escribiendo…» animado
-/// - Si no → «En línea» / «Últ. vez …» (presencia Stream)
+/// - Si no → «Con Hernán · En línea» / «Con Hernán · Últ. vez …»
 class TindogChannelStatus extends StatelessWidget {
   const TindogChannelStatus({
     super.key,
     required this.channel,
+    this.ownerName,
     this.textStyle = const TextStyle(
       color: AppColors.textSecondary,
       fontSize: 12,
@@ -20,12 +21,29 @@ class TindogChannelStatus extends StatelessWidget {
   });
 
   final Channel channel;
+  /// Nombre del dueño (humano), si se conoce.
+  final String? ownerName;
   final TextStyle textStyle;
+
+  String? get _ownerLabel {
+    final name = ownerName?.trim();
+    if (name == null || name.isEmpty) return null;
+    return 'Con $name';
+  }
 
   @override
   Widget build(BuildContext context) {
     final channelState = channel.state;
-    if (channelState == null) return const SizedBox.shrink();
+    if (channelState == null) {
+      final owner = _ownerLabel;
+      if (owner == null) return const SizedBox.shrink();
+      return Text(
+        owner,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: textStyle,
+      );
+    }
 
     final client = StreamChat.maybeOf(context)?.client;
     final myId = client?.state.currentUser?.id;
@@ -54,12 +72,7 @@ class TindogChannelStatus extends StatelessWidget {
             final other = members.firstWhereOrNull((m) => m.userId != myId);
             final otherUserId = other?.userId;
             if (otherUserId == null || otherUserId.isEmpty) {
-              return Text(
-                'Desconectado',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: textStyle,
-              );
+              return _composedLabel('Desconectado');
             }
 
             final usersState = client?.state;
@@ -70,7 +83,6 @@ class TindogChannelStatus extends StatelessWidget {
               );
             }
 
-            // Solo presencia Stream (no watchers: pueden quedar “fantasma”).
             return BetterStreamBuilder<Map<String, User>>(
               stream: usersState.usersStream,
               initialData: usersState.users,
@@ -89,13 +101,26 @@ class TindogChannelStatus extends StatelessWidget {
   }
 
   Widget _statusLabel({required bool online, DateTime? lastActive}) {
+    final presence = formatPresenceLabel(
+      online: online,
+      lastActive: lastActive,
+    );
+    return _composedLabel(
+      presence,
+      emphasize: online,
+    );
+  }
+
+  Widget _composedLabel(String presence, {bool emphasize = false}) {
+    final owner = _ownerLabel;
+    final text = owner == null ? presence : '$owner · $presence';
     return Text(
-      formatPresenceLabel(online: online, lastActive: lastActive),
+      text,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: textStyle.copyWith(
-        color: online ? AppColors.primaryDark : AppColors.textSecondary,
-        fontWeight: online ? FontWeight.w600 : FontWeight.w400,
+        color: emphasize ? AppColors.primaryDark : AppColors.textSecondary,
+        fontWeight: emphasize ? FontWeight.w600 : FontWeight.w400,
       ),
     );
   }

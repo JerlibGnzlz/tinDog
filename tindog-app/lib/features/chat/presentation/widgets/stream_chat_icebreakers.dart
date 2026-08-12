@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/constants/dog_chat_icebreakers.dart';
 
-const kDogChatIcebreakers = <String>[
-  '¡Hola! ¿Salimos a pasear?',
-  '¿Conocés algún parque bueno por acá?',
-  '¿Tu perro se lleva bien con otros?',
-  '¿Quedamos este finde?',
-];
+export '../../../../shared/constants/dog_chat_icebreakers.dart'
+    show kDogChatIcebreakers;
 
 class StreamChatIcebreakers extends StatelessWidget {
   const StreamChatIcebreakers({
@@ -80,7 +77,7 @@ class StreamChatIcebreakers extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           const Text(
-            'Tocá una frase para enviar',
+            'Coordiná en un lugar público y de día',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: AppColors.textSecondary,
