@@ -112,7 +112,7 @@ class ExploreScreen extends ConsumerWidget {
                 crossAxisCount: 2,
                 mainAxisSpacing: AppSpacing.md,
                 crossAxisSpacing: AppSpacing.md,
-                childAspectRatio: 0.84,
+                childAspectRatio: 0.9,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {

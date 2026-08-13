@@ -3,12 +3,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/network/network_online_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/confirm_app_exit_scope.dart';
+import '../../../shared/widgets/tindog_offline_banner.dart';
 import '../../auth/data/auth_repository.dart';
+import '../../chat/presentation/stream_chat_providers.dart';
 import '../../chat/presentation/stream_presence_keeper.dart';
 import '../../profile/presentation/profile_providers.dart';
 import 'chats_providers.dart';
+import 'discover_providers.dart';
 import 'likes_providers.dart';
 import 'widgets/discover_bottom_nav.dart';
 
@@ -40,6 +44,15 @@ class _MatchingShellState extends ConsumerState<MatchingShell> {
     ref.invalidate(sentLikesProvider);
   }
 
+  void _retryNetwork() {
+    ref.read(discoverDeckProvider.notifier).reload();
+    ref.invalidate(matchesProvider);
+    _refreshLikes();
+    ref.invalidate(myProfileProvider);
+    ref.invalidate(myPetProvider);
+    unawaited(ref.read(streamChatClientProvider.notifier).reconnect());
+  }
+
   @override
   void initState() {
     super.initState();
@@ -68,6 +81,7 @@ class _MatchingShellState extends ConsumerState<MatchingShell> {
         ref.watch(unreadChatsCountProvider).valueOrNull ?? 0;
     final index =
         widget.navigationShell.currentIndex.clamp(0, _tabs.length - 1);
+    final online = ref.watch(networkOnlineProvider).valueOrNull ?? true;
 
     final pet = ref.watch(myPetProvider).valueOrNull;
     if (!_sentToPetOnboarding &&
@@ -88,7 +102,21 @@ class _MatchingShellState extends ConsumerState<MatchingShell> {
         color: AppColors.surface,
         child: Column(
           children: [
-            Expanded(child: widget.navigationShell),
+            if (!online)
+              ColoredBox(
+                color: const Color(0xFF3D4A2E),
+                child: SafeArea(
+                  bottom: false,
+                  child: TindogOfflineBanner(onRetry: _retryNetwork),
+                ),
+              ),
+            Expanded(
+              child: MediaQuery.removePadding(
+                context: context,
+                removeTop: !online,
+                child: widget.navigationShell,
+              ),
+            ),
             DiscoverBottomNav(
               active: _tabs[index],
               likesBadge: receivedCount > 0 ? receivedCount : null,

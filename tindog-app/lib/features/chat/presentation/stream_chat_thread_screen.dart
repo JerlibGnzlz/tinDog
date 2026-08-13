@@ -809,45 +809,44 @@ class _EmptyMatchHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.pets_rounded,
-              size: 44,
-              color: AppColors.primary.withValues(alpha: 0.9),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.pets_rounded,
+            size: 36,
+            color: AppColors.primary.withValues(alpha: 0.9),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '¡Match con $petName!',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 18,
             ),
-            const SizedBox(height: 14),
-            Text(
-              '¡Match con $petName!',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w800,
-                fontSize: 20,
-              ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Elegí una frase o escribí la tuya abajo.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.textSecondary.withValues(alpha: 0.95),
+              height: 1.35,
+              fontSize: 13,
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Vas a ver cuándo está en línea o escribiendo.\n'
-              'Elegí una frase o escribí la tuya abajo.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.textSecondary.withValues(alpha: 0.95),
-                height: 1.4,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 22),
-            StreamChatIcebreakers(
-              channel: channel,
-              wrap: true,
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 14),
+          StreamChatIcebreakers(
+            channel: channel,
+            wrap: true,
+            compact: true,
+            maxItems: 3,
+          ),
+        ],
       ),
     );
   }

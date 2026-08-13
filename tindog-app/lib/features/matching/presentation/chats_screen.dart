@@ -6,7 +6,6 @@ import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/tindog_empty_state.dart';
-import '../../../shared/widgets/tindog_loader.dart';
 import '../../chat/presentation/stream_chat_errors.dart';
 import '../../chat/presentation/stream_chat_providers.dart';
 import '../../chat/presentation/widgets/chat_presence_avatar.dart';
@@ -20,6 +19,7 @@ import 'chats_providers.dart';
 import 'delete_conversation.dart';
 import 'likes_providers.dart';
 import 'widgets/chats_likes_shortcut_card.dart';
+import 'widgets/chats_list_skeleton.dart';
 
 class ChatsScreen extends ConsumerWidget {
   const ChatsScreen({super.key});
@@ -100,9 +100,7 @@ class ChatsScreen extends ConsumerWidget {
           ),
           Expanded(
             child: matchesAsync.when(
-              loading: () => const Center(
-                child: TindogLoader(message: 'Cargando chats…'),
-              ),
+              loading: () => const ChatsListSkeleton(),
               error: (error, _) => Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
@@ -582,21 +580,19 @@ class _MessageRow extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 10,
-                              vertical: 6,
+                              vertical: 5,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.18),
+                              color: AppColors.primaryDark,
                               borderRadius: BorderRadius.circular(999),
-                              border: Border.all(
-                                color: AppColors.primary.withValues(alpha: 0.35),
-                              ),
                             ),
                             child: const Text(
                               'Tu turno',
                               style: TextStyle(
-                                color: AppColors.primaryDark,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.2,
                               ),
                             ),
                           ),

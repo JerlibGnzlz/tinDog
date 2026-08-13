@@ -44,8 +44,8 @@ class TindogChatListTimestamp extends StatelessWidget {
       formatChatListTime(at),
       style: TextStyle(
         color: emphasize ? AppColors.primaryDark : AppColors.textSecondary,
-        fontSize: 12,
-        fontWeight: emphasize ? FontWeight.w700 : FontWeight.w500,
+        fontSize: 13,
+        fontWeight: emphasize ? FontWeight.w800 : FontWeight.w600,
       ),
     );
   }

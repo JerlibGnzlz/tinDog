@@ -33,8 +33,8 @@ StreamTheme tindogStreamTheme() {
       bubble: StreamMessageBubbleStyle(
         backgroundColor: StreamMessageLayoutProperty.resolveWith((p) {
           final mine = p.alignment == StreamMessageAlignment.end;
-          // Míos: verde salvia. Otros: crema con tinte verde suave.
-          return mine ? AppColors.primary : const Color(0xFFE8EFDF);
+          // Míos: salvia un tono más oscuro (mejor contraste hora/texto).
+          return mine ? AppColors.primaryDark : const Color(0xFFE8EFDF);
         }),
       ),
       text: StreamMessageTextStyle(
@@ -44,24 +44,25 @@ StreamTheme tindogStreamTheme() {
         }),
         linkColor: StreamMessageLayoutProperty.resolveWith((p) {
           final mine = p.alignment == StreamMessageAlignment.end;
-          return mine ? Colors.white : AppColors.accent;
+          return mine ? const Color(0xFFE8FFD6) : AppColors.accent;
         }),
       ),
       metadata: StreamMessageMetadataStyle(
         timestampColor: StreamMessageLayoutProperty.resolveWith((p) {
           final mine = p.alignment == StreamMessageAlignment.end;
-          // Verde oscuro sobre burbuja salvia (blanco casi no se ve).
-          return mine ? AppColors.primaryDark : AppColors.textSecondary;
+          return mine
+              ? Colors.white.withValues(alpha: 0.92)
+              : AppColors.textSecondary;
         }),
         editedColor: StreamMessageLayoutProperty.resolveWith((p) {
           final mine = p.alignment == StreamMessageAlignment.end;
           return mine
-              ? AppColors.primaryDark.withValues(alpha: 0.85)
+              ? Colors.white.withValues(alpha: 0.85)
               : AppColors.textSecondary;
         }),
         statusColor: StreamMessageLayoutProperty.resolveWith((p) {
           final mine = p.alignment == StreamMessageAlignment.end;
-          return mine ? AppColors.primaryDark : AppColors.accent;
+          return mine ? const Color(0xFFE8FFD6) : AppColors.accent;
         }),
       ),
     ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/feedback/app_feedback.dart';
 import '../../../core/network/session_handler.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/tindog_form_sheet_scaffold.dart';
 import '../data/safety_repository.dart';
 
 enum SafetyActionKind { reported, blocked, reportedAndBlocked }
@@ -265,9 +266,9 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.viewInsetsOf(context).bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottom),
+    return TindogFormSheetScaffold(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      maxHeightFactor: 0.92,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

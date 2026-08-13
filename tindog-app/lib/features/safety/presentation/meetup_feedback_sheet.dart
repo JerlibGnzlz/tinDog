@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/feedback/app_feedback.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/tindog_form_sheet_scaffold.dart';
 
 enum MeetupFeedbackMood { great, ok, rough }
 
@@ -57,113 +58,99 @@ class _MeetupFeedbackBodyState extends ConsumerState<_MeetupFeedbackBody> {
 
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.of(context);
-    final bottomSafe = media.padding.bottom;
-    final keyboard = media.viewInsets.bottom;
-
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: keyboard),
-      child: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(20, 12, 20, 16 + bottomSafe),
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    return TindogFormSheetScaffold(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+          Text(
+            '¿Cómo fue el encuentro con ${widget.otherPetName}?',
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 18,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Solo para mejorar tinDog. No se publica en el perfil.',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              height: 1.35,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Row(
             children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 14),
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
+              Expanded(
+                child: _MoodChip(
+                  label: 'Genial',
+                  emoji: '👍',
+                  selected: _mood == MeetupFeedbackMood.great,
+                  onTap: () =>
+                      setState(() => _mood = MeetupFeedbackMood.great),
                 ),
               ),
-              Text(
-                '¿Cómo fue el encuentro con ${widget.otherPetName}?',
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 18,
+              const SizedBox(width: 8),
+              Expanded(
+                child: _MoodChip(
+                  label: 'Bien',
+                  emoji: '🙂',
+                  selected: _mood == MeetupFeedbackMood.ok,
+                  onTap: () =>
+                      setState(() => _mood = MeetupFeedbackMood.ok),
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Solo para mejorar tinDog. No se publica en el perfil.',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  height: 1.35,
-                  fontSize: 13,
+              const SizedBox(width: 8),
+              Expanded(
+                child: _MoodChip(
+                  label: 'Regular',
+                  emoji: '👎',
+                  selected: _mood == MeetupFeedbackMood.rough,
+                  onTap: () =>
+                      setState(() => _mood = MeetupFeedbackMood.rough),
                 ),
-              ),
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  Expanded(
-                    child: _MoodChip(
-                      label: 'Genial',
-                      emoji: '👍',
-                      selected: _mood == MeetupFeedbackMood.great,
-                      onTap: () =>
-                          setState(() => _mood = MeetupFeedbackMood.great),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _MoodChip(
-                      label: 'Bien',
-                      emoji: '🙂',
-                      selected: _mood == MeetupFeedbackMood.ok,
-                      onTap: () =>
-                          setState(() => _mood = MeetupFeedbackMood.ok),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _MoodChip(
-                      label: 'Regular',
-                      emoji: '👎',
-                      selected: _mood == MeetupFeedbackMood.rough,
-                      onTap: () =>
-                          setState(() => _mood = MeetupFeedbackMood.rough),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: _note,
-                maxLines: 3,
-                maxLength: 280,
-                textInputAction: TextInputAction.done,
-                decoration: const InputDecoration(
-                  hintText: 'Opcional: ¿algo que debamos saber?',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              FilledButton(
-                onPressed: _mood == null || _sending ? null : _submit,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(48),
-                ),
-                child: Text(_sending ? 'Enviando…' : 'Enviar'),
-              ),
-              TextButton(
-                onPressed: _sending ? null : () => Navigator.pop(context),
-                child: const Text('Ahora no'),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _note,
+            maxLines: 3,
+            maxLength: 280,
+            textInputAction: TextInputAction.done,
+            decoration: const InputDecoration(
+              hintText: 'Opcional: ¿algo que debamos saber?',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          FilledButton(
+            onPressed: _mood == null || _sending ? null : _submit,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(48),
+            ),
+            child: Text(_sending ? 'Enviando…' : 'Enviar'),
+          ),
+          TextButton(
+            onPressed: _sending ? null : () => Navigator.pop(context),
+            child: const Text('Ahora no'),
+          ),
+        ],
       ),
     );
   }

@@ -25,6 +25,7 @@ class WelcomeAuthButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         child: Container(
           width: double.infinity,
+          constraints: const BoxConstraints(minHeight: 54),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           child: Stack(
             alignment: Alignment.center,
@@ -48,7 +49,8 @@ class WelcomeAuthButton extends StatelessWidget {
                         color: enabled
                             ? AppColors.textPrimary
                             : AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
                       ),
                 ),
               ),

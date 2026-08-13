@@ -26,11 +26,11 @@ class TindogSendingStatus extends StatelessWidget {
         final isRead = data.readsOf(message: message).isNotEmpty;
         final isDelivered = data.deliveriesOf(message: message).isNotEmpty;
 
-        // Sobre burbuja salvia: contraste alto; “Visto” en accent.
+        // Sobre burbuja salvia oscura: blanco / accent claros.
         final muted = onOwnBubble
-            ? AppColors.primaryDark.withValues(alpha: 0.72)
+            ? Colors.white.withValues(alpha: 0.88)
             : AppColors.textSecondary;
-        final seen = AppColors.accent;
+        final seen = onOwnBubble ? const Color(0xFFE8FFD6) : AppColors.accent;
 
         if (isRead) {
           return Row(

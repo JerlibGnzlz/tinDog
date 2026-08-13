@@ -25,21 +25,21 @@ class ExploreCategory {
   bool get opensDiscover => mode != null;
 }
 
-/// Atajos → modos de Desliza.
+/// Atajos → modos de Desliza (paleta alineada a AppColors).
 const exploreDogShortcuts = <ExploreCategory>[
   ExploreCategory(
     id: 'near',
     title: 'Cerca de vos',
-    subtitle: 'Mascotas a poca distancia',
+    subtitle: 'A poca distancia',
     icon: Icons.near_me_rounded,
-    accent: Color(0xFF5B8FA8),
+    accent: AppColors.primaryDark,
     mode: DiscoverMode.near,
     countLabel: 'GPS',
   ),
   ExploreCategory(
     id: 'breed',
     title: 'Misma raza',
-    subtitle: 'Perfiles parecidos a tu mascota',
+    subtitle: 'Como tu mascota',
     icon: Icons.pets_rounded,
     accent: AppColors.primary,
     mode: DiscoverMode.breed,
@@ -48,7 +48,7 @@ const exploreDogShortcuts = <ExploreCategory>[
   ExploreCategory(
     id: 'for_you',
     title: 'Para ti',
-    subtitle: 'Sugerencias personalizadas',
+    subtitle: 'Sugerencias para vos',
     icon: Icons.auto_awesome_rounded,
     accent: AppColors.accent,
     mode: DiscoverMode.forYou,
@@ -57,9 +57,9 @@ const exploreDogShortcuts = <ExploreCategory>[
   ExploreCategory(
     id: 'with_videos',
     title: 'Con videos',
-    subtitle: 'Solo quien tiene clip',
+    subtitle: 'Con clip de video',
     icon: Icons.videocam_rounded,
-    accent: const Color(0xFF6B8F9A),
+    accent: Color(0xFF7A9B5A),
     mode: DiscoverMode.withVideos,
     countLabel: 'Clip',
   ),
@@ -70,9 +70,9 @@ const exploreServiceTeasers = <ExploreCategory>[
   ExploreCategory(
     id: 'vets',
     title: 'Veterinarias',
-    subtitle: 'Clínicas cerca tuyo',
+    subtitle: 'Clínicas cerca',
     icon: Icons.medical_services_rounded,
-    accent: Color(0xFF5B8FA8),
+    accent: AppColors.primaryDark,
     countLabel: 'Pronto',
   ),
   ExploreCategory(
@@ -86,9 +86,9 @@ const exploreServiceTeasers = <ExploreCategory>[
   ExploreCategory(
     id: 'shelters',
     title: 'Refugios',
-    subtitle: 'Adopción y protectoras',
+    subtitle: 'Adopción cercana',
     icon: Icons.home_rounded,
-    accent: Color(0xFFC4A574),
+    accent: Color(0xFF8A9A6E),
     countLabel: 'Pronto',
   ),
   ExploreCategory(

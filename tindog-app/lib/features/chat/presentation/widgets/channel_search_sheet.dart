@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/tindog_form_sheet_scaffold.dart';
 
 /// Busca mensajes de texto dentro del canal actual.
 ///
@@ -79,46 +80,43 @@ class _ChannelSearchSheetState extends State<_ChannelSearchSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.viewInsetsOf(context).bottom;
-    final height = MediaQuery.sizeOf(context).height * 0.85;
-
-    return SizedBox(
-      height: height,
-      child: Padding(
-        padding: EdgeInsets.only(bottom: bottom),
-        child: Column(
-          children: [
-            const SizedBox(height: 10),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(999),
-              ),
+    return TindogFormSheetScaffold(
+      scrollable: false,
+      maxHeightFactor: 0.85,
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          const SizedBox(height: 10),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.border,
+              borderRadius: BorderRadius.circular(999),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
-              child: Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'Buscar en el chat',
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 18,
-                      ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Buscar en el chat',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded),
-                    color: AppColors.textSecondary,
-                  ),
-                ],
-              ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded),
+                  color: AppColors.textSecondary,
+                ),
+              ],
             ),
+          ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: TextField(
@@ -168,7 +166,6 @@ class _ChannelSearchSheetState extends State<_ChannelSearchSheet> {
             ),
           ],
         ),
-      ),
     );
   }
 }

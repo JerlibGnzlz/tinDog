@@ -9,7 +9,6 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/pet_photo_viewer_screen.dart';
 import '../../../shared/widgets/pet_video_player_screen.dart';
 import '../../../shared/widgets/tindog_empty_state.dart';
-import '../../../shared/widgets/tindog_loader.dart';
 import '../../../shared/models/swipe_preview_media.dart';
 import '../../chat/presentation/widgets/match_profile_sheet.dart';
 import '../../profile/presentation/profile_providers.dart';
@@ -18,6 +17,7 @@ import 'discover_filters.dart';
 import 'discover_providers.dart';
 import 'widgets/discover_actions.dart';
 import 'widgets/discover_card.dart';
+import 'widgets/discover_card_skeleton.dart';
 import 'widgets/discover_filters_sheet.dart';
 import 'widgets/match_celebration_dialog.dart';
 
@@ -109,7 +109,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               fit: StackFit.expand,
               children: [
                 if (deck.isLoading && current == null)
-                  const Center(child: TindogLoader(message: 'Buscando…'))
+                  DiscoverCardSkeleton(topInset: topInset)
                 else if (deck.errorMessage != null && current == null)
                   Center(
                     child: Padding(

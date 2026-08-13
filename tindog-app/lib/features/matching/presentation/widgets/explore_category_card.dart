@@ -97,7 +97,7 @@ class ExploreCategoryCard extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             category.subtitle,
-                            maxLines: 2,
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: AppColors.textSecondary.withValues(

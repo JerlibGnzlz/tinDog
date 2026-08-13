@@ -227,7 +227,7 @@ class _HomeProfileBody extends ConsumerWidget {
       slides.add(
         HomePromoSlide(
           title: 'Completá tu perfil',
-          subtitle: 'Tu nombre y bio se muestran a otros dueños.',
+          subtitle: 'Nombre y bio visibles para otros dueños',
           cta: 'Editar perfil',
           icon: Icons.pets_rounded,
           onCta: onEdit,
@@ -239,7 +239,7 @@ class _HomeProfileBody extends ConsumerWidget {
       slides.add(
         HomePromoSlide(
           title: 'Tu foto genera confianza',
-          subtitle: 'Otros dueños quieren saber quién acompaña a la mascota.',
+          subtitle: 'Mostrá quién acompaña a la mascota',
           cta: 'Datos personales',
           icon: Icons.person_rounded,
           onCta: () => context.push('/profile/personal'),
@@ -249,8 +249,8 @@ class _HomeProfileBody extends ConsumerWidget {
     if (videos.isEmpty) {
       slides.add(
         HomePromoSlide(
-          title: 'Añadir vídeo',
-          subtitle: 'Un clip corto muestra personalidad y diferencia tinDog.',
+          title: 'Sumá un vídeo',
+          subtitle: 'Un clip corto muestra personalidad',
           cta: 'Subir vídeo',
           icon: Icons.videocam_rounded,
           onCta: () => context.push('/profile/videos'),
@@ -261,7 +261,7 @@ class _HomeProfileBody extends ConsumerWidget {
       slides.add(
         HomePromoSlide(
           title: 'Más fotos',
-          subtitle: 'Los perfiles con varias fotos reciben más likes.',
+          subtitle: 'Varias fotos = más likes',
           cta: 'Añadir fotos',
           icon: Icons.photo_library_rounded,
           onCta: () => context.push('/profile/photos'),
@@ -272,14 +272,16 @@ class _HomeProfileBody extends ConsumerWidget {
       HomePromoSlide(
         title: coreDone ? 'Seguí deslizando' : 'Empezá a deslizar',
         subtitle: coreDone
-            ? 'Hay perfiles nuevos esperándote en Desliza.'
-            : 'Cuando tu perfil esté listo, buscá nuevos amigos.',
+            ? 'Hay perfiles nuevos en Desliza'
+            : 'Cuando estés listo, buscá amigos',
         cta: 'Ir a Desliza',
         icon: Icons.local_fire_department_rounded,
         onCta: () => context.go('/discover'),
       ),
     );
-    return slides;
+    // Una idea clara: como máximo 3 slides (prioridad + Desliza).
+    if (slides.length <= 3) return slides;
+    return [slides.first, slides[slides.length - 2], slides.last];
   }
 }
 

@@ -107,7 +107,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
               duration: 650.ms,
               curve: Curves.elasticOut,
             ),
-        const SizedBox(height: 20),
+        SizedBox(height: titleSize != null ? 16 : 24),
         Text(
           'tinDog',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -120,20 +120,20 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
             .animate()
             .fadeIn(delay: 100.ms, duration: 400.ms)
             .slideY(begin: 0.08, end: 0, duration: 400.ms),
-        const SizedBox(height: 10),
+        SizedBox(height: titleSize != null ? 14 : 18),
         AppTagline(compact: titleSize != null)
             .animate()
             .fadeIn(delay: 160.ms, duration: 400.ms)
             .slideY(begin: 0.06, end: 0, duration: 400.ms),
-        const SizedBox(height: 12),
+        SizedBox(height: titleSize != null ? 14 : 18),
         Text(
-          'Perfiles reales · playdates en lugares públicos',
+          'Coordiná en lugares públicos y de día',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.88),
+            color: Colors.white.withValues(alpha: 0.82),
             fontSize: titleSize != null ? 12.5 : 13.5,
             fontWeight: FontWeight.w500,
-            height: 1.3,
+            height: 1.35,
           ),
         )
             .animate()
@@ -183,7 +183,19 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
         )
             .animate()
             .fadeIn(delay: 200.ms, duration: 400.ms),
-        SizedBox(height: compact ? 12 : 20),
+        SizedBox(height: compact ? 20 : 28),
+        WelcomeAuthButton(
+          label: _googleLoading
+              ? 'Conectando con Google…'
+              : 'Continuar con Google',
+          icon: const GoogleLogo(size: 24),
+          enabled: !_googleLoading,
+          onPressed: _continueWithGoogle,
+        )
+            .animate()
+            .fadeIn(delay: 280.ms, duration: 400.ms)
+            .slideY(begin: 0.06, end: 0, duration: 400.ms),
+        SizedBox(height: compact ? 12 : 14),
         WelcomeAuthButton(
           label: 'Continuar con email',
           icon: const Icon(
@@ -194,21 +206,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
           onPressed: () => context.push('/login'),
         )
             .animate()
-            .fadeIn(delay: 280.ms, duration: 400.ms)
-            .slideY(begin: 0.06, end: 0, duration: 400.ms),
-        const SizedBox(height: 12),
-        WelcomeAuthButton(
-          label: _googleLoading
-              ? 'Conectando con Google…'
-              : 'Continuar con Google',
-          icon: const GoogleLogo(size: 24),
-          enabled: !_googleLoading,
-          onPressed: _continueWithGoogle,
-        )
-            .animate()
             .fadeIn(delay: 340.ms, duration: 400.ms)
             .slideY(begin: 0.06, end: 0, duration: 400.ms),
-        SizedBox(height: compact ? 12 : 20),
+        SizedBox(height: compact ? 16 : 24),
         TindogTextButton(
           onPressed: _openForgotPassword,
           foregroundColor: Colors.white,
@@ -248,15 +248,15 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: horizontalPadding),
                 child: Column(
                   children: [
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 28),
                     _brandBlock(logoSize: logoSize, titleSize: 24),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 36),
                     _actionsBlock(
                       legalStyle: legalStyle,
                       linkStyle: linkStyle,
                       compact: true,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                   ],
                 ),
               );
@@ -266,15 +266,15 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: horizontalPadding),
               child: Column(
                 children: [
-                  SizedBox(height: constraints.maxHeight * 0.10),
+                  SizedBox(height: constraints.maxHeight * 0.12),
                   _brandBlock(logoSize: logoSize),
-                  const Spacer(),
+                  const Spacer(flex: 2),
                   _actionsBlock(
                     legalStyle: legalStyle,
                     linkStyle: linkStyle,
                     compact: false,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 20),
                 ],
               ),
             );

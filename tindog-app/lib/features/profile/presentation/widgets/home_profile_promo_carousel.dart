@@ -17,7 +17,7 @@ class HomePromoSlide {
   final IconData icon;
 }
 
-/// Card promo inferior (carousel) estilo hub Tinder, paleta TinDog.
+/// Una promo clara a la vez (PageView), sin stack de cards tipo dashboard.
 class HomeProfilePromoCarousel extends StatefulWidget {
   const HomeProfilePromoCarousel({super.key, required this.slides});
 
@@ -60,48 +60,40 @@ class _HomeProfilePromoCarouselState extends State<HomeProfilePromoCarousel> {
   Widget build(BuildContext context) {
     if (widget.slides.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceMuted,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+    final slide = widget.slides[_index];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: AppColors.card,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.textPrimary.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
-                height: 118,
+                height: 96,
                 child: PageView.builder(
                   controller: _controller,
                   itemCount: widget.slides.length,
                   onPageChanged: (i) => setState(() => _index = i),
                   itemBuilder: (context, i) {
-                    final slide = widget.slides[i];
+                    final item = widget.slides[i];
                     return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          slide.icon,
+                          item.icon,
                           color: AppColors.primaryDark,
-                          size: 26,
+                          size: 28,
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 10),
                         Text(
-                          slide.title,
+                          item.title,
                           textAlign: TextAlign.center,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -112,16 +104,17 @@ class _HomeProfilePromoCarouselState extends State<HomeProfilePromoCarousel> {
                             height: 1.2,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Text(
-                          slide.subtitle,
+                          item.subtitle,
                           textAlign: TextAlign.center,
-                          maxLines: 2,
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 13,
                             height: 1.25,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -129,43 +122,45 @@ class _HomeProfilePromoCarouselState extends State<HomeProfilePromoCarousel> {
                   },
                 ),
               ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(widget.slides.length, (i) {
-                  final active = i == _index;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: active ? 8 : 6,
-                    height: active ? 8 : 6,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: active
-                          ? AppColors.primaryDark
-                          : AppColors.border,
-                    ),
-                  );
-                }),
-              ),
-              const SizedBox(height: 12),
+              if (widget.slides.length > 1) ...[
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(widget.slides.length, (i) {
+                    final active = i == _index;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      width: active ? 16 : 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(999),
+                        color: active
+                            ? AppColors.primaryDark
+                            : AppColors.border,
+                      ),
+                    );
+                  }),
+                ),
+              ],
+              const SizedBox(height: 14),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
-                  onPressed: widget.slides[_index].onCta,
+                  onPressed: slide.onCta,
                   child: Text(
-                    widget.slides[_index].cta.toUpperCase(),
+                    slide.cta,
                     style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.6,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
                     ),
                   ),
                 ),
