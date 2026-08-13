@@ -496,9 +496,23 @@ class _MessageRow extends StatelessWidget {
       onDismissed: (_) => onRemoved(),
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 24),
+        padding: const EdgeInsets.only(right: 20),
         color: Colors.red.shade700,
-        child: const Icon(Icons.delete_outline_rounded, color: Colors.white),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Icon(Icons.delete_outline_rounded, color: Colors.white),
+            SizedBox(width: 8),
+            Text(
+              'Eliminar match',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
       ),
       child: Material(
         color: Colors.transparent,

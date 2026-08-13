@@ -225,24 +225,25 @@ class _OwnerChip extends StatelessWidget {
             ),
           ),
         ),
+      ],
+    );
+
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        chip,
         if (googleLinked) ...[
-          const SizedBox(width: 6),
-          Icon(
-            Icons.verified_rounded,
-            size: 16,
-            color: const Color(0xFF7CFFB2),
-            shadows: const [
-              Shadow(
-                color: Color(0x66000000),
-                blurRadius: 4,
-              ),
-            ],
+          const SizedBox(height: 6),
+          const Tooltip(
+            message: 'Verificado con Google',
+            child: _GoogleVerifiedBadge(),
           ),
         ],
       ],
     );
 
-    if (onTap == null) return chip;
+    if (onTap == null) return content;
 
     return Material(
       color: Colors.transparent,
@@ -251,8 +252,44 @@ class _OwnerChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
-          child: chip,
+          child: content,
         ),
+      ),
+    );
+  }
+}
+
+class _GoogleVerifiedBadge extends StatelessWidget {
+  const _GoogleVerifiedBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0x337CFFB2),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0x887CFFB2)),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.verified_rounded,
+            size: 13,
+            color: Color(0xFF7CFFB2),
+          ),
+          SizedBox(width: 4),
+          Text(
+            'Verificado con Google',
+            style: TextStyle(
+              color: Color(0xFFB8FFE0),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              height: 1.1,
+            ),
+          ),
+        ],
       ),
     );
   }
