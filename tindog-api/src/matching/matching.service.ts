@@ -766,7 +766,8 @@ export class MatchingService {
       pet.user.updatedAt.getTime(),
       pet.user.profile?.updatedAt?.getTime() ?? 0,
     );
-    const activeWindowMs = 7 * 24 * 60 * 60 * 1000;
+    // «Activo hace poco»: última actividad (login / perfil / mascota) ≤ 48 h.
+    const activeWindowMs = 48 * 60 * 60 * 1000;
     const isActive = Date.now() - lastTouchMs <= activeWindowMs;
 
     return {

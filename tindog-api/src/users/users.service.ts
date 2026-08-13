@@ -88,7 +88,7 @@ export class UsersService {
     return name ? name : null;
   }
 
-  /** Marca actividad reciente (señal «Activo» en Desliza). */
+  /** Marca actividad reciente (señal «Activo hace poco» en Desliza, ventana 48 h). */
   touchLastSeen(userId: string) {
     return this.prisma.user.update({
       where: { id: userId },

@@ -21,41 +21,58 @@ const SEED_USER_COUNT = 50;
  */
 const UPLOAD_CLOUDINARY = process.env.SEED_UPLOAD_CLOUDINARY === '1';
 
-/** Puntos en Argentina para probar Cerca / maxKm (referencia Obelisco). */
+/**
+ * Ubicaciones alineadas al formato de la app / GeoRef:
+ * `{Localidad}, {Provincia}` → en Desliza: «Vive en {Localidad}».
+ * Coords reales para probar modo Cerca (referencia Obelisco ≈ San Nicolás).
+ */
 const LOCATIONS = [
-  // ~0–3 km del Obelisco
-  { label: 'Obelisco, CABA', lat: -34.6037, lng: -58.3816 },
-  { label: 'San Nicolás, CABA', lat: -34.605, lng: -58.384 },
-  { label: 'Monserrat, CABA', lat: -34.612, lng: -58.383 },
-  { label: 'Retiro, CABA', lat: -34.592, lng: -58.375 },
-  { label: 'Recoleta, CABA', lat: -34.5875, lng: -58.3974 },
-  // ~3–8 km
-  { label: 'Palermo, CABA', lat: -34.5735, lng: -58.4233 },
+  // —— CABA (barrios) · 0–15 km del centro ——
+  { label: 'San Nicolás, CABA', lat: -34.6037, lng: -58.3816 },
+  { label: 'Monserrat, CABA', lat: -34.6125, lng: -58.3817 },
+  { label: 'Retiro, CABA', lat: -34.5928, lng: -58.375 },
+  { label: 'Recoleta, CABA', lat: -34.5875, lng: -58.3928 },
+  { label: 'Palermo, CABA', lat: -34.5889, lng: -58.4306 },
   { label: 'Belgrano, CABA', lat: -34.5627, lng: -58.4584 },
-  { label: 'Caballito, CABA', lat: -34.6197, lng: -58.441 },
-  { label: 'Almagro, CABA', lat: -34.606, lng: -58.42 },
-  { label: 'Villa Crespo, CABA', lat: -34.598, lng: -58.44 },
-  { label: 'Colegiales, CABA', lat: -34.574, lng: -58.449 },
-  { label: 'Núñez, CABA', lat: -34.545, lng: -58.462 },
-  // ~8–15 km
-  { label: 'Villa Urquiza, CABA', lat: -34.5736, lng: -58.487 },
-  { label: 'Flores, CABA', lat: -34.635, lng: -58.463 },
-  { label: 'Liniers, CABA', lat: -34.639, lng: -58.522 },
-  { label: 'Saavedra, CABA', lat: -34.554, lng: -58.488 },
-  { label: 'Avellaneda, GBA', lat: -34.662, lng: -58.365 },
-  { label: 'Vicente López, GBA', lat: -34.526, lng: -58.475 },
-  // ~15–30 km
-  { label: 'San Isidro, GBA', lat: -34.4739, lng: -58.5116 },
-  { label: 'Morón, GBA', lat: -34.653, lng: -58.619 },
-  { label: 'Quilmes, GBA', lat: -34.729, lng: -58.263 },
-  { label: 'La Plata, BA', lat: -34.9205, lng: -57.9536 },
-  { label: 'Tigre, GBA', lat: -34.426, lng: -58.58 },
-  // ~50–100+ km (filtro distancia alto)
-  { label: 'Mar del Plata, BA', lat: -38.0055, lng: -57.5426 },
+  { label: 'Caballito, CABA', lat: -34.6197, lng: -58.4406 },
+  { label: 'Almagro, CABA', lat: -34.6118, lng: -58.4215 },
+  { label: 'Villa Crespo, CABA', lat: -34.5986, lng: -58.4397 },
+  { label: 'Colegiales, CABA', lat: -34.5744, lng: -58.4492 },
+  { label: 'Núñez, CABA', lat: -34.5486, lng: -58.4631 },
+  { label: 'Villa Urquiza, CABA', lat: -34.5736, lng: -58.4869 },
+  { label: 'Flores, CABA', lat: -34.6356, lng: -58.4628 },
+  { label: 'Liniers, CABA', lat: -34.6431, lng: -58.5203 },
+  { label: 'Saavedra, CABA', lat: -34.5547, lng: -58.4886 },
+  { label: 'San Telmo, CABA', lat: -34.6211, lng: -58.3731 },
+  { label: 'La Boca, CABA', lat: -34.6345, lng: -58.363 },
+  { label: 'Boedo, CABA', lat: -34.6335, lng: -58.4167 },
+  // —— Provincia de Buenos Aires (GBA + costa) ——
+  { label: 'Avellaneda, Buenos Aires', lat: -34.6625, lng: -58.365 },
+  { label: 'Vicente López, Buenos Aires', lat: -34.5264, lng: -58.4756 },
+  { label: 'San Isidro, Buenos Aires', lat: -34.4736, lng: -58.5114 },
+  { label: 'Morón, Buenos Aires', lat: -34.6506, lng: -58.6197 },
+  { label: 'Quilmes, Buenos Aires', lat: -34.7203, lng: -58.2544 },
+  { label: 'Tigre, Buenos Aires', lat: -34.4264, lng: -58.5797 },
+  { label: 'La Plata, Buenos Aires', lat: -34.9215, lng: -57.9545 },
+  { label: 'Mar del Plata, Buenos Aires', lat: -38.0055, lng: -57.5426 },
+  { label: 'Bahía Blanca, Buenos Aires', lat: -38.7183, lng: -62.2663 },
+  // —— Interior (distancias altas / diversidad) ——
   { label: 'Rosario, Santa Fe', lat: -32.9442, lng: -60.6505 },
-  { label: 'Córdoba Capital', lat: -31.4201, lng: -64.1888 },
-  { label: 'Mendoza Capital', lat: -32.8895, lng: -68.8458 },
+  { label: 'Santa Fe, Santa Fe', lat: -31.6333, lng: -60.7 },
+  { label: 'Córdoba, Córdoba', lat: -31.4201, lng: -64.1888 },
+  { label: 'Villa Carlos Paz, Córdoba', lat: -31.4241, lng: -64.4974 },
+  { label: 'Mendoza, Mendoza', lat: -32.8895, lng: -68.8458 },
+  { label: 'San Miguel de Tucumán, Tucumán', lat: -26.8083, lng: -65.2176 },
+  { label: 'Salta, Salta', lat: -24.7821, lng: -65.4232 },
+  { label: 'Neuquén, Neuquén', lat: -38.9516, lng: -68.0591 },
+  { label: 'Bariloche, Río Negro', lat: -41.1335, lng: -71.3103 },
+  { label: 'Posadas, Misiones', lat: -27.3671, lng: -55.8961 },
+  { label: 'Ushuaia, Tierra del Fuego', lat: -54.8019, lng: -68.303 },
 ] as const;
+
+function locationShortName(label: string): string {
+  return label.split(',')[0]?.trim() || label;
+}
 
 /** Alineadas con kSuggestedBreeds de la app (+ algunas extras). */
 const BREEDS = [
@@ -303,7 +320,7 @@ function buildSeedUsers(count: number): SeedUser[] {
       email: `${slug}${SEED_DOMAIN}`,
       profile: {
         name: i === 0 ? 'Ana García' : `${first} ${last}`,
-        bio: `Me gusta pasear por ${loc.label} y armar playdates tranquilos.`,
+        bio: `Me gusta pasear por ${locationShortName(loc.label)} y armar playdates tranquilos.`,
         location: loc.label,
         latitude: loc.lat,
         longitude: loc.lng,

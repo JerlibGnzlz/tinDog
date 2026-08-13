@@ -31,7 +31,7 @@ Permitir que un usuario **reporte** o **bloquee** a otro antes de publicar en ti
 
 ## Confianza (señales)
 - «Verificado con Google» si la cuenta tiene `google_sub`
-- «Activo» solo si hubo actividad en los últimos 7 días
+- «Activo hace poco» solo si hubo actividad en las últimas 48 horas
 - Icebreakers orientados a lugares públicos
 - Tip de parque seguro al matchear
 

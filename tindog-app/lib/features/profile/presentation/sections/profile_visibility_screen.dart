@@ -53,7 +53,7 @@ class ProfileVisibilityScreen extends StatelessWidget {
               'Barrio / zona (sin dirección exacta)',
               'Distancia aproximada si activaste GPS',
               'Si entraste con Google: sello «Verificado con Google»',
-              'Señal «Activo hace poco» si usaste la app recientemente',
+              'Señal «Activo hace poco» si usaste la app en las últimas 48 h',
             ],
           ),
           const SizedBox(height: 16),

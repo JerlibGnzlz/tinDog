@@ -15,6 +15,10 @@ class DeviceCoordinates {
 
 /// Obtiene lat/lng con permiso del usuario (solo cuando se usa).
 class DeviceLocation {
+  /// Preferimos un fix fresco; el last-known solo como fallback reciente
+  /// (en emuladores el last-known queda “pegado” y no refleja Set Location).
+  static const _staleLastKnown = Duration(minutes: 2);
+
   /// Lanza [DeviceLocationException] si el usuario niega, el GPS está off
   /// o no hay fix a tiempo (típico en emulador sin Location seteada).
   static Future<DeviceCoordinates> getCurrent() async {
@@ -40,15 +44,6 @@ class DeviceLocation {
       );
     }
 
-    // En emuladores suele haber un last-known tras Set Location.
-    final last = await Geolocator.getLastKnownPosition();
-    if (last != null) {
-      return DeviceCoordinates(
-        latitude: last.latitude,
-        longitude: last.longitude,
-      );
-    }
-
     try {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: _settings,
@@ -58,6 +53,13 @@ class DeviceLocation {
         longitude: position.longitude,
       );
     } on TimeoutException {
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null && _isFresh(last)) {
+        return DeviceCoordinates(
+          latitude: last.latitude,
+          longitude: last.longitude,
+        );
+      }
       throw const DeviceLocationException(
         'GPS sin señal a tiempo. En el emulador: ⋯ → Location → '
         'poné lat/lng (ej. -34.6037, -58.3816) → Set Location, y reintentá.',
@@ -65,17 +67,22 @@ class DeviceLocation {
     }
   }
 
+  static bool _isFresh(Position last) {
+    final age = DateTime.now().difference(last.timestamp);
+    return age <= _staleLastKnown;
+  }
+
   static LocationSettings get _settings {
     if (defaultTargetPlatform == TargetPlatform.android) {
       return AndroidSettings(
-        accuracy: LocationAccuracy.medium,
+        accuracy: LocationAccuracy.high,
         // LocationManager suele responder mejor en emuladores que Fused.
         forceLocationManager: true,
         timeLimit: const Duration(seconds: 12),
       );
     }
     return const LocationSettings(
-      accuracy: LocationAccuracy.medium,
+      accuracy: LocationAccuracy.high,
       timeLimit: Duration(seconds: 12),
     );
   }
