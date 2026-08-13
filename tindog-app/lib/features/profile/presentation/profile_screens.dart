@@ -10,6 +10,7 @@ import '../../safety/presentation/safety_sheets.dart';
 import '../data/profile_model.dart';
 import 'profile_providers.dart';
 import 'widgets/home_profile_action_row.dart';
+import 'widgets/home_profile_atmosphere.dart';
 import 'widgets/home_profile_avatar.dart';
 import 'widgets/home_profile_promo_carousel.dart';
 import 'widgets/home_settings_sheet.dart';
@@ -36,30 +37,33 @@ class HomeScreen extends ConsumerWidget {
     });
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: petAsync.when(
-        loading: () => const Center(child: TindogLoader(message: 'Cargando…')),
-        error: (error, _) => _HomeProfileBody(
-          errorMessage: readableError(error),
-          onEdit: () => context.go('/profile'),
-        ),
-        data: (pet) {
-          if ((pet.name ?? '').trim().isEmpty) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (context.mounted) context.go('/profile/pet');
-            });
-          }
-          final photos = photosAsync.valueOrNull ?? const <PetMediaModel>[];
-          final videos = videosAsync.valueOrNull ?? const <PetMediaModel>[];
-          final profile = profileAsync.valueOrNull;
-          return _HomeProfileBody(
-            pet: pet,
-            profile: profile,
-            photos: photos,
-            videos: videos,
+      backgroundColor: Colors.transparent,
+      body: HomeProfileAtmosphere(
+        child: petAsync.when(
+          loading: () =>
+              const Center(child: TindogLoader(message: 'Cargando…')),
+          error: (error, _) => _HomeProfileBody(
+            errorMessage: readableError(error),
             onEdit: () => context.go('/profile'),
-          );
-        },
+          ),
+          data: (pet) {
+            if ((pet.name ?? '').trim().isEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (context.mounted) context.go('/profile/pet');
+              });
+            }
+            final photos = photosAsync.valueOrNull ?? const <PetMediaModel>[];
+            final videos = videosAsync.valueOrNull ?? const <PetMediaModel>[];
+            final profile = profileAsync.valueOrNull;
+            return _HomeProfileBody(
+              pet: pet,
+              profile: profile,
+              photos: photos,
+              videos: videos,
+              onEdit: () => context.go('/profile'),
+            );
+          },
+        ),
       ),
     );
   }

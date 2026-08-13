@@ -22,7 +22,7 @@ class DiscoverBottomNav extends StatelessWidget {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Material(
-      color: AppColors.surface,
+      color: Colors.transparent,
       child: Padding(
         padding: EdgeInsets.fromLTRB(10, 4, 10, bottom > 0 ? bottom : 8),
         child: DecoratedBox(

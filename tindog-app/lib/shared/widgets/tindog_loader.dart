@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import 'paw_particle_path.dart';
 
-/// Loader de marca: patitas que “caminan” (perros y gatos).
+/// Loader de marca: rastro de huellas que “caminan”.
+///
+/// En [compact] / [inverted] (botones) usa una fila corta;
+/// en pantallas completas, el rastro curvo + halo de marca.
 class TindogLoader extends StatefulWidget {
   const TindogLoader({
     super.key,
@@ -33,6 +36,7 @@ class _TindogLoaderState extends State<TindogLoader>
     AppColors.primary,
     AppColors.accent,
     AppColors.primary,
+    AppColors.primaryDark,
   ];
 
   List<Color> get _pawColors => widget.inverted
@@ -49,7 +53,7 @@ class _TindogLoaderState extends State<TindogLoader>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1100),
+      duration: Duration(milliseconds: widget.compact ? 1000 : 1600),
     )..repeat();
   }
 
@@ -61,34 +65,185 @@ class _TindogLoaderState extends State<TindogLoader>
 
   @override
   Widget build(BuildContext context) {
-    final pawSize = widget.compact ? widget.size * 0.35 : widget.size * 0.42;
-    final spacing = widget.compact ? 4.0 : 6.0;
+    if (widget.compact) {
+      return _CompactPawBounce(
+        controller: _controller,
+        size: widget.size,
+        inverted: widget.inverted,
+        colors: _pawColors,
+        message: widget.message,
+      );
+    }
+
+    return _BrandPawTrail(
+      controller: _controller,
+      size: widget.size,
+      colors: _pawColors,
+      message: widget.message,
+    );
+  }
+}
+
+/// Pantalla completa: arco de huellas + glow.
+class _BrandPawTrail extends StatelessWidget {
+  const _BrandPawTrail({
+    required this.controller,
+    required this.size,
+    required this.colors,
+    this.message,
+  });
+
+  final AnimationController controller;
+  final double size;
+  final List<Color> colors;
+  final String? message;
+
+  @override
+  Widget build(BuildContext context) {
+    final trailW = math.max(size * 2.6, 168.0);
+    final trailH = math.max(size * 1.55, 96.0);
+    final pawSize = size * 0.48;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          height: widget.size,
+          width: trailW + 48,
+          height: trailH + 36,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Halo de marca detrás del rastro.
+              IgnorePointer(
+                child: Container(
+                  width: trailW * 0.95,
+                  height: trailH * 1.1,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        AppColors.primary.withValues(alpha: 0.28),
+                        AppColors.primary.withValues(alpha: 0.08),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.55, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              AnimatedBuilder(
+                animation: controller,
+                builder: (context, _) {
+                  const count = 5;
+                  return SizedBox(
+                    width: trailW,
+                    height: trailH,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: List.generate(count, (index) {
+                        final t = index / (count - 1);
+                        // Arco suave de izquierda a derecha (como un paseo).
+                        final x = t * trailW;
+                        final y = trailH * 0.55 +
+                            math.sin(t * math.pi) * (trailH * 0.28);
+                        final rot = (index.isEven ? -0.38 : 0.38);
+
+                        // Onda que recorre el rastro (huella “fresca”).
+                        final wave = (controller.value - t * 0.72 + 1.0) % 1.0;
+                        final freshness = math.exp(-math.pow(wave - 0.18, 2) / 0.02);
+                        final opacity = 0.22 + freshness * 0.78;
+                        final scale = 0.72 + freshness * 0.38;
+
+                        return Positioned(
+                          left: x - pawSize / 2,
+                          top: y - pawSize / 2,
+                          child: Opacity(
+                            opacity: opacity.clamp(0.0, 1.0),
+                            child: Transform.rotate(
+                              angle: rot,
+                              child: Transform.scale(
+                                scale: scale,
+                                child: _PawMark(
+                                  size: pawSize,
+                                  color: colors[index % colors.length],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        if (message != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            message!,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.2,
+              height: 1.25,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Compacto para botones / espacios chicos.
+class _CompactPawBounce extends StatelessWidget {
+  const _CompactPawBounce({
+    required this.controller,
+    required this.size,
+    required this.inverted,
+    required this.colors,
+    this.message,
+  });
+
+  final AnimationController controller;
+  final double size;
+  final bool inverted;
+  final List<Color> colors;
+  final String? message;
+
+  @override
+  Widget build(BuildContext context) {
+    final pawSize = size * 0.35;
+    const spacing = 4.0;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          height: size,
           child: AnimatedBuilder(
-            animation: _controller,
+            animation: controller,
             builder: (context, _) {
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: List.generate(4, (index) {
-                  final phase = (_controller.value + index * 0.18) % 1.0;
+                  final phase = (controller.value + index * 0.18) % 1.0;
                   final lift = math.sin(phase * math.pi);
                   final scale = 0.72 + (lift * 0.28);
 
                   return Padding(
-                    padding: EdgeInsets.symmetric(horizontal: spacing / 2),
+                    padding: const EdgeInsets.symmetric(horizontal: spacing / 2),
                     child: Transform.translate(
-                      offset: Offset(0, -lift * (widget.compact ? 6 : 10)),
+                      offset: Offset(0, -lift * 6),
                       child: Transform.scale(
                         scale: scale,
                         child: _PawMark(
                           size: pawSize,
-                          color: _pawColors[index % _pawColors.length],
+                          color: colors[index % colors.length],
                         ),
                       ),
                     ),
@@ -98,12 +253,12 @@ class _TindogLoaderState extends State<TindogLoader>
             },
           ),
         ),
-        if (widget.message != null) ...[
-          SizedBox(height: widget.compact ? 8 : 14),
+        if (message != null) ...[
+          const SizedBox(height: 8),
           Text(
-            widget.message!,
+            message!,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: inverted ? Colors.white : AppColors.textSecondary,
                 ),
             textAlign: TextAlign.center,
           ),

@@ -7,6 +7,7 @@ import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import '../../../core/feedback/app_feedback.dart';
 import '../../../core/network/session_handler.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/tindog_brand_atmosphere.dart';
 import '../../../shared/widgets/tindog_loader.dart';
 import '../../matching/data/chat_models.dart';
 import '../../matching/data/discover_candidate.dart';
@@ -451,9 +452,12 @@ class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(
-        backgroundColor: AppColors.surface,
-        body: Center(
-          child: TindogLoader(message: 'Abriendo chat…'),
+        backgroundColor: Colors.transparent,
+        body: TindogBrandAtmosphere(
+          kind: TindogAtmosphereKind.shell,
+          child: Center(
+            child: TindogLoader(message: 'Abriendo chat…'),
+          ),
         ),
       );
     }

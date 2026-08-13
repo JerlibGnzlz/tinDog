@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/network/network_online_provider.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/confirm_app_exit_scope.dart';
+import '../../../shared/widgets/tindog_brand_atmosphere.dart';
 import '../../../shared/widgets/tindog_offline_banner.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../chat/presentation/stream_chat_providers.dart';
@@ -98,8 +98,8 @@ class _MatchingShellState extends ConsumerState<MatchingShell> {
 
     // Confirma salida en la raíz (Android atrás / pop del shell). No cierra sesión.
     return ConfirmAppExitScope(
-      child: ColoredBox(
-        color: AppColors.surface,
+      child: TindogBrandAtmosphere(
+        kind: TindogAtmosphereKind.shell,
         child: Column(
           children: [
             if (!online)

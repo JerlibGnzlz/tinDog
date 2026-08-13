@@ -101,7 +101,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final hasOwnBreed = (pet?.breed ?? '').trim().isNotEmpty;
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Colors.transparent,
       body: Column(
         children: [
           Expanded(
