@@ -75,7 +75,7 @@ class _ProfileHubScreenState extends ConsumerState<ProfileHubScreen> {
         error: (error, _) {
           if (isSessionError(error)) {
             return _SessionErrorBody(
-              onLogin: () => context.go('/login'),
+              onLogin: () => context.go('/welcome'),
             );
           }
           return _ErrorBody(
@@ -88,7 +88,7 @@ class _ProfileHubScreenState extends ConsumerState<ProfileHubScreen> {
           error: (error, _) {
             if (isSessionError(error)) {
               return _SessionErrorBody(
-                onLogin: () => context.go('/login'),
+                onLogin: () => context.go('/welcome'),
               );
             }
             return _ErrorBody(

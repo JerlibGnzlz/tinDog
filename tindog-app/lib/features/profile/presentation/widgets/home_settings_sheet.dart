@@ -16,8 +16,8 @@ Future<void> showHomeSettingsSheet({
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (context) {
-      final maxHeight = MediaQuery.sizeOf(context).height * 0.88;
+    builder: (sheetContext) {
+      final maxHeight = MediaQuery.sizeOf(sheetContext).height * 0.88;
       return SafeArea(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: maxHeight),
@@ -92,7 +92,7 @@ Future<void> showHomeSettingsSheet({
                     style: TextStyle(color: AppColors.textPrimary),
                   ),
                   onTap: () {
-                    Navigator.pop(context);
+                    Navigator.pop(sheetContext);
                     context.push('/profile');
                   },
                 ),
@@ -113,8 +113,7 @@ Future<void> showHomeSettingsSheet({
                     ),
                   ),
                   onTap: () {
-                    Navigator.pop(context);
-                    // Ruta top-level: pop() vuelve a Home (Perfil).
+                    Navigator.pop(sheetContext);
                     context.push('/visibility');
                   },
                 ),
@@ -135,7 +134,7 @@ Future<void> showHomeSettingsSheet({
                     ),
                   ),
                   onTap: () {
-                    Navigator.pop(context);
+                    Navigator.pop(sheetContext);
                     context.push('/profile/blocked');
                   },
                 ),
@@ -149,7 +148,7 @@ Future<void> showHomeSettingsSheet({
                     style: TextStyle(color: AppColors.textPrimary),
                   ),
                   onTap: () {
-                    Navigator.pop(context);
+                    Navigator.pop(sheetContext);
                     context.go('/discover');
                   },
                 ),
@@ -160,9 +159,10 @@ Future<void> showHomeSettingsSheet({
                     'Cerrar sesión',
                     style: TextStyle(color: Colors.red.shade700),
                   ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    signOutToWelcome(ref, context);
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+                    // [context] = padre del sheet (sigue montado).
+                    await signOutToWelcome(ref, context);
                   },
                 ),
               ],

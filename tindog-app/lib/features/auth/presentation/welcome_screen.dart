@@ -239,9 +239,12 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
-            final compact = constraints.maxHeight < 560;
+            final compact = constraints.maxHeight < 680;
             final logoSize = compact ? 72.0 : 120.0;
             const horizontalPadding = 28.0;
+
+            // En alturas medias (tests ~600, phones chicos) el Column fijo
+            // overflowea; scroll asegura que siempre quepa.
 
             if (compact) {
               return SingleChildScrollView(

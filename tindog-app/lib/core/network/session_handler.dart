@@ -37,7 +37,7 @@ void handleSessionExpired(WidgetRef ref, BuildContext context, Object error) {
   if (!context.mounted) return;
 
   ScaffoldMessenger.of(context).clearSnackBars();
-  context.go('/login');
+  context.go('/welcome');
 }
 
 String readableError(Object error) {
