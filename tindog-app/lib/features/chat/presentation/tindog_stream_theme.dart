@@ -48,22 +48,10 @@ StreamTheme tindogStreamTheme() {
         }),
       ),
       metadata: StreamMessageMetadataStyle(
-        timestampColor: StreamMessageLayoutProperty.resolveWith((p) {
-          final mine = p.alignment == StreamMessageAlignment.end;
-          return mine
-              ? Colors.white.withValues(alpha: 0.92)
-              : AppColors.textSecondary;
-        }),
-        editedColor: StreamMessageLayoutProperty.resolveWith((p) {
-          final mine = p.alignment == StreamMessageAlignment.end;
-          return mine
-              ? Colors.white.withValues(alpha: 0.85)
-              : AppColors.textSecondary;
-        }),
-        statusColor: StreamMessageLayoutProperty.resolveWith((p) {
-          final mine = p.alignment == StreamMessageAlignment.end;
-          return mine ? const Color(0xFFE8FFD6) : AppColors.accent;
-        }),
+        // Footer fuera de la burbuja (fondo crema): hora negra, checks verdes.
+        timestampColor: StreamMessageLayoutProperty.all(AppColors.textPrimary),
+        editedColor: StreamMessageLayoutProperty.all(AppColors.textSecondary),
+        statusColor: StreamMessageLayoutProperty.all(AppColors.primaryDark),
       ),
     ),
   );

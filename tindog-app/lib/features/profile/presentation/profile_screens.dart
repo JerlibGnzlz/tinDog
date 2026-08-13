@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/network/session_handler.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../shared/widgets/tindog_loader.dart';
 import '../../pets/data/pet_media_model.dart';
 import '../../pets/data/pet_model.dart';
 import '../../safety/presentation/safety_sheets.dart';
@@ -13,6 +12,7 @@ import 'widgets/home_profile_action_row.dart';
 import 'widgets/home_profile_atmosphere.dart';
 import 'widgets/home_profile_avatar.dart';
 import 'widgets/home_profile_promo_carousel.dart';
+import 'widgets/home_profile_skeleton.dart';
 import 'widgets/home_settings_sheet.dart';
 
 /// Tab Perfil (/home): hub estilo Tinder con colores tinDog.
@@ -40,8 +40,7 @@ class HomeScreen extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       body: HomeProfileAtmosphere(
         child: petAsync.when(
-          loading: () =>
-              const Center(child: TindogLoader(message: 'Cargando…')),
+          loading: () => const HomeProfileSkeleton(),
           error: (error, _) => _HomeProfileBody(
             errorMessage: readableError(error),
             onEdit: () => context.push('/profile'),

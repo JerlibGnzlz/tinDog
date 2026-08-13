@@ -3,17 +3,17 @@ import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
 
 /// Checks de envío: reloj → ✓ → ✓✓ → ✓✓ Visto (estilo WhatsApp / tinDog).
+///
+/// El footer va **fuera** de la burbuja (fondo crema): contraste oscuro.
 class TindogSendingStatus extends StatelessWidget {
   const TindogSendingStatus({
     super.key,
     required this.message,
-    this.size = 14,
-    this.onOwnBubble = true,
+    this.size = 15,
   });
 
   final Message message;
   final double size;
-  final bool onOwnBubble;
 
   @override
   Widget build(BuildContext context) {
@@ -26,11 +26,9 @@ class TindogSendingStatus extends StatelessWidget {
         final isRead = data.readsOf(message: message).isNotEmpty;
         final isDelivered = data.deliveriesOf(message: message).isNotEmpty;
 
-        // Sobre burbuja salvia oscura: blanco / accent claros.
-        final muted = onOwnBubble
-            ? Colors.white.withValues(alpha: 0.88)
-            : AppColors.textSecondary;
-        final seen = onOwnBubble ? const Color(0xFFE8FFD6) : AppColors.accent;
+        // Enviado / entregado: salvia oscura. Visto: acento más marcado.
+        const pending = AppColors.primaryDark;
+        const seen = AppColors.accent;
 
         if (isRead) {
           return Row(
@@ -38,11 +36,11 @@ class TindogSendingStatus extends StatelessWidget {
             children: [
               Icon(Icons.done_all_rounded, size: size, color: seen),
               const SizedBox(width: 3),
-              Text(
+              const Text(
                 'Visto',
                 style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
                   color: seen,
                   height: 1,
                 ),
@@ -51,13 +49,13 @@ class TindogSendingStatus extends StatelessWidget {
           );
         }
         if (isDelivered) {
-          return Icon(Icons.done_all_rounded, size: size, color: muted);
+          return Icon(Icons.done_all_rounded, size: size, color: pending);
         }
         if (message.state.isCompleted) {
-          return Icon(Icons.done_rounded, size: size, color: muted);
+          return Icon(Icons.done_rounded, size: size, color: pending);
         }
         if (message.state.isOutgoing) {
-          return Icon(Icons.schedule_rounded, size: size, color: muted);
+          return Icon(Icons.schedule_rounded, size: size, color: pending);
         }
         return const SizedBox.shrink();
       },
@@ -65,7 +63,7 @@ class TindogSendingStatus extends StatelessWidget {
   }
 }
 
-/// Footer con hora + edited + estado de envío/visto.
+/// Footer con hora + edited + estado de envío/visto (fuera de la burbuja).
 class TindogMessageFooter extends StatelessWidget {
   const TindogMessageFooter({super.key, required this.props});
 
@@ -78,6 +76,21 @@ class TindogMessageFooter extends StatelessWidget {
     final isMine = message.user?.id == me;
 
     return StreamMessageMetadata(
+      style: StreamMessageMetadataStyle.from(
+        timestampColor: AppColors.textPrimary,
+        editedColor: AppColors.textSecondary,
+        statusColor: AppColors.primaryDark,
+        timestampTextStyle: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          height: 1.1,
+        ),
+        statusTextStyle: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          height: 1.1,
+        ),
+      ),
       timestamp: StreamTimestamp(
         date: message.createdAt.toLocal(),
         formatter: (context, date) => Jiffy.parseFromDateTime(date).jm,
@@ -85,9 +98,7 @@ class TindogMessageFooter extends StatelessWidget {
       edited: message.messageTextUpdatedAt != null
           ? Text(context.translations.editedMessageLabel)
           : null,
-      status: isMine
-          ? TindogSendingStatus(message: message, onOwnBubble: true)
-          : null,
+      status: isMine ? TindogSendingStatus(message: message) : null,
     );
   }
 }
