@@ -89,6 +89,54 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     ref.read(discoverFiltersProvider.notifier).state = next;
   }
 
+  Future<void> _onEmptyPrimary(DiscoverEmptyPrimary action) async {
+    switch (action) {
+      case DiscoverEmptyPrimary.reload:
+        ref.read(discoverDeckProvider.notifier).reload();
+      case DiscoverEmptyPrimary.openLocation:
+        context.push('/profile/location');
+      case DiscoverEmptyPrimary.openFilters:
+        await _openFilters();
+      case DiscoverEmptyPrimary.openVideos:
+        context.push('/profile/videos');
+      case DiscoverEmptyPrimary.clearFilters:
+        final mode = ref.read(discoverFiltersProvider).mode;
+        ref.read(discoverFiltersProvider.notifier).state =
+            DiscoverFilters(mode: mode);
+        if (mounted) {
+          showTindogInfoSnackBar(context, 'Filtros limpios');
+        }
+    }
+  }
+
+  Future<void> _onEmptySecondary(DiscoverEmptySecondary action) async {
+    switch (action) {
+      case DiscoverEmptySecondary.forYou:
+        ref.read(discoverFiltersProvider.notifier).state =
+            const DiscoverFilters();
+      case DiscoverEmptySecondary.openFilters:
+        await _openFilters();
+      case DiscoverEmptySecondary.openProfile:
+        context.push('/profile');
+    }
+  }
+
+  void _onModeSelected(DiscoverMode mode) {
+    final current = ref.read(discoverFiltersProvider);
+    final hadExtras = current.hasExtraFilters;
+    final next = current.forModeChange(mode);
+    ref.read(discoverFiltersProvider.notifier).state = next;
+    if (mode == DiscoverMode.forYou && hadExtras && mounted) {
+      showTindogInfoSnackBar(context, 'Para ti sin filtros extra');
+    }
+  }
+
+  void _clearExtraFilters() {
+    final current = ref.read(discoverFiltersProvider);
+    ref.read(discoverFiltersProvider.notifier).state = current.withoutExtras();
+    showTindogInfoSnackBar(context, 'Filtros limpios');
+  }
+
   @override
   Widget build(BuildContext context) {
     final deck = ref.watch(discoverDeckProvider);
@@ -99,6 +147,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final topInset = MediaQuery.paddingOf(context).top;
     final hasGps = profile?.hasGps ?? false;
     final hasOwnBreed = (pet?.breed ?? '').trim().isNotEmpty;
+    final emptySpec = filters.emptySpec(
+      hasGps: hasGps,
+      hasOwnBreed: hasOwnBreed,
+    );
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -212,33 +264,13 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   )
                 else
                   _EmptyDiscover(
-                    title: 'Por ahora no hay más perfiles',
-                    subtitle: filters.emptyMessage(
-                      hasGps: hasGps,
-                      hasOwnBreed: hasOwnBreed,
-                    ),
-                    primaryLabel: filters.mode == DiscoverMode.near && !hasGps
-                        ? 'Activar GPS'
-                        : filters.mode == DiscoverMode.breed &&
-                                !hasOwnBreed &&
-                                (filters.breed == null ||
-                                    filters.breed!.trim().isEmpty)
-                            ? 'Elegir raza'
-                            : 'Actualizar',
-                    onPrimary: () async {
-                      if (filters.mode == DiscoverMode.near && !hasGps) {
-                        context.push('/profile/location');
-                        return;
-                      }
-                      if (filters.mode == DiscoverMode.breed &&
-                          (filters.breed == null ||
-                              filters.breed!.trim().isEmpty) &&
-                          !hasOwnBreed) {
-                        await _openFilters();
-                        return;
-                      }
-                      ref.read(discoverDeckProvider.notifier).reload();
-                    },
+                    spec: emptySpec,
+                    onRefresh: () =>
+                        ref.read(discoverDeckProvider.notifier).reload(),
+                    onPrimary: () => _onEmptyPrimary(emptySpec.primaryAction),
+                    onSecondary: emptySpec.secondaryAction == null
+                        ? null
+                        : () => _onEmptySecondary(emptySpec.secondaryAction!),
                     onRewind: deck.canRewind ? _onRewind : null,
                   ),
                 Positioned(
@@ -260,14 +292,22 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         stops: [0, 0.35, 0.7, 1],
                       ),
                     ),
-                    child: _DiscoverTopBar(
-                      mode: filters.mode,
-                      filtersActive: filters.hasExtraFilters,
-                      onModeSelected: (mode) {
-                        ref.read(discoverFiltersProvider.notifier).state =
-                            filters.copyWith(mode: mode);
-                      },
-                      onOpenFilters: _openFilters,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _DiscoverTopBar(
+                          mode: filters.mode,
+                          filtersActive: filters.hasExtraFilters,
+                          onModeSelected: _onModeSelected,
+                          onOpenFilters: _openFilters,
+                        ),
+                        if (filters.hasExtraFilters)
+                          _ActiveFiltersBar(
+                            summary: filters.activeSummary,
+                            onClear: _clearExtraFilters,
+                            onEdit: _openFilters,
+                          ),
+                      ],
                     ),
                   ),
                 ),
@@ -282,47 +322,129 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
 class _EmptyDiscover extends StatelessWidget {
   const _EmptyDiscover({
-    required this.title,
-    required this.subtitle,
-    required this.primaryLabel,
+    required this.spec,
+    required this.onRefresh,
     required this.onPrimary,
+    this.onSecondary,
     this.onRewind,
   });
 
-  final String title;
-  final String subtitle;
-  final String primaryLabel;
+  final DiscoverEmptySpec spec;
+  final Future<void> Function() onRefresh;
   final VoidCallback onPrimary;
+  final VoidCallback? onSecondary;
   final VoidCallback? onRewind;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.xxxl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TindogEmptyState(
-              title: title,
-              subtitle: subtitle,
-              icon: Icons.pets_rounded,
-              primaryLabel: primaryLabel,
-              onPrimary: onPrimary,
-              padding: EdgeInsets.zero,
+    return RefreshIndicator(
+      color: AppColors.primary,
+      backgroundColor: AppColors.card,
+      onRefresh: onRefresh,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xxxl,
+              AppSpacing.xxxl + 72,
+              AppSpacing.xxxl,
+              AppSpacing.xxxl,
             ),
-            if (onRewind != null) ...[
-              const SizedBox(height: AppSpacing.md),
-              TextButton.icon(
-                onPressed: onRewind,
-                icon: const Icon(Icons.replay_rounded),
-                label: const Text('Deshacer último swipe'),
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFFD4A017),
-                ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TindogEmptyState(
+                    title: spec.title,
+                    subtitle: spec.subtitle,
+                    icon: spec.icon,
+                    primaryLabel: spec.primaryLabel,
+                    onPrimary: onPrimary,
+                    secondaryLabel: spec.secondaryLabel,
+                    onSecondary: onSecondary,
+                    padding: EdgeInsets.zero,
+                  ),
+                  if (onRewind != null) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    TextButton.icon(
+                      onPressed: onRewind,
+                      icon: const Icon(Icons.replay_rounded),
+                      label: const Text('Deshacer último swipe'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFFD4A017),
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ],
-          ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ActiveFiltersBar extends StatelessWidget {
+  const _ActiveFiltersBar({
+    required this.summary,
+    required this.onClear,
+    required this.onEdit,
+  });
+
+  final String summary;
+  final VoidCallback onClear;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      child: Material(
+        color: AppColors.primary.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: onEdit,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.tune_rounded,
+                  size: 18,
+                  color: AppColors.primaryDark,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    summary.isEmpty ? 'Filtros activos' : summary,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.primaryDark,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: onClear,
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.accent,
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                  ),
+                  child: const Text(
+                    'Limpiar',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

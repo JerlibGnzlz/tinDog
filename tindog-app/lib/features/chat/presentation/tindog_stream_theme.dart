@@ -73,7 +73,7 @@ StreamChatThemeData tindogStreamChatTheme() {
   return StreamChatThemeData(
     channelHeaderTheme: const StreamAppBarThemeData(
       style: StreamAppBarStyle(
-        backgroundColor: AppColors.surface,
+        backgroundColor: Color(0x00000000),
         titleTextStyle: TextStyle(
           color: AppColors.textPrimary,
           fontWeight: FontWeight.w700,
@@ -86,7 +86,7 @@ StreamChatThemeData tindogStreamChatTheme() {
       ),
     ),
     messageListViewTheme: const StreamMessageListViewThemeData(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Color(0x00000000),
     ),
   );
 }
@@ -101,6 +101,8 @@ Widget wrapWithTindogStreamTheme({
       final base = Theme.of(context);
       return Theme(
         data: base.copyWith(
+          // NO transparente: envuelve toda la app cuando hay Stream client.
+          // El chat thread pone transparent solo en su Scaffold + atmósfera.
           scaffoldBackgroundColor: AppColors.surface,
           extensions: [
             ...base.extensions.values.where((e) => e is! StreamTheme),

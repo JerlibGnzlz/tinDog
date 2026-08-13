@@ -11,6 +11,8 @@ class TindogEmptyState extends StatelessWidget {
     this.icon = Icons.pets_rounded,
     this.primaryLabel,
     this.onPrimary,
+    this.secondaryLabel,
+    this.onSecondary,
     this.padding = const EdgeInsets.fromLTRB(32, 24, 32, 40),
   });
 
@@ -19,6 +21,8 @@ class TindogEmptyState extends StatelessWidget {
   final IconData icon;
   final String? primaryLabel;
   final VoidCallback? onPrimary;
+  final String? secondaryLabel;
+  final VoidCallback? onSecondary;
   final EdgeInsetsGeometry padding;
 
   @override
@@ -82,6 +86,19 @@ class TindogEmptyState extends StatelessWidget {
                 onPressed: onPrimary,
                 child: Text(
                   primaryLabel!,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+            if (secondaryLabel != null && onSecondary != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              TextButton(
+                onPressed: onSecondary,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.primaryDark,
+                ),
+                child: Text(
+                  secondaryLabel!,
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),

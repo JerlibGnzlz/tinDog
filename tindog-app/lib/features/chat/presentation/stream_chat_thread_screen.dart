@@ -467,22 +467,28 @@ class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
         _error ?? StateError('No se pudo abrir el chat'),
       );
       return Scaffold(
-        backgroundColor: AppColors.surface,
-        appBar: AppBar(
-          backgroundColor: AppColors.surface,
-          foregroundColor: AppColors.textPrimary,
-          title: Text(_petName),
-        ),
-        body: StreamChatErrorPanel(
-          error: _error ?? StateError(failure.message),
-          onRetry: _openChannel,
-          onBack: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/chats');
-            }
-          },
+        backgroundColor: Colors.transparent,
+        body: TindogBrandAtmosphere(
+          kind: TindogAtmosphereKind.shell,
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              foregroundColor: AppColors.textPrimary,
+              title: Text(_petName),
+            ),
+            body: StreamChatErrorPanel(
+              error: _error ?? StateError(failure.message),
+              onRetry: _openChannel,
+              onBack: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/chats');
+                }
+              },
+            ),
+          ),
         ),
       );
     }
@@ -523,10 +529,12 @@ class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
             },
           ),
         ),
-        child: Scaffold(
-          backgroundColor: AppColors.surface,
+        child: TindogBrandAtmosphere(
+          kind: TindogAtmosphereKind.shell,
+          child: Scaffold(
+          backgroundColor: Colors.transparent,
           appBar: AppBar(
-            backgroundColor: AppColors.surface,
+            backgroundColor: Colors.transparent,
             foregroundColor: AppColors.textPrimary,
             elevation: 0,
             scrolledUnderElevation: 0,
@@ -781,6 +789,7 @@ class _StreamChatThreadScreenState extends ConsumerState<StreamChatThreadScreen>
               ),
             ],
           ),
+        ),
         ),
       ),
     );

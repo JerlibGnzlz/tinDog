@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/feedback/app_haptics.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class DiscoverActions extends StatelessWidget {
@@ -30,6 +31,7 @@ class DiscoverActions extends StatelessWidget {
           size: 46,
           onTap: canRewind ? onRewind : null,
           enabled: canRewind,
+          feel: _PressFeel.rewind,
         ),
         _Btn(
           icon: Icons.close_rounded,
@@ -37,12 +39,14 @@ class DiscoverActions extends StatelessWidget {
           size: 62,
           iconSize: 32,
           onTap: onPass,
+          feel: _PressFeel.pass,
         ),
         _Btn(
           icon: Icons.star_rounded,
           color: const Color(0xFF5B8FA8),
           size: 46,
           onTap: onSuperLike,
+          feel: _PressFeel.soft,
         ),
         _Btn(
           icon: Icons.favorite_rounded,
@@ -50,24 +54,29 @@ class DiscoverActions extends StatelessWidget {
           size: 62,
           iconSize: 30,
           onTap: onLike,
+          feel: _PressFeel.like,
         ),
         _Btn(
           icon: Icons.bolt_rounded,
           color: AppColors.primaryDark,
           size: 46,
           onTap: onBoost,
+          feel: _PressFeel.soft,
         ),
       ],
     );
   }
 }
 
-class _Btn extends StatelessWidget {
+enum _PressFeel { rewind, pass, like, soft }
+
+class _Btn extends StatefulWidget {
   const _Btn({
     required this.icon,
     required this.color,
     required this.size,
     required this.onTap,
+    required this.feel,
     this.iconSize,
     this.enabled = true,
   });
@@ -78,19 +87,81 @@ class _Btn extends StatelessWidget {
   final double? iconSize;
   final VoidCallback? onTap;
   final bool enabled;
+  final _PressFeel feel;
+
+  @override
+  State<_Btn> createState() => _BtnState();
+}
+
+class _BtnState extends State<_Btn> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 90),
+      reverseDuration: const Duration(milliseconds: 240),
+    );
+    _scale = Tween<double>(begin: 1, end: 0.88).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOut,
+        reverseCurve: Curves.easeOutBack,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _hapticIfNeeded() {
+    // Like / Pass / Rewind ya vibran en la card o en discover_screen.
+    if (widget.feel == _PressFeel.soft) {
+      AppHaptics.light();
+    }
+  }
+
+  Future<void> _onTapDown(TapDownDetails _) async {
+    if (!widget.enabled) return;
+    AppHaptics.selection();
+    await _controller.forward();
+  }
+
+  Future<void> _onTapUp(TapUpDetails _) async {
+    if (!widget.enabled) return;
+    _hapticIfNeeded();
+    widget.onTap?.call();
+    if (!mounted) return;
+    await _controller.reverse();
+  }
+
+  Future<void> _onTapCancel() async {
+    if (!widget.enabled) return;
+    if (!mounted) return;
+    await _controller.reverse();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = enabled ? color : color.withValues(alpha: 0.35);
-    return Material(
-      color: Colors.transparent,
-      elevation: 0,
-      child: InkWell(
-        onTap: enabled ? onTap : null,
-        customBorder: const CircleBorder(),
-        child: Ink(
-          width: size,
-          height: size,
+    final effectiveColor =
+        widget.enabled ? widget.color : widget.color.withValues(alpha: 0.35);
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: widget.enabled ? _onTapDown : null,
+      onTapUp: widget.enabled ? _onTapUp : null,
+      onTapCancel: widget.enabled ? _onTapCancel : null,
+      child: ScaleTransition(
+        scale: _scale,
+        child: Container(
+          width: widget.size,
+          height: widget.size,
           decoration: BoxDecoration(
             color: AppColors.card,
             shape: BoxShape.circle,
@@ -103,7 +174,11 @@ class _Btn extends StatelessWidget {
               ),
             ],
           ),
-          child: Icon(icon, color: effectiveColor, size: iconSize ?? 22),
+          child: Icon(
+            widget.icon,
+            color: effectiveColor,
+            size: widget.iconSize ?? 22,
+          ),
         ),
       ),
     );

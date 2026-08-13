@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/feedback/app_feedback.dart';
 import '../../../core/feedback/app_haptics.dart';
+import '../../../core/router/tindog_nav.dart';
 import '../../../core/session/user_data_cache.dart';
 import '../../../core/network/session_handler.dart';
 import '../../../core/theme/app_colors.dart';
@@ -53,10 +54,20 @@ class _ProfileHubScreenState extends ConsumerState<ProfileHubScreen> {
       );
     });
 
-    return Scaffold(
+    final canPop = context.canPop();
+
+    return PopScope(
+      canPop: canPop,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        tindogPopOrHome(context);
+      },
+      child: Scaffold(
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
+        backgroundColor: AppColors.surface,
         title: const Text('Mi perfil'),
-        leading: TindogBackButton(onPressed: () => context.go('/home')),
+        leading: TindogBackButton(onPressed: () => tindogPopOrHome(context)),
         leadingWidth: 48,
       ),
       body: profileAsync.when(
@@ -103,6 +114,7 @@ class _ProfileHubScreenState extends ConsumerState<ProfileHubScreen> {
             );
           },
         ),
+      ),
       ),
     );
   }

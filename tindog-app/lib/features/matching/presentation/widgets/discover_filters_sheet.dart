@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/tindog_form_sheet_scaffold.dart';
 import '../discover_filters.dart';
 
 Future<DiscoverFilters?> showDiscoverFiltersSheet({
@@ -49,12 +50,44 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
     super.dispose();
   }
 
+  bool get _fullAgeRange =>
+      _age.start.round() <= 0 && _age.end.round() >= 20;
+
+  void _clear() {
+    Navigator.pop(
+      context,
+      widget.initial.copyWith(
+        clearBreed: true,
+        clearMinAge: true,
+        clearMaxAge: true,
+        maxKm: 50,
+      ),
+    );
+  }
+
+  void _apply() {
+    final breed = _breedController.text.trim();
+    // 0–20 = sin filtro de edad (si no, Prisma excluía pets con age null).
+    Navigator.pop(
+      context,
+      widget.initial.copyWith(
+        breed: breed.isEmpty ? null : breed,
+        clearBreed: breed.isEmpty,
+        minAge: _fullAgeRange ? null : _age.start.round(),
+        maxAge: _fullAgeRange ? null : _age.end.round(),
+        clearMinAge: _fullAgeRange,
+        clearMaxAge: _fullAgeRange,
+        maxKm: _maxKm.round(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.viewInsetsOf(context).bottom;
     final breedNow = _breedController.text.trim();
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottom),
+
+    return TindogFormSheetScaffold(
+      maxHeightFactor: 0.92,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -89,7 +122,9 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
           const SizedBox(height: 8),
           TextField(
             controller: _breedController,
+            textInputAction: TextInputAction.done,
             onChanged: (_) => setState(() {}),
+            onSubmitted: (_) => FocusScope.of(context).unfocus(),
             decoration: const InputDecoration(
               hintText: 'Ej: Labrador, Mestizo…',
               border: OutlineInputBorder(),
@@ -112,6 +147,7 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
                         : AppColors.border,
                   ),
                   onPressed: () {
+                    FocusScope.of(context).unfocus();
                     _breedController.text = breed;
                     setState(() {});
                   },
@@ -120,7 +156,9 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
           ),
           const SizedBox(height: 20),
           Text(
-            'Edad: ${_age.start.round()} – ${_age.end.round()} años',
+            _fullAgeRange
+                ? 'Edad: todas'
+                : 'Edad: ${_age.start.round()} – ${_age.end.round()} años',
             style: const TextStyle(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w700,
@@ -160,17 +198,7 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.pop(
-                      context,
-                      widget.initial.copyWith(
-                        clearBreed: true,
-                        clearMinAge: true,
-                        clearMaxAge: true,
-                        maxKm: 50,
-                      ),
-                    );
-                  },
+                  onPressed: _clear,
                   child: const Text('Limpiar'),
                 ),
               ),
@@ -181,19 +209,7 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                   ),
-                  onPressed: () {
-                    final breed = _breedController.text.trim();
-                    Navigator.pop(
-                      context,
-                      widget.initial.copyWith(
-                        breed: breed.isEmpty ? null : breed,
-                        clearBreed: breed.isEmpty,
-                        minAge: _age.start.round(),
-                        maxAge: _age.end.round(),
-                        maxKm: _maxKm.round(),
-                      ),
-                    );
-                  },
+                  onPressed: _apply,
                   child: const Text('Aplicar'),
                 ),
               ),

@@ -118,6 +118,7 @@ export class MatchingService {
     const ageFilter: Prisma.IntFilter = {};
     if (options.minAge != null) ageFilter.gte = options.minAge;
     if (options.maxAge != null) ageFilter.lte = options.maxAge;
+    const hasAgeFilter = Object.keys(ageFilter).length > 0;
 
     const breedQuery =
       (options.breed?.trim() ||
@@ -149,13 +150,23 @@ export class MatchingService {
         : {}),
       name: { not: null },
       NOT: { name: '' },
-      OR: [
-        { photoUrl: { not: null } },
-        { media: { some: { type: PetMediaType.photo } } },
+      AND: [
+        {
+          OR: [
+            { photoUrl: { not: null } },
+            { media: { some: { type: PetMediaType.photo } } },
+          ],
+        },
+        ...(hasAgeFilter
+          ? [
+              {
+                OR: [{ age: ageFilter }, { age: null }],
+              },
+            ]
+          : []),
       ],
-      ...(Object.keys(ageFilter).length > 0 ? { age: ageFilter } : {}),
       ...(breedQuery
-        ? { breed: { contains: breedQuery, mode: 'insensitive' } }
+        ? { breed: { contains: breedQuery, mode: 'insensitive' as const } }
         : {}),
       ...(mode === 'near'
         ? {

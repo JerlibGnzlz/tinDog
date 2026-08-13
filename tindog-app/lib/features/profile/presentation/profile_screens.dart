@@ -44,7 +44,7 @@ class HomeScreen extends ConsumerWidget {
               const Center(child: TindogLoader(message: 'Cargando…')),
           error: (error, _) => _HomeProfileBody(
             errorMessage: readableError(error),
-            onEdit: () => context.go('/profile'),
+            onEdit: () => context.push('/profile'),
           ),
           data: (pet) {
             if ((pet.name ?? '').trim().isEmpty) {
@@ -60,7 +60,7 @@ class HomeScreen extends ConsumerWidget {
               profile: profile,
               photos: photos,
               videos: videos,
-              onEdit: () => context.go('/profile'),
+              onEdit: () => context.push('/profile'),
             );
           },
         ),

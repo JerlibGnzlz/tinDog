@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/feedback/app_feedback.dart';
 import '../../../core/network/session_handler.dart';
+import '../../../core/router/tindog_nav.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/tindog_back_button.dart';
 import '../../../shared/widgets/tindog_loader.dart';
@@ -71,14 +72,21 @@ class BlockedUsersScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(blockedUsersProvider);
+    final canPop = context.canPop();
 
-    return Scaffold(
+    return PopScope(
+      canPop: canPop,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        tindogPopOrHome(context);
+      },
+      child: Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         title: const Text('Bloqueados'),
-        leading: TindogBackButton(onPressed: () => context.pop()),
+        leading: TindogBackButton(onPressed: () => tindogPopOrHome(context)),
       ),
       body: async.when(
         loading: () => const Center(child: TindogLoader(message: 'Cargando…')),
@@ -159,6 +167,7 @@ class BlockedUsersScreen extends ConsumerWidget {
             },
           );
         },
+      ),
       ),
     );
   }

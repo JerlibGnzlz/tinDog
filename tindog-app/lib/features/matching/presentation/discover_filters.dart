@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Modo de discovery (tabs Desliza).
 enum DiscoverMode {
   forYou,
@@ -62,23 +64,138 @@ class DiscoverFilters {
       maxAge != null ||
       maxKm != 50;
 
-  String emptyMessage({required bool hasGps, required bool hasOwnBreed}) {
+  /// Resumen legible de filtros extra (chips / empty).
+  String get activeSummary {
+    final parts = <String>[];
+    final b = breed?.trim();
+    if (b != null && b.isNotEmpty) parts.add(b);
+    if (minAge != null || maxAge != null) {
+      parts.add('${minAge ?? 0}–${maxAge ?? 20} años');
+    }
+    if (maxKm != 50) parts.add('$maxKm km');
+    return parts.join(' · ');
+  }
+
+  /// Solo cambia el modo (mantiene raza/edad/km).
+  DiscoverFilters withMode(DiscoverMode next) => copyWith(mode: next);
+
+  /// Quita raza, edad y radio custom; deja el modo.
+  DiscoverFilters withoutExtras() => DiscoverFilters(mode: mode);
+
+  /// «Para ti» limpio: sin filtros extra.
+  DiscoverFilters get asCleanForYou => const DiscoverFilters();
+
+  /// Al cambiar de pestaña: Para ti / Videos arrancan limpios.
+  DiscoverFilters forModeChange(DiscoverMode next) {
+    if (next == DiscoverMode.forYou) return asCleanForYou;
+    if (next == DiscoverMode.withVideos) {
+      return const DiscoverFilters(mode: DiscoverMode.withVideos);
+    }
+    return withMode(next);
+  }
+
+  /// Copy + acciones del empty state según modo (Cerca / Razas / Videos…).
+  DiscoverEmptySpec emptySpec({
+    required bool hasGps,
+    required bool hasOwnBreed,
+  }) {
+    // Casos que no se resuelven limpiando filtros.
+    if (mode == DiscoverMode.near && !hasGps) {
+      return const DiscoverEmptySpec(
+        title: 'Falta tu ubicación',
+        subtitle:
+            'Activá el GPS en tu perfil para ver mascotas cerca de vos.',
+        icon: Icons.location_off_rounded,
+        primaryLabel: 'Activar GPS',
+        primaryAction: DiscoverEmptyPrimary.openLocation,
+        secondaryLabel: 'Ver Para ti',
+        secondaryAction: DiscoverEmptySecondary.forYou,
+      );
+    }
+    if (mode == DiscoverMode.breed &&
+        (breed == null || breed!.trim().isEmpty) &&
+        !hasOwnBreed) {
+      return const DiscoverEmptySpec(
+        title: 'Elegí una raza',
+        subtitle:
+            'Indicá la raza en Filtros o completá la de tu mascota para buscar iguales.',
+        icon: Icons.pets_rounded,
+        primaryLabel: 'Elegir raza',
+        primaryAction: DiscoverEmptyPrimary.openFilters,
+        secondaryLabel: 'Ver Para ti',
+        secondaryAction: DiscoverEmptySecondary.forYou,
+      );
+    }
+
+    // Filtros extra activos → el vacío suele ser por eso (muy confuso en Para ti).
+    if (hasExtraFilters) {
+      final summary = activeSummary;
+      return DiscoverEmptySpec(
+        title: 'Nadie con estos filtros',
+        subtitle: summary.isEmpty
+            ? 'Tus filtros están dejando el feed vacío. Limpiálos o editálos.'
+            : 'Activos: $summary. Limpiálos o editálos para ver más perfiles.',
+        icon: Icons.filter_alt_off_rounded,
+        primaryLabel: 'Limpiar filtros',
+        primaryAction: DiscoverEmptyPrimary.clearFilters,
+        secondaryLabel: 'Editar filtros',
+        secondaryAction: DiscoverEmptySecondary.openFilters,
+      );
+    }
+
     switch (mode) {
       case DiscoverMode.near:
-        if (!hasGps) {
-          return 'Activá tu ubicación GPS en el perfil para ver mascotas cerca.';
-        }
-        return 'Por ahora no hay perfiles dentro de $maxKm km. Probá ampliar el radio o volvé más tarde.';
+        return DiscoverEmptySpec(
+          title: 'Nadie cerca por ahora',
+          subtitle:
+              'No hay perfiles dentro de $maxKm km. Ampliá el radio o mirá otras sugerencias.',
+          icon: Icons.near_me_rounded,
+          primaryLabel: 'Ampliar radio',
+          primaryAction: DiscoverEmptyPrimary.openFilters,
+          secondaryLabel: 'Ver Para ti',
+          secondaryAction: DiscoverEmptySecondary.forYou,
+        );
       case DiscoverMode.breed:
-        if ((breed == null || breed!.trim().isEmpty) && !hasOwnBreed) {
-          return 'Elegí una raza en Filtros o completá la raza de tu mascota.';
-        }
-        return 'Todavía no hay perfiles de esa raza. Probá otra o volvé más tarde.';
+        final label = (breed != null && breed!.trim().isNotEmpty)
+            ? breed!.trim()
+            : 'esa raza';
+        return DiscoverEmptySpec(
+          title: 'Sin perfiles de $label',
+          subtitle:
+              'Todavía no hay dueños con esa raza. Probá otra o volvé más tarde.',
+          icon: Icons.pets_rounded,
+          primaryLabel: 'Cambiar raza',
+          primaryAction: DiscoverEmptyPrimary.openFilters,
+          secondaryLabel: 'Ver Para ti',
+          secondaryAction: DiscoverEmptySecondary.forYou,
+        );
       case DiscoverMode.withVideos:
-        return 'Nadie subió un clip todavía. Sé de los primeros: subí el tuyo en Perfil → Videos.';
+        return const DiscoverEmptySpec(
+          title: 'Todavía no hay clips',
+          subtitle:
+              'Sé de los primeros: un video corto hace que tu perfil destaque en Desliza.',
+          icon: Icons.videocam_rounded,
+          primaryLabel: 'Subir mi video',
+          primaryAction: DiscoverEmptyPrimary.openVideos,
+          secondaryLabel: 'Ver Para ti',
+          secondaryAction: DiscoverEmptySecondary.forYou,
+        );
       case DiscoverMode.forYou:
-        return 'No hay más perfiles por ahora. Completá tu perfil o volvé un rato más tarde.';
+        return const DiscoverEmptySpec(
+          title: 'Por ahora no hay más perfiles',
+          subtitle:
+              'Completá tu perfil o volvé un rato más tarde: van apareciendo dueños nuevos.',
+          icon: Icons.auto_awesome_rounded,
+          primaryLabel: 'Actualizar',
+          primaryAction: DiscoverEmptyPrimary.reload,
+          secondaryLabel: 'Completar perfil',
+          secondaryAction: DiscoverEmptySecondary.openProfile,
+        );
     }
+  }
+
+  String emptyMessage({required bool hasGps, required bool hasOwnBreed}) {
+    return emptySpec(hasGps: hasGps, hasOwnBreed: hasOwnBreed).subtitle;
   }
 
   @override
@@ -93,6 +210,40 @@ class DiscoverFilters {
 
   @override
   int get hashCode => Object.hash(mode, breed, minAge, maxAge, maxKm);
+}
+
+enum DiscoverEmptyPrimary {
+  reload,
+  openLocation,
+  openFilters,
+  openVideos,
+  clearFilters,
+}
+
+enum DiscoverEmptySecondary {
+  forYou,
+  openFilters,
+  openProfile,
+}
+
+class DiscoverEmptySpec {
+  const DiscoverEmptySpec({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.primaryLabel,
+    required this.primaryAction,
+    this.secondaryLabel,
+    this.secondaryAction,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final String primaryLabel;
+  final DiscoverEmptyPrimary primaryAction;
+  final String? secondaryLabel;
+  final DiscoverEmptySecondary? secondaryAction;
 }
 
 /// Razas sugeridas para el picker (texto libre también permitido).

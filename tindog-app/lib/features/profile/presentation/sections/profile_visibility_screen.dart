@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/router/tindog_nav.dart';
 import '../../../../core/theme/app_colors.dart';
 
 /// Transparencia: qué ven otros dueños de tu perfil.
@@ -8,7 +9,15 @@ class ProfileVisibilityScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final canPop = context.canPop();
+
+    return PopScope(
+      canPop: canPop,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        tindogPopOrHome(context);
+      },
+      child: Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
         backgroundColor: AppColors.surface,
@@ -21,13 +30,7 @@ class ProfileVisibilityScreen extends StatelessWidget {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           tooltip: 'Volver',
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/home');
-            }
-          },
+          onPressed: () => tindogPopOrHome(context),
         ),
       ),
       body: ListView(
@@ -80,6 +83,7 @@ class ProfileVisibilityScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

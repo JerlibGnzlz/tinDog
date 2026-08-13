@@ -22,9 +22,10 @@ class TindogFormSheetScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    final screenH = MediaQuery.sizeOf(context).height;
     final maxH = maxHeightFactor == null
         ? null
-        : MediaQuery.sizeOf(context).height * maxHeightFactor!;
+        : (screenH - keyboard) * maxHeightFactor!;
 
     Widget body = scrollable
         ? SingleChildScrollView(
@@ -37,10 +38,13 @@ class TindogFormSheetScaffold extends StatelessWidget {
     if (maxH != null) {
       body = scrollable
           ? ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: maxH),
+              constraints: BoxConstraints(maxHeight: maxH.clamp(120, screenH)),
               child: body,
             )
-          : SizedBox(height: maxH, child: body);
+          : SizedBox(
+              height: maxH.clamp(120, screenH),
+              child: body,
+            );
     }
 
     return AnimatedPadding(

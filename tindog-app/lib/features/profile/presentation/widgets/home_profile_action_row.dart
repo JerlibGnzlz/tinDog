@@ -16,27 +16,32 @@ class HomeProfileActionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _Action(
-          icon: Icons.settings_rounded,
-          label: 'AJUSTES',
-          size: 58,
-          onTap: onSettings,
+        Expanded(
+          child: _Action(
+            icon: Icons.settings_rounded,
+            label: 'Ajustes',
+            size: 58,
+            onTap: onSettings,
+          ),
         ),
-        _Action(
-          icon: Icons.photo_camera_rounded,
-          label: 'MEDIA',
-          size: 78,
-          filled: true,
-          badge: Icons.add_rounded,
-          onTap: onAddMedia,
+        Expanded(
+          child: _Action(
+            icon: Icons.photo_camera_rounded,
+            label: 'Media',
+            size: 78,
+            filled: true,
+            badge: Icons.add_rounded,
+            onTap: onAddMedia,
+          ),
         ),
-        _Action(
-          icon: Icons.shield_outlined,
-          label: 'SEGURIDAD',
-          size: 58,
-          onTap: onSafety,
+        Expanded(
+          child: _Action(
+            icon: Icons.shield_outlined,
+            label: 'Seguridad',
+            size: 58,
+            onTap: onSafety,
+          ),
         ),
       ],
     );
@@ -130,19 +135,16 @@ class _Action extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        SizedBox(
-          width: size + 12,
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.4,
-            ),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          softWrap: false,
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            height: 1.1,
           ),
         ),
       ],

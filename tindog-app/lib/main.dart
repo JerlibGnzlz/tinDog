@@ -63,6 +63,7 @@ class _TinDogAppState extends ConsumerState<TinDogApp> {
     return MaterialApp.router(
       title: 'tinDog',
       theme: AppTheme.light,
+      themeMode: ThemeMode.light,
       scrollBehavior: const TindogScrollBehavior(),
       locale: const Locale('es'),
       supportedLocales: const [

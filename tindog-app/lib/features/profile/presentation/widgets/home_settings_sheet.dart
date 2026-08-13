@@ -93,7 +93,7 @@ Future<void> showHomeSettingsSheet({
                   ),
                   onTap: () {
                     Navigator.pop(context);
-                    context.go('/profile');
+                    context.push('/profile');
                   },
                 ),
                 ListTile(
