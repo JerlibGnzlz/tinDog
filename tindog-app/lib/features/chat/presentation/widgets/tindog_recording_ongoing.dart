@@ -69,26 +69,6 @@ class TindogRecordingOngoing extends StatelessWidget {
   }
 }
 
-/// Centro del composer: UI de grabación propia o el default de Stream.
-class TindogComposerInputCenter extends StatelessWidget {
-  const TindogComposerInputCenter({super.key, required this.props});
-
-  final MessageComposerInputCenterProps props;
-
-  @override
-  Widget build(BuildContext context) {
-    final recorder = props.audioRecorderController;
-    final state = props.audioRecorderState;
-    // Solo el hold (mantener mic). Si está locked/stopped, Stream muestra
-    // cancelar/enviar; si interceptamos RecordStateRecording entero, el
-    // candado deja la UI “pegada” sin botones.
-    if (recorder != null && state is RecordStateRecordingHold) {
-      return TindogRecordingOngoing(audioRecorderController: recorder);
-    }
-    return DefaultStreamMessageComposerInputCenter(props: props);
-  }
-}
-
 class _GradientText extends StatelessWidget {
   const _GradientText(
     this.text, {

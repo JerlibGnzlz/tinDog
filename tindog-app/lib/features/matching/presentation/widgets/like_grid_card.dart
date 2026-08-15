@@ -9,12 +9,14 @@ class LikeGridCard extends StatelessWidget {
     required this.item,
     this.onTap,
     this.onLikeBack,
+    this.onOpenChat,
     this.liking = false,
   });
 
   final LikeListItem item;
   final VoidCallback? onTap;
   final VoidCallback? onLikeBack;
+  final VoidCallback? onOpenChat;
   final bool liking;
 
   @override
@@ -151,7 +153,11 @@ class LikeGridCard extends StatelessWidget {
                         matched: item.matched,
                         onPressed: liking
                             ? null
-                            : (canLikeBack ? onLikeBack : onTap),
+                            : (canLikeBack
+                                ? onLikeBack
+                                : item.matched
+                                    ? onOpenChat
+                                    : onTap),
                       ),
                     ],
                   ),

@@ -29,7 +29,7 @@ import 'widgets/stream_chat_icebreakers.dart';
 import 'widgets/tindog_channel_status.dart';
 import 'widgets/tindog_chat_attachments.dart';
 import 'widgets/tindog_composer_emoji.dart';
-import 'widgets/tindog_recording_ongoing.dart';
+import 'widgets/tindog_composer_input_center.dart';
 import 'widgets/tindog_message_actions.dart';
 import 'widgets/tindog_message_edit.dart';
 import 'widgets/tindog_message_footer.dart';

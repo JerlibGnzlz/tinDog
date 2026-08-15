@@ -6,6 +6,8 @@ import '../../../core/network/session_handler.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/tindog_loader.dart';
+import '../../chat/presentation/widgets/match_profile_sheet.dart';
+import '../../safety/presentation/safety_sheets.dart';
 import '../data/discover_candidate.dart';
 import '../data/matching_repository.dart';
 import 'chats_providers.dart';
@@ -254,22 +256,26 @@ class _LikesGrid extends ConsumerWidget {
                 onLikeBack: enableLikeBack && onLikeBack != null
                     ? () => onLikeBack!(item)
                     : null,
+                onOpenChat: item.matched && item.matchId != null
+                    ? () => context.push('/chats/${item.matchId}')
+                    : null,
                 onTap: () {
-                  if (enableLikeBack &&
-                      onLikeBack != null &&
-                      !item.matched) {
-                    onLikeBack!(item);
-                    return;
-                  }
-                  if (item.matched && item.matchId != null) {
-                    context.push('/chats/${item.matchId}');
-                    return;
-                  }
-                  showTindogInfoSnackBar(
-                    context,
-                    item.matched
-                        ? '${item.name} — ya es match'
-                        : 'Like enviado a ${item.name}',
+                  showMatchProfileSheet(
+                    context: context,
+                    pet: item,
+                    onSafety: item.ownerUserId == null
+                        ? null
+                        : () {
+                            showSafetyActionsSheet(
+                              context: context,
+                              ref: ref,
+                              otherUserId: item.ownerUserId!,
+                              otherName: item.ownerName?.trim().isNotEmpty ==
+                                      true
+                                  ? item.ownerName!.trim()
+                                  : item.name,
+                            );
+                          },
                   );
                 },
               );
